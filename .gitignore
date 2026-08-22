@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.playwright-cli/
+*.tsbuildinfo
+.wrangler/
+.wrangler.log
+worker-configuration.d.ts
+.dev.vars
+.env
+.DS_Store
+playwright-report/
+test-results/

@@ -1,0 +1,20 @@
+# International Steam content delivery
+DOMAIN-SUFFIX,steamcontent.com
+DOMAIN-SUFFIX,steamserver.net
+DOMAIN-SUFFIX,steamusercontent.com
+DOMAIN-SUFFIX,steamstatic.com
+DOMAIN,steamcdn-a.akamaihd.net
+DOMAIN,steamstore-a.akamaihd.net
+DOMAIN,steamusercontent-a.akamaihd.net
+DOMAIN,steamcommunity-a.akamaihd.net
+DOMAIN,cdn.akamai.steamstatic.com
+DOMAIN,cdn.cloudflare.steamstatic.com
+DOMAIN,cdn.edgecast.steamstatic.com
+DOMAIN,cdn.fastly.steamstatic.com
+DOMAIN,cdn.steamstatic.com
+DOMAIN,community.akamai.steamstatic.com
+DOMAIN,community.cloudflare.steamstatic.com
+DOMAIN,community.fastly.steamstatic.com
+DOMAIN,store.akamai.steamstatic.com
+DOMAIN,store.cloudflare.steamstatic.com
+DOMAIN,store.fastly.steamstatic.com

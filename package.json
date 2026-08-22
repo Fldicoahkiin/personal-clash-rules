@@ -1,0 +1,33 @@
+{
+  "name": "personal-clash-rules",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm cf-typegen && tsc -b && vite build",
+    "test": "vitest run",
+    "test:worker": "WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=.wrangler.log vitest run --config vitest.worker.config.ts",
+    "test:watch": "vitest",
+    "typecheck": "pnpm cf-typegen && tsc -b --pretty false",
+    "cf-typegen": "WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=.wrangler.log node node_modules/wrangler/bin/wrangler.js types worker-configuration.d.ts --config ./wrangler.jsonc --install-skills=false",
+    "check": "pnpm test && pnpm test:worker && pnpm typecheck && pnpm build"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "yaml": "latest"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest",
+    "wrangler": "latest"
+  }
+}

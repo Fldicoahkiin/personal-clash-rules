@@ -1,0 +1,209 @@
+# Clash Party merge override for personal-clash-rules
+# Source URLs use GitHub Raw so this file works before a custom domain is attached.
+
+rule-providers:
+  private-domain:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/local/private-domain.list
+    path: ./ruleset/personal/private-domain.list
+    interval: 86400
+  private-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/local/private-ip.list
+    path: ./ruleset/personal/private-ip.list
+    interval: 86400
+  ai-openai:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/openai.list
+    path: ./ruleset/personal/ai-openai.list
+    interval: 86400
+  ai-anthropic:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/anthropic.list
+    path: ./ruleset/personal/ai-anthropic.list
+    interval: 86400
+  ai-xai:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/xai.list
+    path: ./ruleset/personal/ai-xai.list
+    interval: 86400
+  ai-google:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/google.list
+    path: ./ruleset/personal/ai-google.list
+    interval: 86400
+  ai-coding:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/coding.list
+    path: ./ruleset/personal/ai-coding.list
+    interval: 86400
+  ai-general:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/general.list
+    path: ./ruleset/personal/ai-general.list
+    interval: 86400
+  steam:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/gaming/steam.list
+    path: ./ruleset/personal/steam.list
+    interval: 86400
+  steam-download:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/gaming/steam-download.list
+    path: ./ruleset/personal/steam-download.list
+    interval: 86400
+  discord:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/messaging/discord.list
+    path: ./ruleset/personal/discord.list
+    interval: 86400
+  developer:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/developer/developer.list
+    path: ./ruleset/personal/developer.list
+    interval: 86400
+  media:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/media/media.list
+    path: ./ruleset/personal/media.list
+    interval: 86400
+  social:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/social/social.list
+    path: ./ruleset/personal/social.list
+    interval: 86400
+
++proxy-groups:
+  - name: AUTO
+    type: url-test
+    include-all: true
+    exclude-type: direct
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    tolerance: 80
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: US
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: JP
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇯🇵|日本|Japan|Tokyo|Osaka|(^|[ _-])JP([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: SG
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇸🇬|新加坡|Singapore|(^|[ _-])SG([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: HK
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇭🇰|香港|Hong Kong|(^|[ _-])HK([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: TW
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|(^|[ _-])TW([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: KR
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇰🇷|韩国|韓國|South Korea|Seoul|(^|[ _-])KR([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: EU
+    type: select
+    include-all: true
+    empty-fallback: DIRECT
+    exclude-type: direct
+    filter: '(?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[ _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))'
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: GLOBAL
+    type: select
+    proxies: [AUTO, US, JP, SG, HK, TW, KR, EU, DIRECT]
+    include-all: true
+    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
+  - name: AI
+    type: select
+    proxies: [GLOBAL, US, JP, SG, TW]
+  - name: STEAM
+    type: select
+    proxies: [DIRECT, GLOBAL, JP, US, SG]
+  - name: STEAM-DOWNLOAD
+    type: select
+    proxies: [DIRECT, GLOBAL]
+  - name: DISCORD
+    type: select
+    proxies: [GLOBAL, US, JP, SG, DIRECT]
+  - name: DEV
+    type: select
+    proxies: [GLOBAL, DIRECT, US, JP, SG]
+  - name: MEDIA
+    type: select
+    proxies: [GLOBAL, US, JP, SG, DIRECT]
+  - name: SOCIAL
+    type: select
+    proxies: [GLOBAL, US, JP, SG, DIRECT]
+  - name: DEFAULT
+    type: select
+    proxies: [GLOBAL, DIRECT, AUTO]
+
++rules:
+  - RULE-SET,private-domain,DIRECT
+  - RULE-SET,private-ip,DIRECT,no-resolve
+  - PROCESS-NAME-REGEX,(?i)^codex(\.exe)?$,AI
+  - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,AI
+  - RULE-SET,ai-openai,AI
+  - RULE-SET,ai-anthropic,AI
+  - RULE-SET,ai-xai,AI
+  - RULE-SET,ai-google,AI
+  - RULE-SET,ai-coding,AI
+  - RULE-SET,ai-general,AI
+  - RULE-SET,steam-download,STEAM-DOWNLOAD
+  - RULE-SET,steam,STEAM
+  - RULE-SET,discord,DISCORD
+  - RULE-SET,developer,DEV
+  - RULE-SET,media,MEDIA
+  - RULE-SET,social,SOCIAL
+  - MATCH,DEFAULT

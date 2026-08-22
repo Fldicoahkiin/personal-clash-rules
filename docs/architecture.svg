@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title description">
+  <title id="title">Personal Clash Rules architecture</title>
+  <desc id="description">Rules are maintained in GitHub, published by Cloudflare Workers, imported as a Clash Party override, and routed through region policy groups to personal 3x-ui nodes.</desc>
+  <style>
+    .paper { fill: #f3f5f6; }
+    .surface { fill: #fafbfb; stroke: #b9c2c9; stroke-width: 1.5; }
+    .muted-surface { fill: #e8edf1; stroke: #b9c2c9; stroke-width: 1.5; }
+    .accent-surface { fill: #e5edf3; stroke: #426987; stroke-width: 1.5; }
+    .ink { fill: #20252a; font-family: Arial, "PingFang SC", sans-serif; }
+    .muted { fill: #67717a; font-family: Arial, "PingFang SC", sans-serif; }
+    .accent { fill: #426987; font-family: Arial, "PingFang SC", sans-serif; }
+    .mono { font-family: "SFMono-Regular", Consolas, monospace; }
+    .line { fill: none; stroke: #98a3ac; stroke-width: 1.5; }
+    .accent-line { fill: none; stroke: #426987; stroke-width: 2; }
+    .label { font-size: 12px; font-weight: 700; letter-spacing: 1.8px; }
+    .title { font-size: 31px; font-weight: 700; letter-spacing: -1px; }
+    .node-title { font-size: 18px; font-weight: 700; }
+    .body { font-size: 13px; }
+    .small { font-size: 11px; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#98a3ac" />
+    </marker>
+    <marker id="accent-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#426987" />
+    </marker>
+  </defs>
+
+  <rect class="paper" width="1200" height="720" />
+  <text x="54" y="54" class="accent mono label">PERSONAL MIHOMO TOOLKIT</text>
+  <text x="54" y="94" class="ink title">Source, publish, import, route</text>
+  <text x="1146" y="60" text-anchor="end" class="muted mono small">FLACIER / 2026</text>
+  <line x1="54" y1="120" x2="1146" y2="120" class="line" />
+
+  <text x="54" y="158" class="muted mono label">01 / SOURCE</text>
+  <rect x="54" y="178" width="248" height="210" rx="8" class="surface" />
+  <text x="78" y="214" class="ink node-title">GitHub repository</text>
+  <text x="78" y="237" class="muted mono body">personal-clash-rules</text>
+  <line x1="78" y1="258" x2="278" y2="258" class="line" />
+  <text x="78" y="287" class="ink mono body">/public/rules</text>
+  <text x="78" y="315" class="ink mono body">/public/overrides</text>
+  <text x="78" y="343" class="ink mono body">/src/app</text>
+  <text x="78" y="371" class="muted body">MIT code and attributed rule data</text>
+
+  <text x="356" y="158" class="muted mono label">02 / PUBLISH</text>
+  <rect x="356" y="178" width="264" height="92" rx="8" class="accent-surface" />
+  <text x="380" y="214" class="ink node-title">Cloudflare Worker</text>
+  <text x="380" y="239" class="muted body">Headers, health route, static assets</text>
+  <rect x="356" y="296" width="264" height="92" rx="8" class="surface" />
+  <text x="380" y="332" class="ink node-title">Custom domain</text>
+  <text x="380" y="357" class="muted mono body">rules.your-domain.example</text>
+
+  <text x="674" y="158" class="muted mono label">03 / IMPORT</text>
+  <rect x="674" y="178" width="218" height="210" rx="8" class="surface" />
+  <text x="698" y="214" class="ink node-title">Clash Party</text>
+  <text x="698" y="240" class="muted body">Remote subscription</text>
+  <text x="698" y="266" class="muted body">YAML merge override</text>
+  <line x1="698" y1="287" x2="868" y2="287" class="line" />
+  <text x="698" y="315" class="ink mono body">+proxy-groups</text>
+  <text x="698" y="343" class="ink mono body">+rules</text>
+  <text x="698" y="371" class="ink mono body">rule-providers</text>
+
+  <text x="946" y="158" class="muted mono label">04 / NODE SOURCE</text>
+  <rect x="946" y="178" width="200" height="210" rx="8" class="muted-surface" />
+  <text x="970" y="214" class="ink node-title">Personal 3x-ui</text>
+  <text x="970" y="240" class="muted body">VLESS + REALITY</text>
+  <text x="970" y="266" class="muted body">Named by country</text>
+  <line x1="970" y1="287" x2="1122" y2="287" class="line" />
+  <text x="970" y="315" class="ink mono body">US Los Angeles 01</text>
+  <text x="970" y="343" class="ink mono body">JP Tokyo 01</text>
+  <text x="970" y="371" class="ink mono body">SG Singapore 01</text>
+
+  <path d="M302 224 H356" class="accent-line" marker-end="url(#accent-arrow)" />
+  <path d="M488 270 V296" class="accent-line" marker-end="url(#accent-arrow)" />
+  <path d="M620 342 H674" class="accent-line" marker-end="url(#accent-arrow)" />
+  <path d="M946 262 H892" class="line" marker-end="url(#arrow)" />
+
+  <line x1="54" y1="438" x2="1146" y2="438" class="line" />
+  <text x="54" y="477" class="muted mono label">REQUEST PATH</text>
+
+  <rect x="54" y="503" width="232" height="128" rx="8" class="surface" />
+  <text x="78" y="538" class="ink node-title">Service rules</text>
+  <text x="78" y="566" class="muted mono body">AI  STEAM  DISCORD</text>
+  <text x="78" y="594" class="muted mono body">DEV  MEDIA  SOCIAL</text>
+
+  <rect x="350" y="503" width="220" height="128" rx="8" class="surface" />
+  <text x="374" y="538" class="ink node-title">Policy choice</text>
+  <text x="374" y="566" class="muted mono body">AI / DISCORD / DEV</text>
+  <text x="374" y="594" class="muted body">Independent per service</text>
+
+  <rect x="634" y="503" width="220" height="128" rx="8" class="accent-surface" />
+  <text x="658" y="538" class="ink node-title">Region choice</text>
+  <text x="658" y="566" class="accent mono body">US JP SG HK TW KR EU</text>
+  <text x="658" y="594" class="muted body">DIRECT only when a group is empty</text>
+
+  <rect x="918" y="503" width="228" height="128" rx="8" class="muted-surface" />
+  <text x="942" y="538" class="ink node-title">Selected outbound</text>
+  <text x="942" y="566" class="muted body">Personal VPS node</text>
+  <text x="942" y="594" class="muted mono body">Mihomo Rule mode</text>
+
+  <path d="M286 567 H350" class="line" marker-end="url(#arrow)" />
+  <path d="M570 567 H634" class="line" marker-end="url(#arrow)" />
+  <path d="M854 567 H918" class="accent-line" marker-end="url(#accent-arrow)" />
+
+  <text x="54" y="683" class="muted small">Private networks are matched before process rules. Steam downloads default to DIRECT. Empty region groups fall back to DIRECT.</text>
+</svg>

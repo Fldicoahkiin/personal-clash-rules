@@ -1,0 +1,10 @@
+# Private and local domains
+DOMAIN-SUFFIX,localhost
+DOMAIN-SUFFIX,local
+DOMAIN-SUFFIX,lan
+DOMAIN-SUFFIX,home.arpa
+DOMAIN-SUFFIX,internal
+DOMAIN,router.asus.com
+DOMAIN,routerlogin.net
+DOMAIN,routerlogin.com
+DOMAIN,console.gl-inet.com

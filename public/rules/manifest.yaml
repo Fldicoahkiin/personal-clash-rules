@@ -1,0 +1,36 @@
+version: 1
+format: mihomo-classical-text
+license: MIT
+sources:
+  - name: v2fly/domain-list-community
+    url: https://github.com/v2fly/domain-list-community
+    license: MIT
+ruleSets:
+  - id: ai-openai
+    path: rules/ai/openai.list
+  - id: ai-anthropic
+    path: rules/ai/anthropic.list
+  - id: ai-xai
+    path: rules/ai/xai.list
+  - id: ai-google
+    path: rules/ai/google.list
+  - id: ai-coding
+    path: rules/ai/coding.list
+  - id: ai-general
+    path: rules/ai/general.list
+  - id: steam
+    path: rules/gaming/steam.list
+  - id: steam-download
+    path: rules/gaming/steam-download.list
+  - id: discord
+    path: rules/messaging/discord.list
+  - id: developer
+    path: rules/developer/developer.list
+  - id: media
+    path: rules/media/media.list
+  - id: social
+    path: rules/social/social.list
+  - id: private-domain
+    path: rules/local/private-domain.list
+  - id: private-ip
+    path: rules/local/private-ip.list
