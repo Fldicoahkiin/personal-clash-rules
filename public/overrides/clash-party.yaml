@@ -1,103 +1,103 @@
 # Clash Party merge override for personal-clash-rules
-# Source URLs use GitHub Raw so this file works before a custom domain is attached.
+# Rule providers are published from the repository through rules.flacier.com.
 
 rule-providers:
   private-domain:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/local/private-domain.list
+    url: https://rules.flacier.com/rules/local/private-domain.list
     path: ./ruleset/personal/private-domain.list
     interval: 86400
   private-ip:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/local/private-ip.list
+    url: https://rules.flacier.com/rules/local/private-ip.list
     path: ./ruleset/personal/private-ip.list
     interval: 86400
   ai-openai:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/openai.list
+    url: https://rules.flacier.com/rules/ai/openai.list
     path: ./ruleset/personal/ai-openai.list
     interval: 86400
   ai-anthropic:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/anthropic.list
+    url: https://rules.flacier.com/rules/ai/anthropic.list
     path: ./ruleset/personal/ai-anthropic.list
     interval: 86400
   ai-xai:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/xai.list
+    url: https://rules.flacier.com/rules/ai/xai.list
     path: ./ruleset/personal/ai-xai.list
     interval: 86400
   ai-google:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/google.list
+    url: https://rules.flacier.com/rules/ai/google.list
     path: ./ruleset/personal/ai-google.list
     interval: 86400
   ai-coding:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/coding.list
+    url: https://rules.flacier.com/rules/ai/coding.list
     path: ./ruleset/personal/ai-coding.list
     interval: 86400
   ai-general:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/ai/general.list
+    url: https://rules.flacier.com/rules/ai/general.list
     path: ./ruleset/personal/ai-general.list
     interval: 86400
   steam:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/gaming/steam.list
+    url: https://rules.flacier.com/rules/gaming/steam.list
     path: ./ruleset/personal/steam.list
     interval: 86400
   steam-download:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/gaming/steam-download.list
+    url: https://rules.flacier.com/rules/gaming/steam-download.list
     path: ./ruleset/personal/steam-download.list
     interval: 86400
   discord:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/messaging/discord.list
+    url: https://rules.flacier.com/rules/messaging/discord.list
     path: ./ruleset/personal/discord.list
     interval: 86400
   developer:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/developer/developer.list
+    url: https://rules.flacier.com/rules/developer/developer.list
     path: ./ruleset/personal/developer.list
     interval: 86400
   media:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/media/media.list
+    url: https://rules.flacier.com/rules/media/media.list
     path: ./ruleset/personal/media.list
     interval: 86400
   social:
     type: http
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/rules/social/social.list
+    url: https://rules.flacier.com/rules/social/social.list
     path: ./ruleset/personal/social.list
     interval: 86400
 

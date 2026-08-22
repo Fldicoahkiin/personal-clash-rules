@@ -61,11 +61,15 @@ HK Hong Kong 01
 
 ## 在 Clash Party 中使用
 
-当前覆写文件先引用 GitHub Raw，这样在自定义域名配置前也能工作：
+正式覆写地址：
 
 ```text
-https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/overrides/clash-party.yaml
+https://rules.flacier.com/overrides/clash-party.yaml
 ```
+
+如果 Cloudflare 暂时不可用，可以改用
+[`GitHub Raw`](https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/overrides/clash-party.yaml)
+回退地址；正式覆写中的 rule provider 统一使用 `rules.flacier.com`。
 
 1. 打开 Clash Party 左侧的「覆写」。
 2. 使用上面的链接导入 YAML 覆写。
@@ -137,21 +141,21 @@ Cloudflare 当前会在每次推送后先构建，再执行部署命令；非生
 Settings -> Domains & Routes -> Add -> Custom Domain
 ```
 
-填入你准备好的子域名，例如 `rules.example.com`。Cloudflare 会创建 DNS 记录并签发证书，
+本项目使用 `rules.flacier.com`。Cloudflare 会创建 DNS 记录并签发证书，
 不需要在仓库写入 zone id 或 API token。域名不能已经存在同名 CNAME。参见
 [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
 
-绑定后可以使用：
+当前公开地址：
 
 ```text
-https://rules.example.com/
-https://rules.example.com/overrides/clash-party.yaml
-https://rules.example.com/rules/ai/openai.list
-https://rules.example.com/health
+https://rules.flacier.com/
+https://rules.flacier.com/overrides/clash-party.yaml
+https://rules.flacier.com/rules/ai/openai.list
+https://rules.flacier.com/health
 ```
 
-GitHub Raw provider 地址可在域名确认后统一换成你的域名。现在不预填一个不存在的域名，
-避免首次导入时得到失效规则。
+Cloudflare Workers Builds 已连接 `Fldicoahkiin/personal-clash-rules`，推送 `main` 后会自动
+执行 `pnpm run build` 和 `npx wrangler deploy`。
 
 ## 目录
 
