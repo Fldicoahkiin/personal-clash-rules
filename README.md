@@ -67,9 +67,9 @@ HK Hong Kong 01
 https://rules.flacier.com/overrides/clash-party.yaml
 ```
 
-如果 Cloudflare 暂时不可用，可以改用
 [`GitHub Raw`](https://raw.githubusercontent.com/Fldicoahkiin/personal-clash-rules/main/public/overrides/clash-party.yaml)
-回退地址；正式覆写中的 rule provider 统一使用 `rules.flacier.com`。
+可以用于核对源码或手工下载，但不是 Cloudflare 整体故障时的完整回退：正式覆写中的
+rule provider 统一使用 `rules.flacier.com`。
 
 1. 打开 Clash Party 左侧的「覆写」。
 2. 使用上面的链接导入 YAML 覆写。
