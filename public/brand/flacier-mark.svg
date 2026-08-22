@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">Flacier Rules</title>
+  <rect x="5.5" y="5.5" width="37" height="37" fill="none" stroke="#091e37" stroke-width="2.5"/>
+  <path d="M14 36V13H35" fill="none" stroke="#091e37" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M14 25H28V20H35" fill="none" stroke="#085f68" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+  <circle cx="14" cy="36" r="2.8" fill="#faf8f4" stroke="#091e37" stroke-width="2.2"/>
+  <circle cx="14" cy="13" r="2.8" fill="#faf8f4" stroke="#091e37" stroke-width="2.2"/>
+  <circle cx="35" cy="13" r="2.8" fill="#faf8f4" stroke="#091e37" stroke-width="2.2"/>
+  <circle cx="35" cy="20" r="2.8" fill="#085f68"/>
+</svg>

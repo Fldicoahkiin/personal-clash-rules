@@ -1,4 +1,4 @@
-# personal-clash-rules
+<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> Flacier Rules</h1>
 
 个人分流规则、订阅入口和规则转换工具。
 

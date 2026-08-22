@@ -120,12 +120,21 @@ summary:focus-visible {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   padding-right: 30px;
   color: var(--ink);
   font-size: 1.08rem;
   font-weight: 760;
   letter-spacing: -0.02em;
   text-decoration: none;
+}
+
+.brand img {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
 }
 
 .site-header nav {

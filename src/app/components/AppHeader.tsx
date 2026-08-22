@@ -5,6 +5,7 @@ export function AppHeader() {
     <header className="site-header">
       <div className="header-inner page-width">
         <a className="brand" href="#top" aria-label="返回页面顶部">
+          <img src="/brand/flacier-mark.svg" alt="" />
           <span>Flacier Rules</span>
         </a>
         <nav aria-label="页面导航">
