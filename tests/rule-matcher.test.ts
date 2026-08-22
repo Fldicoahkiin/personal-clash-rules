@@ -43,6 +43,18 @@ const definitions: RuleSetDefinition[] = [
     path: "rules/media/anigamer.list",
     policy: "ANIGAMER",
   },
+  {
+    id: "apple-system",
+    label: "Apple 系统",
+    path: "rules/apple/system.list",
+    policy: "DIRECT",
+  },
+  {
+    id: "apple-services",
+    label: "Apple 服务",
+    path: "rules/apple/services.list",
+    policy: "APPLE",
+  },
 ];
 
 const ruleSets = [
@@ -55,6 +67,8 @@ const ruleSets = [
     "DOMAIN-SUFFIX,steampowered.com\nDOMAIN-SUFFIX,steamcontent.com\n",
   ),
   createRuleSet(definitions[5], "DOMAIN-SUFFIX,gamer.com.tw\n"),
+  createRuleSet(definitions[6], "DOMAIN,captive.apple.com\n"),
+  createRuleSet(definitions[7], "DOMAIN,gsa.apple.com\n"),
 ];
 
 describe("matchUrl", () => {
@@ -79,6 +93,17 @@ describe("matchUrl", () => {
     expect(matchUrl("https://ani.gamer.com.tw/animeVideo.php", ruleSets)).toMatchObject({
       ruleSetId: "anigamer",
       policy: "ANIGAMER",
+    });
+  });
+
+  it("routes Apple authentication separately from system endpoints", () => {
+    expect(matchUrl("https://gsa.apple.com/auth", ruleSets)).toMatchObject({
+      ruleSetId: "apple-services",
+      policy: "APPLE",
+    });
+    expect(matchUrl("http://captive.apple.com", ruleSets)).toMatchObject({
+      ruleSetId: "apple-system",
+      policy: "DIRECT",
     });
   });
 

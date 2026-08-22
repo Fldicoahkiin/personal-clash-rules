@@ -6,7 +6,7 @@
 | URL command | Long URL field with one teal action | Form HTML and CSS |
 | Route result | Three equal steps on one continuous selected line | HTML labels and authored SVG line |
 | Route state | Filled teal ordinary nodes for the selected route | CSS and SVG |
-| Rule index | Two-column dense list with AI, Steam, Discord, Bilibili, AniGamer | Semantic list |
+| Rule index | Two-column dense list with AI, Apple, Steam, Discord, Bilibili, AniGamer | Semantic list |
 | Subscription | URL, name, icon-labelled client cells, copy/open action | Form HTML, local product marks, and verified client schemes |
 | Converter | Two equal work areas with mono only inside rule text and output | Semantic form and code block |
 | Policy map | Table rows with ordinary nodes on a thin route | Semantic table and CSS |

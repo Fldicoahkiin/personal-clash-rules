@@ -12,6 +12,7 @@ const sampleUrl = "https://api.openai.com/v1/models";
 
 const featuredRules = [
   { name: "AI", policy: "AI" },
+  { name: "Apple", policy: "APPLE" },
   { name: "Steam", policy: "STEAM" },
   { name: "Discord", policy: "DISCORD" },
   { name: "Bilibili", policy: "BILIBILI" },

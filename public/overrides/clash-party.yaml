@@ -16,6 +16,20 @@ rule-providers:
     url: https://rules.flacier.com/rules/local/private-ip.list
     path: ./ruleset/personal/private-ip.list
     interval: 86400
+  apple-system:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/apple/system.list
+    path: ./ruleset/personal/apple-system.list
+    interval: 86400
+  apple-services:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/apple/services.list
+    path: ./ruleset/personal/apple-services.list
+    interval: 86400
   ai-openai:
     type: http
     behavior: classical
@@ -188,6 +202,9 @@ rule-providers:
   - name: AI
     type: select
     proxies: [GLOBAL, US, JP, SG, TW]
+  - name: APPLE
+    type: select
+    proxies: [DIRECT, GLOBAL, US, JP, SG]
   - name: STEAM
     type: select
     proxies: [DIRECT, GLOBAL, JP, US, SG]
@@ -222,6 +239,8 @@ rule-providers:
 +rules:
   - RULE-SET,private-domain,DIRECT
   - RULE-SET,private-ip,DIRECT,no-resolve
+  - RULE-SET,apple-system,DIRECT
+  - RULE-SET,apple-services,APPLE
   - PROCESS-NAME-REGEX,(?i)^codex(\.exe)?$,AI
   - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,AI
   - RULE-SET,ai-openai,AI

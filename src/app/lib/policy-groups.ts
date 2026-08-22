@@ -5,6 +5,11 @@ export const displayedPolicyGroups = [
     options: ["GLOBAL", "US", "JP", "SG", "TW"],
   },
   {
+    name: "APPLE",
+    initial: "DIRECT",
+    options: ["DIRECT", "GLOBAL", "US", "JP", "SG"],
+  },
+  {
     name: "STEAM",
     initial: "DIRECT",
     options: ["DIRECT", "GLOBAL", "JP", "US", "SG"],

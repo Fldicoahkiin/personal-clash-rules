@@ -27,7 +27,7 @@ The same public site serves the rule files and tests those published files, so t
 
 ## Capabilities and Constraints
 
-- Published rules cover AI, Steam, Discord, developer tools, media, social services, Bilibili, AniGamer, and local networks.
+- Published rules cover AI, Apple, Steam, Discord, developer tools, media, social services, Bilibili, AniGamer, and local networks.
 - Rule text conversion runs in the browser.
 - URL testing must report the matching rule, rule set, and policy.
 - Country groups filter subscription nodes by their names; the site does not report the client's current exit node.

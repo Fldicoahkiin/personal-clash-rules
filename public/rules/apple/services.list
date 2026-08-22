@@ -1,0 +1,47 @@
+# Apple account and consumer services
+# Sources: https://support.apple.com/101555 and v2fly/domain-list-community
+
+# Apple Account authentication
+DOMAIN,account.apple.com
+DOMAIN,appleid.cdn-apple.com
+DOMAIN,idmsa.apple.com
+DOMAIN,gsa.apple.com
+
+# iCloud and CloudKit
+DOMAIN-SUFFIX,apple-cloudkit.com
+DOMAIN-SUFFIX,apple-livephotoskit.com
+DOMAIN-SUFFIX,cdn-apple.com
+DOMAIN-SUFFIX,gc.apple.com
+DOMAIN-SUFFIX,icloud.com
+DOMAIN-SUFFIX,icloud.apple.com
+DOMAIN-SUFFIX,icloud-content.com
+DOMAIN-SUFFIX,iwork.apple.com
+DOMAIN-SUFFIX,me.com
+
+# App Store, media, and developer content
+DOMAIN-SUFFIX,itunes.apple.com
+DOMAIN-SUFFIX,apps.apple.com
+DOMAIN-SUFFIX,mzstatic.com
+DOMAIN-SUFFIX,appattest.apple.com
+DOMAIN-SUFFIX,apps-marketplace.apple.com
+DOMAIN-SUFFIX,itunes-apple.com
+DOMAIN-SUFFIX,music.apple.com
+DOMAIN-SUFFIX,tv.apple.com
+DOMAIN-SUFFIX,books.apple.com
+DOMAIN-SUFFIX,podcasts.apple.com
+DOMAIN-SUFFIX,fitness.apple.com
+DOMAIN-SUFFIX,news.apple.com
+DOMAIN-SUFFIX,developer.apple.com
+DOMAIN-SUFFIX,support.apple.com
+DOMAIN-SUFFIX,store.apple.com
+
+# Maps, Siri, Search, and Apple Intelligence
+DOMAIN-SUFFIX,apple-mapkit.com
+DOMAIN-SUFFIX,maps.apple.com
+DOMAIN-SUFFIX,ls.apple.com
+DOMAIN,guzzoni.apple.com
+DOMAIN-SUFFIX,smoot.apple.com
+DOMAIN,apple-relay.cloudflare.com
+DOMAIN,apple-relay.fastly-edge.com
+DOMAIN,cp4.cloudflare.com
+DOMAIN,apple-relay.apple.com

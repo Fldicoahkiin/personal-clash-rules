@@ -81,12 +81,12 @@
 
   <rect x="54" y="503" width="232" height="128" rx="8" class="surface" />
   <text x="78" y="538" class="ink node-title">Service rules</text>
-  <text x="78" y="566" class="muted mono body">AI  STEAM  DISCORD</text>
+  <text x="78" y="566" class="muted mono body">AI  APPLE  STEAM</text>
   <text x="78" y="594" class="muted mono body">DEV  MEDIA  SOCIAL</text>
 
   <rect x="350" y="503" width="220" height="128" rx="8" class="surface" />
   <text x="374" y="538" class="ink node-title">Policy choice</text>
-  <text x="374" y="566" class="muted mono body">AI / DISCORD / DEV</text>
+  <text x="374" y="566" class="muted mono body">AI / APPLE / DISCORD</text>
   <text x="374" y="594" class="muted body">Independent per service</text>
 
   <rect x="634" y="503" width="220" height="128" rx="8" class="accent-surface" />

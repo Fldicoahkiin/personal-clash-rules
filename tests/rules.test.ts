@@ -48,6 +48,23 @@ describe("published rule sets", () => {
     expect(discord).toContain("DOMAIN-SUFFIX,discord.com");
   });
 
+  it("separates selectable Apple services from direct system endpoints", async () => {
+    const [services, system] = await Promise.all([
+      read("public/rules/apple/services.list"),
+      read("public/rules/apple/system.list"),
+    ]);
+
+    expect(services).toContain("DOMAIN,gsa.apple.com");
+    expect(services).toContain("DOMAIN,account.apple.com");
+    expect(services).toContain("DOMAIN-SUFFIX,icloud.com");
+    expect(services).toContain("DOMAIN,apple-relay.cloudflare.com");
+    expect(system).toContain("DOMAIN,captive.apple.com");
+    expect(system).toContain("DOMAIN-SUFFIX,push.apple.com");
+    expect(system).toContain("DOMAIN,ocsp.apple.com");
+    expect(`${services}\n${system}`).not.toContain("icloud.com.cn");
+    expect(`${services}\n${system}`).not.toContain("apzones.com");
+  });
+
   it("keeps every text rule valid, unique and free of v2fly attributes", async () => {
     const manifest = parse(await read("public/rules/manifest.yaml")) as {
       ruleSets: Array<{ path: string }>;

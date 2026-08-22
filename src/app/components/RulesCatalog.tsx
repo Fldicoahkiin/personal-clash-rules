@@ -9,6 +9,13 @@ const catalog = [
     count: "6 个",
   },
   {
+    category: "Apple",
+    coverage: "账户、iCloud、App Store、Siri 与系统端点",
+    strategy: "APPLE / DIRECT",
+    href: "/rules/apple/services.list",
+    count: "2 个",
+  },
+  {
     category: "Steam Platform",
     coverage: "商店、社区、账户与平台静态资源",
     strategy: "STEAM",

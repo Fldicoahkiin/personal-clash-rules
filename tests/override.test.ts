@@ -12,14 +12,43 @@ const overridePath = resolve(
 );
 
 describe("Clash Party override", () => {
+  it("publishes Apple rules as remote providers", async () => {
+    const config = parse(await readFile(overridePath, "utf8")) as {
+      "rule-providers": Record<
+        string,
+        {
+          behavior: string;
+          format: string;
+          interval: number;
+          url: string;
+        }
+      >;
+    };
+
+    expect(config["rule-providers"]["apple-system"]).toMatchObject({
+      behavior: "classical",
+      format: "text",
+      interval: 86_400,
+      url: "https://rules.flacier.com/rules/apple/system.list",
+    });
+    expect(config["rule-providers"]["apple-services"]).toMatchObject({
+      behavior: "classical",
+      format: "text",
+      interval: 86_400,
+      url: "https://rules.flacier.com/rules/apple/services.list",
+    });
+  });
+
   it("prepends process, service and local network rules in order", async () => {
     const config = parse(await readFile(overridePath, "utf8")) as {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 4)).toEqual([
+    expect(config["+rules"].slice(0, 6)).toEqual([
       "RULE-SET,private-domain,DIRECT",
       "RULE-SET,private-ip,DIRECT,no-resolve",
+      "RULE-SET,apple-system,DIRECT",
+      "RULE-SET,apple-services,APPLE",
       "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,AI",
       "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,AI",
     ]);
@@ -32,7 +61,11 @@ describe("Clash Party override", () => {
     expect(config["+rules"]).toContain("RULE-SET,bilibili,BILIBILI");
     expect(config["+rules"]).toContain("RULE-SET,anigamer,ANIGAMER");
     expect(config["+rules"]).toContain("RULE-SET,discord,DISCORD");
+    expect(config["+rules"]).toContain("RULE-SET,apple-system,DIRECT");
+    expect(config["+rules"]).toContain("RULE-SET,apple-services,APPLE");
 
+    expect(config["+rules"].indexOf("RULE-SET,apple-system,DIRECT"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,apple-services,APPLE"));
     expect(config["+rules"].indexOf("RULE-SET,steam-download,STEAM-DOWNLOAD"))
       .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam-online,STEAM-ONLINE"));
     expect(config["+rules"].indexOf("RULE-SET,steam-online,STEAM-ONLINE"))
@@ -76,6 +109,13 @@ describe("Clash Party override", () => {
     expect(groups.get("BILIBILI")?.proxies?.[0]).toBe("DIRECT");
     expect(groups.get("ANIGAMER")?.proxies?.[0]).toBe("TW");
     expect(groups.get("DISCORD")?.proxies).toContain("GLOBAL");
+    expect(groups.get("APPLE")?.proxies).toEqual([
+      "DIRECT",
+      "GLOBAL",
+      "US",
+      "JP",
+      "SG",
+    ]);
   });
 
   it("keeps the policy table aligned with the published override", async () => {

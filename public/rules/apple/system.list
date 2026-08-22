@@ -1,0 +1,58 @@
+# Apple system endpoints kept on DIRECT
+# Source: https://support.apple.com/101555
+
+# Device setup and activation
+DOMAIN,albert.apple.com
+DOMAIN,captive.apple.com
+DOMAIN,gs.apple.com
+DOMAIN,humb.apple.com
+DOMAIN,static.ips.apple.com
+DOMAIN,sq-device.apple.com
+DOMAIN,tbsc.apple.com
+
+# Push, DNS, certificate validation, and time
+DOMAIN-SUFFIX,push.apple.com
+DOMAIN,doh.dns.apple.com
+DOMAIN,certs.apple.com
+DOMAIN,crl.apple.com
+DOMAIN,ocsp.apple.com
+DOMAIN,ocsp2.apple.com
+DOMAIN,valid.apple.com
+DOMAIN,time.apple.com
+DOMAIN,time-ios.apple.com
+DOMAIN,time-macos.apple.com
+DOMAIN-SUFFIX,apple-dns.net
+
+# Software updates and recovery
+DOMAIN,appldnld.apple.com
+DOMAIN,configuration.apple.com
+DOMAIN,gdmf.apple.com
+DOMAIN,gg.apple.com
+DOMAIN,ig.apple.com
+DOMAIN,mesu.apple.com
+DOMAIN,oscdn.apple.com
+DOMAIN,osrecovery.apple.com
+DOMAIN,skl.apple.com
+DOMAIN,swcdn.apple.com
+DOMAIN,swdist.apple.com
+DOMAIN,swdownload.apple.com
+DOMAIN,swscan.apple.com
+DOMAIN,updates-http.cdn-apple.com
+DOMAIN,updates.cdn-apple.com
+DOMAIN,xp.apple.com
+DOMAIN,gdmf-ados.apple.com
+DOMAIN,gsra.apple.com
+DOMAIN,wkms-public.apple.com
+DOMAIN,fcs-keys-pub-prod.cdn-apple.com
+
+# Connectivity and relay infrastructure
+DOMAIN,gateway.icloud.com
+DOMAIN,mask.icloud.com
+DOMAIN,mask-h2.icloud.com
+DOMAIN,mask-api.icloud.com
+DOMAIN,probe.icloud.com
+DOMAIN,pong.icloud.com
+DOMAIN,metrics.icloud.com
+DOMAIN,apple-native-relay.apple.com
+DOMAIN,token.safebrowsing.apple
+DOMAIN,app-site-association.networking.apple

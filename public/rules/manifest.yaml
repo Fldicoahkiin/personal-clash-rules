@@ -5,6 +5,9 @@ sources:
   - name: v2fly/domain-list-community
     url: https://github.com/v2fly/domain-list-community
     license: MIT
+  - name: Apple network endpoints
+    url: https://support.apple.com/101555
+    license: reference
 ruleSets:
   - id: private-domain
     label: 本地网络
@@ -14,6 +17,14 @@ ruleSets:
     label: 本地地址
     policy: DIRECT
     path: rules/local/private-ip.list
+  - id: apple-system
+    label: Apple 系统
+    policy: DIRECT
+    path: rules/apple/system.list
+  - id: apple-services
+    label: Apple 服务
+    policy: APPLE
+    path: rules/apple/services.list
   - id: ai-openai
     label: OpenAI
     policy: AI

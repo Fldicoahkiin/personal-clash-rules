@@ -13,6 +13,7 @@
 | 策略 | 内容 | 初始项 |
 | --- | --- | --- |
 | `AI` | OpenAI、Claude、Grok、Gemini、Codex | `GLOBAL` |
+| `APPLE` | Apple Account、iCloud、App Store、Siri | `DIRECT` |
 | `STEAM` | 商店与社区 | `DIRECT` |
 | `STEAM-DOWNLOAD` | 客户端与游戏下载 | `DIRECT` |
 | `STEAM-ONLINE` | 聊天、匹配与中继 | `DIRECT` |
@@ -40,7 +41,8 @@ pnpm sync:rules
 pnpm check
 ```
 
-GitHub Actions 每周同步 Bilibili 与 Bahamut 规则。
+Apple 端点参考 Apple 官方网络清单；GitHub Actions 每周同步 Bilibili 与 Bahamut 规则。
+规则内容每 24 小时拉取；新增策略组或规则源后需刷新远程覆写。
 
 ## 开发
 
