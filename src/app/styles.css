@@ -513,7 +513,7 @@ summary:focus-visible {
 
 .client-picker {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 1px solid var(--line);
   border-left: 1px solid var(--line);
 }
@@ -528,7 +528,12 @@ summary:focus-visible {
 }
 
 .client-picker button {
+  display: inline-flex;
+  min-width: 0;
   min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 7px 9px;
   border: 0;
   border-right: 1px solid var(--line);
@@ -537,6 +542,20 @@ summary:focus-visible {
   color: var(--muted);
   cursor: pointer;
   font-size: 0.73rem;
+}
+
+.client-picker img {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.client-picker button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .client-picker button:hover,

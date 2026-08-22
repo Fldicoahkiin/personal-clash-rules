@@ -6,16 +6,28 @@ import {
   type ClientId,
 } from "../lib/client-import";
 
-const clients: Array<{ id: ClientId; label: string }> = [
-  { id: "mihomo", label: "Mihomo" },
-  { id: "stash", label: "Stash" },
-  { id: "surge", label: "Surge" },
-  { id: "loon", label: "Loon" },
-  { id: "quantumult-x", label: "Quantumult X" },
-  { id: "sing-box", label: "sing-box" },
-  { id: "shadowrocket", label: "Shadowrocket" },
-  { id: "egern", label: "Egern" },
-  { id: "surfboard", label: "Surfboard" },
+const clients: Array<{ id: ClientId; label: string; icon: string }> = [
+  { id: "mihomo", label: "Mihomo", icon: "/client-icons/mihomo.png" },
+  { id: "stash", label: "Stash", icon: "/client-icons/stash.png" },
+  { id: "surge", label: "Surge", icon: "/client-icons/surge.png" },
+  { id: "loon", label: "Loon", icon: "/client-icons/loon.png" },
+  {
+    id: "quantumult-x",
+    label: "Quantumult X",
+    icon: "/client-icons/quantumult-x.png",
+  },
+  { id: "sing-box", label: "sing-box", icon: "/client-icons/sing-box.png" },
+  {
+    id: "shadowrocket",
+    label: "Shadowrocket",
+    icon: "/client-icons/shadowrocket.png",
+  },
+  { id: "egern", label: "Egern", icon: "/client-icons/egern.png" },
+  {
+    id: "surfboard",
+    label: "Surfboard",
+    icon: "/client-icons/surfboard.png",
+  },
 ];
 
 export function SubscriptionImport() {
@@ -85,8 +97,10 @@ export function SubscriptionImport() {
               type="button"
               key={item.id}
               onClick={() => setClient(item.id)}
+              aria-pressed={client === item.id}
             >
-              {item.label}
+              <img src={item.icon} alt="" width="20" height="20" />
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
