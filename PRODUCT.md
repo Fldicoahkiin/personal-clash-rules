@@ -29,7 +29,8 @@ The same public site serves the rule files and tests those published files, so t
 
 - Published rules cover AI, Steam, Discord, developer tools, media, social services, Bilibili, AniGamer, and local networks.
 - Rule text conversion runs in the browser.
-- URL testing must report the matching rule, rule set, policy, and default selection.
+- URL testing must report the matching rule, rule set, and policy.
+- Country groups filter subscription nodes by their names; the site does not report the client's current exit node.
 - Subscription URLs stay in the browser when generating client import links.
 - A client import link is not the same as converting a node subscription into another configuration format. Real cross-format conversion requires a conversion backend; that backend is not present in this repository yet.
 - The repository is public and must not contain node credentials, subscription tokens, or private configuration.

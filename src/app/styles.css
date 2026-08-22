@@ -268,7 +268,7 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 292px;
+  min-height: 220px;
   margin-top: 20px;
 }
 
@@ -280,26 +280,10 @@ summary:focus-visible {
   overflow: visible;
 }
 
-.route-line-active,
-.route-line-branch {
-  fill: none;
-  vector-effect: non-scaling-stroke;
-}
-
 .route-line-active {
+  fill: none;
   stroke: var(--accent);
   stroke-width: 5;
-}
-
-.route-line-branch {
-  stroke: color-mix(in srgb, var(--ink) 72%, var(--line));
-  stroke-width: 2.5;
-}
-
-.route-branch-node {
-  fill: var(--paper);
-  stroke: color-mix(in srgb, var(--ink) 72%, var(--line));
-  stroke-width: 2.5;
   vector-effect: non-scaling-stroke;
 }
 
@@ -320,15 +304,11 @@ summary:focus-visible {
   animation-delay: 140ms;
 }
 
-.route-result .route-steps li:nth-child(4) .route-node {
-  animation-delay: 210ms;
-}
-
 .route-steps {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
   padding: 28px 0 0;
   list-style: none;
@@ -400,11 +380,6 @@ summary:focus-visible {
   padding: 26px 24px;
 }
 
-.index-block + .index-block {
-  margin-top: auto;
-  border-top: 1px solid var(--line-strong);
-}
-
 .index-block h2 {
   margin: 0 0 18px;
   font-size: 1rem;
@@ -444,28 +419,6 @@ summary:focus-visible {
 .index-block li code {
   color: var(--accent-hover);
   font-size: 0.68rem;
-}
-
-.region-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
-}
-
-.region-list span {
-  display: grid;
-  min-height: 40px;
-  place-items: center;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.68rem;
-}
-
-.region-list .is-active {
-  background: var(--ink);
-  color: var(--paper);
 }
 
 .subscription-section {
@@ -1080,15 +1033,9 @@ summary:focus-visible {
 
   .route-index {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     border-top: 1px solid var(--line-strong);
     border-left: 0;
-  }
-
-  .index-block + .index-block {
-    margin-top: 0;
-    border-top: 0;
-    border-left: 1px solid var(--line-strong);
   }
 
   .client-picker {
@@ -1192,11 +1139,6 @@ summary:focus-visible {
 
   .route-index {
     grid-template-columns: 1fr;
-  }
-
-  .index-block + .index-block {
-    border-top: 1px solid var(--line-strong);
-    border-left: 0;
   }
 
   .subscription-section {

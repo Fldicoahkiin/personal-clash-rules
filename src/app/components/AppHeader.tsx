@@ -21,7 +21,7 @@ export function AppHeader() {
           rel="noreferrer"
           aria-label="打开 GitHub 仓库"
         >
-          <GithubLogo aria-hidden="true" />
+          <GithubLogo aria-hidden="true" weight="fill" />
           <span>GitHub</span>
         </a>
       </div>

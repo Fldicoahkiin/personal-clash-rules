@@ -26,23 +26,7 @@ export interface RouteMatch {
   ruleSetLabel: string;
   ruleSetPath: string;
   policy: string;
-  defaultSelection: string;
 }
-
-const defaultSelections: Record<string, string> = {
-  DIRECT: "DIRECT",
-  AI: "GLOBAL",
-  STEAM: "DIRECT",
-  "STEAM-DOWNLOAD": "DIRECT",
-  "STEAM-ONLINE": "DIRECT",
-  DISCORD: "GLOBAL",
-  DEV: "GLOBAL",
-  MEDIA: "GLOBAL",
-  BILIBILI: "DIRECT",
-  ANIGAMER: "TW",
-  SOCIAL: "GLOBAL",
-  DEFAULT: "GLOBAL",
-};
 
 function parseRules(content: string): RuleEntry[] {
   return content
@@ -166,8 +150,6 @@ export function matchUrl(
         ruleSetLabel: ruleSet.label,
         ruleSetPath: ruleSet.path,
         policy: ruleSet.policy,
-        defaultSelection:
-          defaultSelections[ruleSet.policy] ?? defaultSelections.DEFAULT,
       };
     }
   }
@@ -179,6 +161,5 @@ export function matchUrl(
     ruleSetLabel: "默认规则",
     ruleSetPath: "",
     policy: "DEFAULT",
-    defaultSelection: defaultSelections.DEFAULT,
   };
 }

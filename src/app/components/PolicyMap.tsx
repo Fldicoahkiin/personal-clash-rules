@@ -1,40 +1,4 @@
-const policies = [
-  {
-    name: "AI",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "US", "JP", "SG", "TW"],
-  },
-  {
-    name: "STEAM",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "JP", "US", "SG"],
-  },
-  {
-    name: "STEAM-DOWNLOAD",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
-  },
-  {
-    name: "STEAM-ONLINE",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
-  },
-  {
-    name: "BILIBILI",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "HK", "TW", "SG"],
-  },
-  {
-    name: "ANIGAMER",
-    initial: "TW",
-    options: ["TW", "GLOBAL", "DIRECT", "AUTO"],
-  },
-  {
-    name: "DISCORD",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-  },
-];
+import { displayedPolicyGroups } from "../lib/policy-groups";
 
 export function PolicyMap() {
   return (
@@ -45,7 +9,7 @@ export function PolicyMap() {
     >
       <header className="plain-heading">
         <h2 id="policy-title">策略组</h2>
-        <p>默认与出口</p>
+        <p>Mihomo 覆写</p>
       </header>
 
       <div className="policy-table-wrap">
@@ -53,12 +17,12 @@ export function PolicyMap() {
           <thead>
             <tr>
               <th>策略</th>
-              <th>默认</th>
-              <th>可选出口</th>
+              <th>初始项</th>
+              <th>可选节点组</th>
             </tr>
           </thead>
           <tbody>
-            {policies.map((policy) => (
+            {displayedPolicyGroups.map((policy) => (
               <tr key={policy.name}>
                 <th scope="row">{policy.name}</th>
                 <td>
@@ -82,7 +46,9 @@ export function PolicyMap() {
           </tbody>
         </table>
       </div>
-      <p className="policy-note">地区节点：US · JP · SG · HK · TW · KR · EU</p>
+      <p className="policy-note">
+        节点名称分组：US · JP · SG · HK · TW · KR · EU
+      </p>
     </section>
   );
 }

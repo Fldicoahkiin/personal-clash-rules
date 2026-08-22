@@ -65,7 +65,6 @@ describe("matchUrl", () => {
       ruleSetId: "ai-openai",
       ruleSetLabel: "OpenAI",
       policy: "AI",
-      defaultSelection: "GLOBAL",
     });
   });
 
@@ -73,15 +72,13 @@ describe("matchUrl", () => {
     expect(matchUrl("https://cdn.steamcontent.com/file", ruleSets)).toMatchObject({
       ruleSetId: "steam-download",
       policy: "STEAM-DOWNLOAD",
-      defaultSelection: "DIRECT",
     });
   });
 
-  it("uses Taiwan as the AniGamer default", () => {
+  it("routes AniGamer to its policy", () => {
     expect(matchUrl("https://ani.gamer.com.tw/animeVideo.php", ruleSets)).toMatchObject({
       ruleSetId: "anigamer",
       policy: "ANIGAMER",
-      defaultSelection: "TW",
     });
   });
 
@@ -89,7 +86,6 @@ describe("matchUrl", () => {
     expect(matchUrl("http://192.168.1.20", ruleSets)).toMatchObject({
       ruleSetId: "private-ip",
       policy: "DIRECT",
-      defaultSelection: "DIRECT",
     });
   });
 
@@ -97,7 +93,6 @@ describe("matchUrl", () => {
     expect(matchUrl("https://notopenai.com", ruleSets)).toMatchObject({
       rule: "MATCH",
       policy: "DEFAULT",
-      defaultSelection: "GLOBAL",
     });
   });
 });

@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
+import { displayedPolicyGroups } from "../src/app/lib/policy-groups";
+
 const overridePath = resolve(
   import.meta.dirname,
   "../public/overrides/clash-party.yaml",
@@ -74,5 +76,21 @@ describe("Clash Party override", () => {
     expect(groups.get("BILIBILI")?.proxies?.[0]).toBe("DIRECT");
     expect(groups.get("ANIGAMER")?.proxies?.[0]).toBe("TW");
     expect(groups.get("DISCORD")?.proxies).toContain("GLOBAL");
+  });
+
+  it("keeps the policy table aligned with the published override", async () => {
+    const config = parse(await readFile(overridePath, "utf8")) as {
+      "+proxy-groups": Array<{ name: string; proxies?: string[] }>;
+    };
+    const groups = new Map(
+      config["+proxy-groups"].map((group) => [group.name, group]),
+    );
+
+    for (const policy of displayedPolicyGroups) {
+      expect(groups.get(policy.name)?.proxies, policy.name).toEqual(
+        policy.options,
+      );
+      expect(policy.options[0], policy.name).toBe(policy.initial);
+    }
   });
 });

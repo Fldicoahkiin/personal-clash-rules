@@ -103,7 +103,7 @@
       },
       "mono": {
         "displayName": "机器文本",
-        "purpose": "URL、规则、策略、数量、出口代号和转换输出。"
+        "purpose": "URL、规则、策略、数量、节点组代号和转换输出。"
       }
     },
     "shadows": [],
@@ -111,12 +111,12 @@
       {
         "name": "route-trace",
         "value": "420ms ease-out",
-        "purpose": "成功测试后将主线路从输入端描画到默认出口，每次结果只播放一次。"
+        "purpose": "成功测试后将主线路从输入端描画到策略组，每次结果只播放一次。"
       },
       {
         "name": "route-node-settle",
         "value": "240ms ease-out, 70ms stagger",
-        "purpose": "四个当前节点按顺序落位；reduced-motion 下禁用。"
+        "purpose": "三个当前节点按顺序落位；reduced-motion 下禁用。"
       }
     ],
     "breakpoints": [
@@ -171,9 +171,9 @@
       "name": "Route Diagram",
       "kind": "custom",
       "refersTo": "route-node",
-      "description": "把域名、规则集、策略和默认出口连接成一条可读路线。",
-      "html": "<div class=\"ds-route\"><svg viewBox=\"0 0 800 120\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path class=\"ds-route-active\" d=\"M70 50 H730\"/><path class=\"ds-route-branch\" d=\"M270 50 L320 98 H410\"/><circle class=\"ds-route-end\" cx=\"410\" cy=\"98\" r=\"7\"/></svg><ol><li><code>DOMAIN</code><i></i><strong>api.openai.com</strong></li><li><code>RULE SET</code><i></i><strong>openai.list</strong></li><li><code>POLICY</code><i></i><strong>AI</strong></li><li><code>DEFAULT</code><i></i><strong>GLOBAL</strong></li></ol></div>",
-      "css": ".ds-route { position:relative; min-height:170px; color:var(--ink, #091e37); font-family:'SF Pro Text','PingFang SC',sans-serif; } .ds-route svg { position:absolute; inset:34px 0 0; width:100%; height:120px; overflow:visible; } .ds-route-active,.ds-route-branch { fill:none; vector-effect:non-scaling-stroke; } .ds-route-active { stroke:var(--accent, #085f68); stroke-width:5; stroke-dasharray:700; animation:ds-route-trace 420ms ease-out both; } .ds-route-branch { stroke:var(--ink, #091e37); stroke-width:2.5; } .ds-route-end { fill:var(--paper, #faf8f4); stroke:var(--ink, #091e37); stroke-width:2.5; vector-effect:non-scaling-stroke; } .ds-route ol { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:0; padding:0; list-style:none; } .ds-route li { display:flex; min-width:0; flex-direction:column; align-items:center; text-align:center; } .ds-route code { padding:6px 8px; border:1px solid var(--line-strong, #091e37); background:var(--paper, #faf8f4); font:.65rem 'SFMono-Regular',Consolas,monospace; } .ds-route i { width:21px; height:21px; margin:34px 0 13px; border-radius:50%; background:var(--accent, #085f68); animation:ds-node-settle 240ms ease-out both; } .ds-route strong { overflow:hidden; max-width:100%; font-size:.8rem; text-overflow:ellipsis; white-space:nowrap; } @keyframes ds-route-trace { from { stroke-dashoffset:700; } to { stroke-dashoffset:0; } } @keyframes ds-node-settle { from { opacity:.35; transform:scale(.55); } to { opacity:1; transform:scale(1); } } @media (prefers-reduced-motion:reduce) { .ds-route-active,.ds-route i { animation:none; } }"
+      "description": "把域名、规则集和策略连接成一条可读路线。",
+      "html": "<div class=\"ds-route\"><svg viewBox=\"0 0 800 120\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path class=\"ds-route-active\" d=\"M90 50 H710\"/></svg><ol><li><code>DOMAIN</code><i></i><strong>api.openai.com</strong></li><li><code>RULE SET</code><i></i><strong>openai.list</strong></li><li><code>POLICY</code><i></i><strong>AI</strong></li></ol></div>",
+      "css": ".ds-route { position:relative; min-height:170px; color:var(--ink, #091e37); font-family:'SF Pro Text','PingFang SC',sans-serif; } .ds-route svg { position:absolute; inset:34px 0 0; width:100%; height:120px; overflow:visible; } .ds-route-active { fill:none; stroke:var(--accent, #085f68); stroke-width:5; stroke-dasharray:700; vector-effect:non-scaling-stroke; animation:ds-route-trace 420ms ease-out both; } .ds-route ol { position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0; padding:0; list-style:none; } .ds-route li { display:flex; min-width:0; flex-direction:column; align-items:center; text-align:center; } .ds-route code { padding:6px 8px; border:1px solid var(--line-strong, #091e37); background:var(--paper, #faf8f4); font:.65rem 'SFMono-Regular',Consolas,monospace; } .ds-route i { width:21px; height:21px; margin:34px 0 13px; border-radius:50%; background:var(--accent, #085f68); animation:ds-node-settle 240ms ease-out both; } .ds-route strong { overflow:hidden; max-width:100%; font-size:.8rem; text-overflow:ellipsis; white-space:nowrap; } @keyframes ds-route-trace { from { stroke-dashoffset:700; } to { stroke-dashoffset:0; } } @keyframes ds-node-settle { from { opacity:.35; transform:scale(.55); } to { opacity:1; transform:scale(1); } } @media (prefers-reduced-motion:reduce) { .ds-route-active,.ds-route i { animation:none; } }"
     },
     {
       "name": "Rule Index Row",
@@ -192,7 +192,7 @@
   ],
   "narrative": {
     "northStar": "线路总图",
-    "overview": "Flacier Rules 像一张正在工作的规则地图册：冷白纸面承载深蓝细线、索引、表格和普通圆点，青色只标出当前选择与可执行动作。信息以可读线路组织，用户能从网址一路读到命中规则、策略与默认出口，而不是在卡片之间猜测关系。\n\n界面属于操作工具，不采用营销首屏、玻璃拟态或装饰性信号灯。密度来自清楚的表格分隔、紧凑标签和稳定对齐；品牌感来自自托管得意黑标题与路线图语法。",
+    "overview": "Flacier Rules 像一张正在工作的规则地图册：冷白纸面承载深蓝细线、索引、表格和普通圆点，青色只标出当前选择与可执行动作。信息以可读线路组织，用户能从网址一路读到命中规则与策略，而不是在卡片之间猜测关系。\n\n界面属于操作工具，不采用营销首屏、玻璃拟态或装饰性信号灯。密度来自清楚的表格分隔、紧凑标签和稳定对齐；品牌感来自自托管得意黑标题与路线图语法。",
     "keyCharacteristics": [
       "冷白地图纸、深蓝描线、单一青色状态色。",
       "线路、索引和表格优先于卡片与插画。",
@@ -228,11 +228,11 @@
       }
     ],
     "dos": [
-      "Do 把规则决定画成从输入到出口的可读线路，并让节点、标签和值共享对齐轴。",
+      "Do 把规则决定画成从输入到策略的可读线路，并让节点、标签和值共享对齐轴。",
       "Do 用表格、索引、细线和连续纸面组织高密度配置内容。",
       "Do 让青色稀缺，只标记主动作、当前选择、焦点或命中路线。",
       "Do 在移动端把横向关系转换为纵向顺序，并保持原有信息与操作。",
-      "Do 仅对 URL、规则文本、策略代码和出口代号使用等宽字体。"
+      "Do 仅对 URL、规则文本、策略代码和节点组代号使用等宽字体。"
     ],
     "donts": [
       "Don't 使用玻璃拟态、漂浮卡片堆、营销式大标题或装饰性插画。",

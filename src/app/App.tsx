@@ -52,7 +52,7 @@ export function App() {
           target="_blank"
           rel="noreferrer"
         >
-          <GithubLogo aria-hidden="true" />
+          <GithubLogo aria-hidden="true" weight="fill" />
           GitHub
         </a>
       </footer>

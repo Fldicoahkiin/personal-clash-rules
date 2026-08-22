@@ -10,7 +10,7 @@
 
 ## 策略
 
-| 策略 | 内容 | 默认 |
+| 策略 | 内容 | 初始项 |
 | --- | --- | --- |
 | `AI` | OpenAI、Claude、Grok、Gemini、Codex | `GLOBAL` |
 | `STEAM` | 商店与社区 | `DIRECT` |
@@ -23,7 +23,7 @@
 | `MEDIA` | YouTube、Netflix、Disney+、Spotify、Twitch | `GLOBAL` |
 | `SOCIAL` | X、Reddit、Instagram、Telegram、TikTok | `GLOBAL` |
 
-地区组：`US`、`JP`、`SG`、`HK`、`TW`、`KR`、`EU`。
+节点名称分组：`US`、`JP`、`SG`、`HK`、`TW`、`KR`、`EU`。
 
 ## 覆写
 

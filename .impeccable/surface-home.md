@@ -7,6 +7,6 @@
 - Proof: the tester loads the same files published under `public/rules/`.
 - Constraints: no orange; concise Chinese copy; no client-specific product positioning; no secrets.
 - Direction: rule atlas structure with a functional railway interlocking path.
-- Memorable moment: domain, rule set, policy, and default exit appear as one selected route.
+- Memorable moment: domain, rule set, and policy appear as one selected route.
 - Approved comp: `.impeccable/mocks/route-rail/overview.webp`.
 - Approved change: replace red and green signal-light imagery with ordinary selected and unselected nodes.

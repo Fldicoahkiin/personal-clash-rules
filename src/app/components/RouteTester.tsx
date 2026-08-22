@@ -18,8 +18,6 @@ const featuredRules = [
   { name: "AniGamer", policy: "ANIGAMER" },
 ];
 
-const regions = ["GLOBAL", "HK", "SG", "JP", "TW", "US"];
-
 function fileName(path: string): string {
   return path.split("/").at(-1) || "MATCH";
 }
@@ -78,15 +76,14 @@ export function RouteTester() {
       value: result ? fileName(result.ruleSetPath) : "—",
     },
     { code: "POLICY", value: result?.policy || "—" },
-    { code: "DEFAULT", value: result?.defaultSelection || "—" },
   ];
 
   return (
     <section className="route-section page-width" id="tester" aria-labelledby="page-title">
       <div className="route-main">
         <div className="route-intro">
-          <h1 id="page-title">从网址看到出口</h1>
-          <p>规则、策略、默认出口。</p>
+          <h1 id="page-title">网址怎么处理</h1>
+          <p>命中规则、策略组。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -112,11 +109,7 @@ export function RouteTester() {
             preserveAspectRatio="none"
             aria-hidden="true"
           >
-            <path className="route-line-active" d="M80 68 H920" />
-            <path className="route-line-branch" d="M330 68 L390 130 H510" />
-            <path className="route-line-branch" d="M720 68 L780 160 H900" />
-            <circle className="route-branch-node" cx="510" cy="130" r="10" />
-            <circle className="route-branch-node" cx="900" cy="160" r="10" />
+            <path className="route-line-active" d="M110 68 H890" />
           </svg>
           <ol className="route-steps">
             {steps.map((step) => (
@@ -131,13 +124,13 @@ export function RouteTester() {
 
         <div className="route-status">
           <span>{message || result?.rule}</span>
-          <span>域名 / IP 规则</span>
+          <span>域名 / IPv4 规则</span>
         </div>
       </div>
 
       <aside className="route-index" aria-label="规则索引">
         <div className="index-block">
-          <h2>规则索引</h2>
+          <h2>常用规则</h2>
           <div className="index-head" aria-hidden="true">
             <span>规则</span>
             <span>策略</span>
@@ -150,19 +143,6 @@ export function RouteTester() {
               </li>
             ))}
           </ul>
-        </div>
-        <div className="index-block region-block">
-          <h2>默认出口</h2>
-          <div className="region-list">
-            {regions.map((region) => (
-              <span
-                className={result?.defaultSelection === region ? "is-active" : ""}
-                key={region}
-              >
-                {region}
-              </span>
-            ))}
-          </div>
         </div>
       </aside>
     </section>
