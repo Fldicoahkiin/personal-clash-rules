@@ -22,12 +22,18 @@ ruleSets:
     path: rules/gaming/steam.list
   - id: steam-download
     path: rules/gaming/steam-download.list
+  - id: steam-online
+    path: rules/gaming/steam-online.list
   - id: discord
     path: rules/messaging/discord.list
   - id: developer
     path: rules/developer/developer.list
   - id: media
     path: rules/media/media.list
+  - id: bilibili
+    path: rules/media/bilibili.list
+  - id: anigamer
+    path: rules/media/anigamer.list
   - id: social
     path: rules/social/social.list
   - id: private-domain

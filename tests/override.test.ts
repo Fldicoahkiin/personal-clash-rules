@@ -23,7 +23,20 @@ describe("Clash Party override", () => {
     ]);
     expect(config["+rules"]).toContain("RULE-SET,ai-xai,AI");
     expect(config["+rules"]).toContain("RULE-SET,steam,STEAM");
+    expect(config["+rules"]).toContain(
+      "RULE-SET,steam-download,STEAM-DOWNLOAD",
+    );
+    expect(config["+rules"]).toContain("RULE-SET,steam-online,STEAM-ONLINE");
+    expect(config["+rules"]).toContain("RULE-SET,bilibili,BILIBILI");
+    expect(config["+rules"]).toContain("RULE-SET,anigamer,ANIGAMER");
     expect(config["+rules"]).toContain("RULE-SET,discord,DISCORD");
+
+    expect(config["+rules"].indexOf("RULE-SET,steam-download,STEAM-DOWNLOAD"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam-online,STEAM-ONLINE"));
+    expect(config["+rules"].indexOf("RULE-SET,steam-online,STEAM-ONLINE"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam,STEAM"));
+    expect(config["+rules"].indexOf("RULE-SET,bilibili,BILIBILI"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,media,MEDIA"));
   });
 
   it("offers explicit country selectors and service policies", async () => {
@@ -55,6 +68,11 @@ describe("Clash Party override", () => {
       "TW",
     ]);
     expect(groups.get("STEAM")?.proxies).toContain("DIRECT");
+    expect(groups.get("STEAM")?.proxies?.[0]).toBe("DIRECT");
+    expect(groups.get("STEAM-DOWNLOAD")?.proxies?.[0]).toBe("DIRECT");
+    expect(groups.get("STEAM-ONLINE")?.proxies?.[0]).toBe("DIRECT");
+    expect(groups.get("BILIBILI")?.proxies?.[0]).toBe("DIRECT");
+    expect(groups.get("ANIGAMER")?.proxies?.[0]).toBe("TW");
     expect(groups.get("DISCORD")?.proxies).toContain("GLOBAL");
   });
 });

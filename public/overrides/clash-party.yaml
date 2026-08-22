@@ -72,6 +72,13 @@ rule-providers:
     url: https://rules.flacier.com/rules/gaming/steam-download.list
     path: ./ruleset/personal/steam-download.list
     interval: 86400
+  steam-online:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/gaming/steam-online.list
+    path: ./ruleset/personal/steam-online.list
+    interval: 86400
   discord:
     type: http
     behavior: classical
@@ -92,6 +99,20 @@ rule-providers:
     format: text
     url: https://rules.flacier.com/rules/media/media.list
     path: ./ruleset/personal/media.list
+    interval: 86400
+  bilibili:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/media/bilibili.list
+    path: ./ruleset/personal/bilibili.list
+    interval: 86400
+  anigamer:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/media/anigamer.list
+    path: ./ruleset/personal/anigamer.list
     interval: 86400
   social:
     type: http
@@ -172,7 +193,10 @@ rule-providers:
     proxies: [DIRECT, GLOBAL, JP, US, SG]
   - name: STEAM-DOWNLOAD
     type: select
-    proxies: [DIRECT, GLOBAL]
+    proxies: [DIRECT, GLOBAL, JP, US, SG, HK, TW]
+  - name: STEAM-ONLINE
+    type: select
+    proxies: [DIRECT, GLOBAL, JP, US, SG, HK, TW]
   - name: DISCORD
     type: select
     proxies: [GLOBAL, US, JP, SG, DIRECT]
@@ -182,6 +206,12 @@ rule-providers:
   - name: MEDIA
     type: select
     proxies: [GLOBAL, US, JP, SG, DIRECT]
+  - name: BILIBILI
+    type: select
+    proxies: [DIRECT, GLOBAL, HK, TW, SG]
+  - name: ANIGAMER
+    type: select
+    proxies: [TW, GLOBAL, DIRECT, AUTO]
   - name: SOCIAL
     type: select
     proxies: [GLOBAL, US, JP, SG, DIRECT]
@@ -201,9 +231,12 @@ rule-providers:
   - RULE-SET,ai-coding,AI
   - RULE-SET,ai-general,AI
   - RULE-SET,steam-download,STEAM-DOWNLOAD
+  - RULE-SET,steam-online,STEAM-ONLINE
   - RULE-SET,steam,STEAM
   - RULE-SET,discord,DISCORD
   - RULE-SET,developer,DEV
+  - RULE-SET,bilibili,BILIBILI
+  - RULE-SET,anigamer,ANIGAMER
   - RULE-SET,media,MEDIA
   - RULE-SET,social,SOCIAL
   - MATCH,DEFAULT

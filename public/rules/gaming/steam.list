@@ -1,17 +1,20 @@
-# Steam store, community and game services
+# Steam platform, store and community services
+# Source: https://github.com/v2fly/domain-list-community/blob/master/data/steam
 DOMAIN-SUFFIX,playartifact.com
 DOMAIN-SUFFIX,s.team
 DOMAIN-SUFFIX,steam.tv
 DOMAIN-SUFFIX,steam-api.com
-DOMAIN-SUFFIX,steam-chat.com
 DOMAIN-SUFFIX,steamcommunity.com
-DOMAIN-SUFFIX,steamconnecttest.com
 DOMAIN-SUFFIX,steamdeck.com
-DOMAIN-SUFFIX,steamgames.com
 DOMAIN-SUFFIX,steampowered.com
 DOMAIN-SUFFIX,steamstatic.com
 DOMAIN-SUFFIX,steamusercontent.com
-DOMAIN-SUFFIX,underlords.com
-DOMAIN-SUFFIX,valve.net
 DOMAIN-SUFFIX,valvesoftware.com
-DOMAIN-SUFFIX,dota2.com
+DOMAIN,steamcommunity-a.akamaihd.net.edgesuite.net
+DOMAIN,steamcommunity-a.akamaihd.net
+DOMAIN,steammobile.akamaized.net
+DOMAIN,steamstore-a.akamaihd.net
+DOMAIN,steamusercontent-a.akamaihd.net
+DOMAIN,steamuserimages-a.akamaihd.net
+DOMAIN,steamcloudsweden.blob.core.windows.net
+DOMAIN,steamugcquincy.blob.core.windows.net

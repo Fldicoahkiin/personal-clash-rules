@@ -1,4 +1,15 @@
-const serviceGroups = ["AI", "STEAM", "DISCORD", "DEV", "MEDIA", "SOCIAL"];
+const serviceGroups = [
+  "AI",
+  "STEAM",
+  "STEAM-DOWNLOAD",
+  "STEAM-ONLINE",
+  "BILIBILI",
+  "ANIGAMER",
+  "DISCORD",
+  "DEV",
+  "MEDIA",
+  "SOCIAL",
+];
 const regionGroups = ["US", "JP", "SG", "HK", "TW", "KR", "EU"];
 
 export function PolicyMap() {
@@ -21,7 +32,7 @@ export function PolicyMap() {
       <div className="policy-map" role="img" aria-label="规则到服务策略再到地区节点的流向">
         <div className="map-column">
           <span className="map-label">RULE SETS</span>
-          <div className="map-primary">14 个规则集</div>
+          <div className="map-primary">17 个规则集</div>
           <p>域名、进程与私有网段</p>
         </div>
         <span className="map-connector" aria-hidden="true" />

@@ -7,6 +7,6 @@ which is distributed under the MIT License.
 Copyright (c) 2018-2019 V2Ray
 
 The source repository and its license remain the reference for those entries.
-Entries marked with `@cn` or `@ads` were not imported. The lists in this
-repository are smaller, grouped for a personal Mihomo setup, and may differ
-from the upstream data over time.
+Entries marked with `@ads` are not imported. Routing attributes such as `@cn`
+are removed when converting entries to Mihomo classical format. The lists are
+grouped for this repository and may differ from the upstream data over time.

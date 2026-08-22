@@ -1,0 +1,7 @@
+# Bahamut AniGamer services
+# Source: https://github.com/v2fly/domain-list-community/blob/master/data/bahamut
+DOMAIN-SUFFIX,bahamut.akamaized.net
+DOMAIN-SUFFIX,bahamut.com.tw
+DOMAIN-SUFFIX,gamer.com.tw
+DOMAIN,gamer2-cds.cdn.hinet.net
+DOMAIN,gamer-cds.cdn.hinet.net

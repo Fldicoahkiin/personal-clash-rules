@@ -11,13 +11,28 @@ async function read(relativePath: string): Promise<string> {
 }
 
 describe("published rule sets", () => {
-  it("contains the requested AI, Steam and Discord coverage", async () => {
-    const [openai, anthropic, xai, coding, steam, discord] = await Promise.all([
+  it("contains the requested AI, gaming, media and Discord coverage", async () => {
+    const [
+      openai,
+      anthropic,
+      xai,
+      coding,
+      steam,
+      steamDownload,
+      steamOnline,
+      bilibili,
+      anigamer,
+      discord,
+    ] = await Promise.all([
       read("public/rules/ai/openai.list"),
       read("public/rules/ai/anthropic.list"),
       read("public/rules/ai/xai.list"),
       read("public/rules/ai/coding.list"),
       read("public/rules/gaming/steam.list"),
+      read("public/rules/gaming/steam-download.list"),
+      read("public/rules/gaming/steam-online.list"),
+      read("public/rules/media/bilibili.list"),
+      read("public/rules/media/anigamer.list"),
       read("public/rules/messaging/discord.list"),
     ]);
 
@@ -26,6 +41,10 @@ describe("published rule sets", () => {
     expect(xai).toContain("DOMAIN-SUFFIX,grok.com");
     expect(coding).toContain("DOMAIN-SUFFIX,githubcopilot.com");
     expect(steam).toContain("DOMAIN-SUFFIX,steampowered.com");
+    expect(steamDownload).toContain("DOMAIN-SUFFIX,steamcontent.com");
+    expect(steamOnline).toContain("DOMAIN-SUFFIX,steamserver.net");
+    expect(bilibili).toContain("DOMAIN-SUFFIX,bilibili.com");
+    expect(anigamer).toContain("DOMAIN-SUFFIX,gamer.com.tw");
     expect(discord).toContain("DOMAIN-SUFFIX,discord.com");
   });
 

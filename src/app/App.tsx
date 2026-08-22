@@ -18,13 +18,13 @@ export function App() {
               Flacier<span>の</span>订阅转换
             </h1>
             <p className="hero-summary">
-              为个人节点准备的规则工作台。整理 AI、Steam、Discord
+              为个人节点准备的规则工作台。整理 AI、Steam、Bilibili、动画疯、Discord
               等常用流量，生成 Clash Party 覆写，并在浏览器里完成规则格式转换。
             </p>
           </div>
           <dl className="hero-facts" aria-label="项目摘要">
             <div>
-              <dt>14</dt>
+              <dt>17</dt>
               <dd>规则集</dd>
             </div>
             <div>
