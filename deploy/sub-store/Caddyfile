@@ -1,0 +1,9 @@
+:8080 {
+	@authorized header Authorization "Bearer {$SUB_STORE_TOKEN}"
+
+	handle @authorized {
+		reverse_proxy sub-store:3000
+	}
+
+	respond 401
+}

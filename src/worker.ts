@@ -1,3 +1,6 @@
+import { refreshDueProfiles, routeSubscriptionRequest } from "./worker/subscriptions";
+import type { SubscriptionEnv } from "./worker/types";
+
 const securityHeaders = {
   "Content-Security-Policy":
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
@@ -12,6 +15,9 @@ function cacheControl(pathname: string): string {
   }
   if (pathname.startsWith("/rules/") || pathname.startsWith("/overrides/")) {
     return "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
+  }
+  if (pathname.startsWith("/s/")) {
+    return "private, max-age=300, stale-while-revalidate=3600";
   }
   return "no-cache";
 }
@@ -33,6 +39,11 @@ function withResponseHeaders(response: Response, pathname: string): Response {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
+
+    const subscriptionResponse = await routeSubscriptionRequest(request, url, env);
+    if (subscriptionResponse) {
+      return withResponseHeaders(subscriptionResponse, url.pathname);
+    }
 
     if (request.method !== "GET" && request.method !== "HEAD") {
       return Response.json(
@@ -72,4 +83,8 @@ export default {
       );
     }
   },
-} satisfies ExportedHandler<Env>;
+  async scheduled(_controller, env): Promise<void> {
+    const result = await refreshDueProfiles(env);
+    console.log(JSON.stringify({ message: "scheduled subscription refresh", ...result }));
+  },
+} satisfies ExportedHandler<SubscriptionEnv>;

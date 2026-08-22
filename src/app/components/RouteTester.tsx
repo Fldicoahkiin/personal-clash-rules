@@ -70,30 +70,46 @@ export function RouteTester() {
   const policyRoute = result ? describePolicyRoute(result.policy) : null;
   const steps = [
     {
-      label: "查询地址",
+      label: "网址",
       value: result?.hostname || "—",
-      detail: "",
+      detail: "输入地址",
       machine: true,
+      state: null,
     },
     {
-      label: result ? (result.matched ? "已命中" : "未命中") : "匹配规则",
-      value: result
+      label: result
         ? result.matched
-          ? result.rule
-          : "MATCH（默认规则）"
-        : "—",
+          ? "规则已命中"
+          : "规则未命中"
+        : "规则",
+      value: result?.rule || "—",
       detail: result
         ? result.matched
-          ? `${result.ruleSetLabel} 规则集`
-          : "进入 DEFAULT"
+          ? result.ruleSetLabel
+          : "使用默认规则"
         : "",
       machine: true,
+      state: result ? (result.matched ? "pass" : "stop") : null,
     },
     {
-      label: "处理方式",
-      value: policyRoute?.mode || "—",
-      detail: policyRoute?.route || "",
-      machine: false,
+      label: "策略组",
+      value: result?.policy || "—",
+      detail: policyRoute
+        ? policyRoute.route.includes(" → ")
+          ? `默认 ${policyRoute.route.split(" → ")[1]}`
+          : "固定路线"
+        : "",
+      machine: true,
+      state: null,
+    },
+    {
+      label: "最终路线",
+      value: policyRoute
+        ? `${policyRoute.target} · ${policyRoute.mode}`
+        : "—",
+      detail: "",
+      machine: true,
+      state: null,
     },
   ];
 
@@ -102,7 +118,7 @@ export function RouteTester() {
       <div className="route-main">
         <div className="route-intro">
           <h1 id="page-title">网址规则测试</h1>
-          <p>查看命中的规则和默认去向。</p>
+          <p>输入网址，查看规则、策略组和最终路线。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -125,8 +141,26 @@ export function RouteTester() {
           <ol className="route-steps">
             {steps.map((step) => (
               <li key={step.label}>
-                <span className="route-step-label">{step.label}</span>
-                <span className="route-node" aria-hidden="true" />
+                <span
+                  className={
+                    step.state
+                      ? `route-step-label route-step-label-${step.state}`
+                      : "route-step-label"
+                  }
+                >
+                  {step.state ? (
+                    <span className="route-signal-light" aria-hidden="true" />
+                  ) : null}
+                  {step.label}
+                </span>
+                <span
+                  className={
+                    step.state
+                      ? `route-node route-node-${step.state}`
+                      : "route-node"
+                  }
+                  aria-hidden="true"
+                />
                 <strong
                   className={
                     step.machine
@@ -152,15 +186,18 @@ export function RouteTester() {
           <h2>常用规则</h2>
           <div className="index-head" aria-hidden="true">
             <span>规则</span>
-            <span>策略</span>
+            <span>默认</span>
           </div>
           <ul>
-            {featuredRules.map((item) => (
-              <li key={item.name}>
-                <span>{item.name}</span>
-                <code>{item.policy}</code>
-              </li>
-            ))}
+            {featuredRules.map((item) => {
+              const route = describePolicyRoute(item.policy);
+              return (
+                <li key={item.name}>
+                  <span>{item.name}</span>
+                  <code>{route.mode}</code>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </aside>

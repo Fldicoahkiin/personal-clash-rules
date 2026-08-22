@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "latest",
+    "@tanstack/react-query": "^5.101.4",
+    "jose": "^6.2.10",
     "react": "latest",
     "react-dom": "latest",
     "yaml": "latest"

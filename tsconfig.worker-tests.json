@@ -12,8 +12,10 @@
   },
   "include": [
     "tests/worker.integration.ts",
+    "tests/worker.setup.ts",
     "vitest.worker.config.ts",
     "worker-configuration.d.ts",
-    "src/worker.ts"
+    "src/worker.ts",
+    "src/worker/**/*.ts"
   ]
 }

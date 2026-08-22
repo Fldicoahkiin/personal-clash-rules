@@ -1,5 +1,34 @@
-import { exports } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { env, exports } from "cloudflare:workers";
+import { describe, expect, it, vi } from "vitest";
+
+const authorization = { Authorization: "Bearer worker-test-token" };
+const testEnv = env as typeof env & { DB: D1Database };
+
+async function createProfile(name = "Flacier") {
+  const response = await exports.default.fetch("https://example.com/api/manage/profiles", {
+    method: "POST",
+    headers: { ...authorization, "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  expect(response.status).toBe(201);
+  const data = await response.json<{ profile: { id: string; name: string } }>();
+  return data.profile;
+}
+
+async function addSource(
+  profileId: string,
+  source: { name: string; type: "subscription" | "node"; value: string },
+) {
+  const response = await exports.default.fetch(
+    `https://example.com/api/manage/profiles/${profileId}/sources`,
+    {
+      method: "POST",
+      headers: { ...authorization, "Content-Type": "application/json" },
+      body: JSON.stringify(source),
+    },
+  );
+  expect(response.status).toBe(201);
+}
 
 describe("Worker entrypoint", () => {
   it("returns a private health response with security headers", async () => {
@@ -21,5 +50,221 @@ describe("Worker entrypoint", () => {
 
     expect(response.status).toBe(405);
     expect(response.headers.get("allow")).toBe("GET, HEAD");
+  });
+
+  it("requires authentication for subscription management", async () => {
+    const response = await exports.default.fetch("https://example.com/api/manage/profiles");
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "authentication_required",
+      message: "Authentication required",
+    });
+  });
+
+  it("creates a profile and stores subscription sources encrypted", async () => {
+    const profile = await createProfile("旅行设备");
+    const secretUrl = "https://provider.example/subscription?token=private-value";
+    const response = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/sources`,
+      {
+        method: "POST",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "主订阅",
+          type: "subscription",
+          value: secretUrl,
+        }),
+      },
+    );
+
+    expect(response.status).toBe(201);
+    const responseText = await response.text();
+    expect(responseText).not.toContain(secretUrl);
+    expect(responseText).not.toContain("private-value");
+
+    const stored = await testEnv.DB.prepare(`
+      SELECT secret_ciphertext, secret_iv
+      FROM sources
+      WHERE profile_id = ?
+    `).bind(profile.id).first<{ secret_ciphertext: string; secret_iv: string }>();
+    expect(stored?.secret_ciphertext).toBeTruthy();
+    expect(stored?.secret_ciphertext).not.toContain("private-value");
+    expect(stored?.secret_iv).toBeTruthy();
+
+    const detail = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      { headers: authorization },
+    );
+    const detailText = await detail.text();
+    expect(detail.status).toBe(200);
+    expect(detailText).toContain("主订阅");
+    expect(detailText).not.toContain("secret_ciphertext");
+    expect(detailText).not.toContain("private-value");
+  });
+
+  it("publishes generated output behind a stable revocable link", async () => {
+    const profile = await createProfile();
+    const output = "proxies:\n  - name: test-node\n    type: ss\n";
+    const outputResponse = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/outputs/mihomo`,
+      {
+        method: "PUT",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ content: output }),
+      },
+    );
+    expect(outputResponse.status).toBe(200);
+    const outputData = await outputResponse.json<{ etag: string }>();
+
+    const linkResponse = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/links`,
+      {
+        method: "POST",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "手机" }),
+      },
+    );
+    expect(linkResponse.status).toBe(201);
+    const linkData = await linkResponse.json<{
+      link: { id: string };
+      urls: Record<string, string>;
+    }>();
+    expect(linkData.urls.mihomo).toMatch(/^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo$/);
+    const rawToken = linkData.urls.mihomo.split("/").at(-2);
+    const storedLink = await testEnv.DB.prepare(`
+      SELECT token_hash, token_ciphertext, token_iv
+      FROM share_links
+      WHERE id = ?
+    `).bind(linkData.link.id).first<{
+      token_hash: string;
+      token_ciphertext: string;
+      token_iv: string;
+    }>();
+    expect(storedLink?.token_hash).not.toBe(rawToken);
+    expect(storedLink?.token_ciphertext).not.toContain(String(rawToken));
+    expect(storedLink?.token_iv).toBeTruthy();
+
+    const profileDetail = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      { headers: authorization },
+    );
+    const profileData = await profileDetail.json<{
+      profile: { links: Array<{ id: string; urls: Record<string, string> }> };
+    }>();
+    expect(profileData.profile.links[0].urls.mihomo).toBe(linkData.urls.mihomo);
+
+    const published = await exports.default.fetch(linkData.urls.mihomo);
+    expect(published.status).toBe(200);
+    expect(published.headers.get("etag")).toBe(outputData.etag);
+    expect(published.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=3600");
+    await expect(published.text()).resolves.toBe(output);
+
+    const unchanged = await exports.default.fetch(linkData.urls.mihomo, {
+      headers: { "If-None-Match": outputData.etag },
+    });
+    expect(unchanged.status).toBe(304);
+
+    const revoke = await exports.default.fetch(
+      `https://example.com/api/manage/links/${linkData.link.id}`,
+      { method: "DELETE", headers: authorization },
+    );
+    expect(revoke.status).toBe(204);
+
+    const revoked = await exports.default.fetch(linkData.urls.mihomo);
+    expect(revoked.status).toBe(404);
+  });
+
+  it("refreshes every client output through Sub-Store", async () => {
+    const profile = await createProfile("设备订阅");
+    const subscriptionUrl = "https://provider.example/sub?token=refresh-secret";
+    const nodeUri = "vless://00000000-0000-4000-8000-000000000000@node.example:443#manual";
+    await addSource(profile.id, {
+      name: "机场",
+      type: "subscription",
+      value: subscriptionUrl,
+    });
+    await addSource(profile.id, {
+      name: "手工节点",
+      type: "node",
+      value: nodeUri,
+    });
+
+    const converterBodies: Array<Record<string, unknown>> = [];
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      converterBodies.push(body);
+      const headers = new Headers(init?.headers);
+      expect(headers.get("cf-access-client-id")).toBe("sub-store-client-id");
+      expect(headers.get("cf-access-client-secret")).toBe("sub-store-client-secret");
+
+      if (url.endsWith("/api/preview/sub?target=JSON")) {
+        return Response.json({
+          status: "success",
+          data: {
+            processed: [
+              { name: "remote", type: "ss", server: "one.example", port: 443 },
+              { name: "manual", type: "vless", server: "node.example", port: 443 },
+            ],
+          },
+        });
+      }
+
+      if (url.endsWith("/api/proxy/parse")) {
+        return Response.json({
+          status: "success",
+          data: { par_res: `${body.client} generated output` },
+        });
+      }
+
+      return new Response(null, { status: 404 });
+    });
+
+    try {
+      const response = await exports.default.fetch(
+        `https://example.com/api/manage/profiles/${profile.id}/refresh`,
+        { method: "POST", headers: authorization },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json<{
+        refresh: { status: string; nodeCount: number; targetCount: number; targets: string[] };
+      }>();
+      expect(data.refresh).toMatchObject({
+        status: "succeeded",
+        nodeCount: 2,
+        targetCount: 13,
+      });
+      expect(data.refresh.targets).toContain("mihomo");
+      expect(data.refresh.targets).toContain("sing-box");
+
+      const preview = converterBodies[0];
+      expect(preview.url).toBe(subscriptionUrl);
+      expect(preview.content).toBe(nodeUri);
+      expect(preview.mergeSources).toBe("remoteFirst");
+      expect(fetchSpy).toHaveBeenCalledTimes(14);
+
+      const storedOutputs = await testEnv.DB.prepare(`
+        SELECT COUNT(*) AS count
+        FROM generated_outputs
+        WHERE profile_id = ?
+      `).bind(profile.id).first<{ count: number }>();
+      expect(storedOutputs?.count).toBe(13);
+
+      const detail = await exports.default.fetch(
+        `https://example.com/api/manage/profiles/${profile.id}`,
+        { headers: authorization },
+      );
+      const detailData = await detail.json<{
+        profile: { latestRefresh: { status: string; nodeCount: number; targetCount: number } };
+      }>();
+      expect(detailData.profile.latestRefresh).toMatchObject({
+        status: "succeeded",
+        nodeCount: 2,
+        targetCount: 13,
+      });
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 });
