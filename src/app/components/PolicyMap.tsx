@@ -1,16 +1,40 @@
-const serviceGroups = [
-  "AI",
-  "STEAM",
-  "STEAM-DOWNLOAD",
-  "STEAM-ONLINE",
-  "BILIBILI",
-  "ANIGAMER",
-  "DISCORD",
-  "DEV",
-  "MEDIA",
-  "SOCIAL",
+const policies = [
+  {
+    name: "AI",
+    initial: "GLOBAL",
+    options: ["GLOBAL", "US", "JP", "SG", "TW"],
+  },
+  {
+    name: "STEAM",
+    initial: "DIRECT",
+    options: ["DIRECT", "GLOBAL", "JP", "US", "SG"],
+  },
+  {
+    name: "STEAM-DOWNLOAD",
+    initial: "DIRECT",
+    options: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+  },
+  {
+    name: "STEAM-ONLINE",
+    initial: "DIRECT",
+    options: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+  },
+  {
+    name: "BILIBILI",
+    initial: "DIRECT",
+    options: ["DIRECT", "GLOBAL", "HK", "TW", "SG"],
+  },
+  {
+    name: "ANIGAMER",
+    initial: "TW",
+    options: ["TW", "GLOBAL", "DIRECT", "AUTO"],
+  },
+  {
+    name: "DISCORD",
+    initial: "GLOBAL",
+    options: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
+  },
 ];
-const regionGroups = ["US", "JP", "SG", "HK", "TW", "KR", "EU"];
 
 export function PolicyMap() {
   return (
@@ -19,44 +43,46 @@ export function PolicyMap() {
       id="policies"
       aria-labelledby="policy-title"
     >
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">03 · POLICY MAP</p>
-          <h2 id="policy-title">服务分流与地区选择</h2>
-        </div>
-        <p>
-          服务先进入独立策略组，再手动选择地区节点。地区匹配依赖节点名称，不读取或推测节点出口 IP。
-        </p>
-      </div>
+      <header className="plain-heading">
+        <h2 id="policy-title">策略组</h2>
+        <p>默认与出口</p>
+      </header>
 
-      <div className="policy-map" role="img" aria-label="规则到服务策略再到地区节点的流向">
-        <div className="map-column">
-          <span className="map-label">RULE SETS</span>
-          <div className="map-primary">17 个规则集</div>
-          <p>域名、进程与私有网段</p>
-        </div>
-        <span className="map-connector" aria-hidden="true" />
-        <div className="map-column">
-          <span className="map-label">POLICIES</span>
-          <div className="chip-grid">
-            {serviceGroups.map((group) => (
-              <span key={group}>{group}</span>
+      <div className="policy-table-wrap">
+        <table className="policy-table">
+          <thead>
+            <tr>
+              <th>策略</th>
+              <th>默认</th>
+              <th>可选出口</th>
+            </tr>
+          </thead>
+          <tbody>
+            {policies.map((policy) => (
+              <tr key={policy.name}>
+                <th scope="row">{policy.name}</th>
+                <td>
+                  <code>{policy.initial}</code>
+                </td>
+                <td>
+                  <div className="policy-route">
+                    {policy.options.map((option) => (
+                      <span
+                        className={option === policy.initial ? "is-active" : ""}
+                        key={option}
+                      >
+                        <i aria-hidden="true" />
+                        {option}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
             ))}
-          </div>
-        </div>
-        <span className="map-connector" aria-hidden="true" />
-        <div className="map-column">
-          <span className="map-label">REGIONS</span>
-          <div className="chip-grid region-grid">
-            {regionGroups.map((group) => (
-              <span key={group}>{group}</span>
-            ))}
-          </div>
-        </div>
+          </tbody>
+        </table>
       </div>
-      <p className="map-note">
-        建议节点名包含国家代码或城市，例如 US Los Angeles 01、JP Tokyo 01、SG Singapore 01。
-      </p>
+      <p className="policy-note">地区节点：US · JP · SG · HK · TW · KR · EU</p>
     </section>
   );
 }

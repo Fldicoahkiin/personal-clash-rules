@@ -5,12 +5,10 @@ export function AppHeader() {
     <header className="site-header">
       <div className="header-inner page-width">
         <a className="brand" href="#top" aria-label="返回页面顶部">
-          <span className="brand-mark" aria-hidden="true">
-            F
-          </span>
           <span>Flacier Rules</span>
         </a>
         <nav aria-label="页面导航">
+          <a href="#tester">测试</a>
           <a href="#subscription">订阅</a>
           <a href="#converter">转换</a>
           <a href="#policies">策略</a>
@@ -24,6 +22,7 @@ export function AppHeader() {
           aria-label="打开 GitHub 仓库"
         >
           <GithubLogo aria-hidden="true" />
+          <span>GitHub</span>
         </a>
       </div>
     </header>

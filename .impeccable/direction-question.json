@@ -1,0 +1,88 @@
+{
+  "title": "选择 Flacier Rules 的新视觉方向",
+  "question": "这次是整站换方向。选一套继续，我会再给出同一方向的三张首页构图稿。",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "规则地图册",
+      "kicker": "本轮方向",
+      "lineage": "折叠式交通图册与地名索引",
+      "thesis": "每个网址都沿着一条可追踪路线，从域名经过规则集和策略，抵达国家出口。",
+      "palette": ["#F2F0E9", "#1B2838", "#1F6F78", "#B9D3CF", "#D44757"],
+      "materials": ["无涂层地图纸", "路线油墨", "索引标签"],
+      "viewport": "首屏是一张可操作的路由地图：输入网址后，域名、命中规则、策略和地区按真实顺序连成一条路线。",
+      "risk": "如果路线不承载真实判断，它会退化成普通地铁图装饰。",
+      "raised": [
+        {
+          "from": "时刻表滑轨",
+          "raise": "每个结果使用固定代码格，扫描时不需要在卡片之间来回找。"
+        },
+        {
+          "from": "数据场",
+          "raise": "概览保持安静，规则索引允许高密度，但密度只出现在需要查找的地方。"
+        }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "model-pick",
+      "label": "铁路调度台",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "铁路联锁图与站场控制台",
+      "thesis": "订阅和网址像列车一样进入调度台，沿着命名道岔被送往策略与节点。",
+      "palette": ["#ECEBE5", "#171C22", "#315B78", "#2F7D67", "#C74B50"],
+      "materials": ["搪瓷站牌", "线路刻线", "信号灯"],
+      "viewport": "首屏是一条横向站场线，网址测试是发车口，规则与地区是可读的站点，当前路径会逐段点亮。",
+      "risk": "铁路隐喻在开发工具里较常见，线条如果太多会抢走内容。",
+      "comp": ".impeccable/mocks/decision/model-pick.webp"
+    },
+    {
+      "id": "challenger-timetable",
+      "label": "冷光时刻表",
+      "verdict": "competitive",
+      "lineage": "口袋航空时刻表与透明滑片架",
+      "thesis": "所有规则以一套固定列宽和单一字号排列，层级只靠字重、反白和状态格表达。",
+      "palette": ["#E8EDF0", "#1C2630", "#5E788A", "#2D6A5C", "#A53D4A"],
+      "materials": ["烟灰玻璃", "冷白灯床", "印刷代码条"],
+      "viewport": "首屏是一组横向滑片，订阅、测试结果和策略按同一条斜向基线排列，状态落在固定单元格内。",
+      "case": "信息扫描很快，但固定单一字号会削弱网址测试与转换操作的主次。",
+      "risk": "结构纪律很强，也更容易显得像一张静态数据表。",
+      "comp": ".impeccable/mocks/decision/challenger-timetable.webp",
+      "hero": "https://impeccable.style/worlds/cards/rw-timetable-slide-rack-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/rw-timetable-slide-rack.webp"
+    },
+    {
+      "id": "challenger-instruments",
+      "label": "夜航仪表",
+      "verdict": "declined",
+      "lineage": "小型飞机夜间六联仪表",
+      "thesis": "每个圆形仪表只报告一种路由状态，用户按固定顺序交叉检查。",
+      "palette": ["#101317", "#E9EDF0", "#72C89C", "#B84C54"],
+      "materials": ["哑黑面板", "荧光刻度", "阻尼指针"],
+      "viewport": "六个仪表分别显示订阅、规则、策略、地区、更新和错误状态。",
+      "case": "视觉信任感成立，但这个产品不是持续监控面板，仪表会制造不存在的实时性。",
+      "kept": "一个组件只承担一个明确判断。",
+      "risk": "会把一次性查询误读为持续遥测。",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-night-flight-six-pack-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/signals-instruments-night-flight-six-pack.webp"
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "常规工具站",
+    "thesis": "用常见导航、表单卡片和两栏工作区组织功能。",
+    "palette": ["#F7F8FA", "#172033", "#3972D9", "#DDE6F2"],
+    "materials": ["白色面板", "细边框", "常规表单控件"],
+    "viewport": "标题和简介在上方，订阅、测试与规则各自占一张圆角卡片。",
+    "risk": "容易使用，但和现有订阅转换站没有明显区别。",
+    "comp": ".impeccable/mocks/decision/canon.webp"
+  },
+  "steer": true
+}

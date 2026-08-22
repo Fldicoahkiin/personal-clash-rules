@@ -10,3 +10,4 @@ worker-configuration.d.ts
 .DS_Store
 playwright-report/
 test-results/
+.impeccable/questions/

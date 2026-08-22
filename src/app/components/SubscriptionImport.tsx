@@ -1,48 +1,48 @@
-import {
-  ArrowRight,
-  Check,
-  Copy,
-  LinkSimple,
-} from "@phosphor-icons/react";
+import { ArrowUpRight, Check, Copy } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
-function buildImportLink(url: string, name: string): string {
-  const subscription = new URL(url);
-  if (subscription.protocol !== "http:" && subscription.protocol !== "https:") {
-    throw new Error("订阅地址必须使用 HTTP 或 HTTPS。");
-  }
-  const params = new URLSearchParams({ url: subscription.toString() });
-  if (name.trim()) {
-    params.set("name", name.trim());
-  }
-  return `mihomo://install-config?${params.toString()}`;
-}
+import {
+  buildClientAction,
+  type ClientId,
+} from "../lib/client-import";
+
+const clients: Array<{ id: ClientId; label: string }> = [
+  { id: "mihomo", label: "Mihomo" },
+  { id: "stash", label: "Stash" },
+  { id: "surge", label: "Surge" },
+  { id: "loon", label: "Loon" },
+  { id: "quantumult-x", label: "Quantumult X" },
+  { id: "sing-box", label: "sing-box" },
+  { id: "shadowrocket", label: "Shadowrocket" },
+  { id: "egern", label: "Egern" },
+  { id: "surfboard", label: "Surfboard" },
+];
 
 export function SubscriptionImport() {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("Flacier Personal");
+  const [client, setClient] = useState<ClientId>("mihomo");
   const [copied, setCopied] = useState(false);
+
+  const selectedClient = clients.find((item) => item.id === client) ?? clients[0];
   const result = useMemo(() => {
     if (!url.trim()) {
-      return { value: "", error: "" };
+      return { action: null, error: "" };
     }
     try {
-      return { value: buildImportLink(url, name), error: "" };
-    } catch (error) {
-      return {
-        value: "",
-        error: error instanceof Error ? error.message : "订阅地址无法识别。",
-      };
+      return { action: buildClientAction(client, url, name), error: "" };
+    } catch {
+      return { action: null, error: "订阅地址无效" };
     }
-  }, [name, url]);
+  }, [client, name, url]);
 
-  async function copyResult() {
-    if (!result.value) {
+  async function copyAction() {
+    if (!result.action) {
       return;
     }
-    await navigator.clipboard.writeText(result.value);
+    await navigator.clipboard.writeText(result.action.value);
     setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    window.setTimeout(() => setCopied(false), 1400);
   }
 
   return (
@@ -51,21 +51,14 @@ export function SubscriptionImport() {
       id="subscription"
       aria-labelledby="subscription-title"
     >
-      <div className="section-heading compact-heading">
-        <div>
-          <p className="section-kicker">01 · SUBSCRIPTION</p>
-          <h2 id="subscription-title">订阅导入链接</h2>
-        </div>
-        <p>
-          生成 Clash Party 官方 URL Scheme。地址只在当前浏览器处理，不经过本站服务器。
-        </p>
-      </div>
+      <header className="plain-heading">
+        <h2 id="subscription-title">导入订阅</h2>
+      </header>
 
-      <div className="subscription-card">
-        <label className="field subscription-url">
-          <span>订阅地址</span>
-          <span className="input-shell">
-            <LinkSimple aria-hidden="true" />
+      <div className="subscription-workspace">
+        <div className="subscription-fields">
+          <label className="field subscription-url">
+            <span>订阅地址</span>
             <input
               type="url"
               value={url}
@@ -74,40 +67,49 @@ export function SubscriptionImport() {
               spellCheck="false"
               autoComplete="off"
             />
-          </span>
-        </label>
-        <label className="field subscription-name">
-          <span>配置名称</span>
-          <input
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Flacier Personal"
-          />
-        </label>
-        <div className="subscription-actions">
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={() => void copyResult()}
-            disabled={!result.value}
-          >
-            {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-            {copied ? "已复制" : "复制链接"}
-          </button>
-          <a
-            className={`button button-primary${result.value ? "" : " is-disabled"}`}
-            href={result.value || undefined}
-            aria-disabled={!result.value}
-            onClick={(event) => {
-              if (!result.value) {
-                event.preventDefault();
-              }
-            }}
-          >
-            打开 Clash Party
-            <ArrowRight aria-hidden="true" />
-          </a>
+          </label>
+          <label className="field subscription-name">
+            <span>名称</span>
+            <input
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="client-picker" aria-label="选择客户端">
+          {clients.map((item) => (
+            <button
+              className={client === item.id ? "is-active" : ""}
+              type="button"
+              key={item.id}
+              onClick={() => setClient(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="subscription-action-row">
+          <span>{result.action?.kind === "link" ? "直接导入" : "复制地址"}</span>
+          <div>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => void copyAction()}
+              disabled={!result.action}
+            >
+              {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+              {copied ? "已复制" : "复制"}
+            </button>
+            {result.action?.kind === "link" ? (
+              <a className="button button-primary" href={result.action.value}>
+                打开 {selectedClient.label}
+                <ArrowUpRight aria-hidden="true" />
+              </a>
+            ) : null}
+          </div>
         </div>
         {result.error ? <p className="field-error">{result.error}</p> : null}
       </div>

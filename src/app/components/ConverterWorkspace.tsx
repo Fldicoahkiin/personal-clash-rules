@@ -105,20 +105,15 @@ export function ConverterWorkspace() {
       id="converter"
       aria-labelledby="converter-title"
     >
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">02 · CONVERTER</p>
-          <h2 id="converter-title">规则格式转换</h2>
-        </div>
-        <p>
-          支持 V2Fly、Mihomo classical、domain 文本和 YAML payload。转换过程不会发起网络请求。
-        </p>
-      </div>
+      <header className="plain-heading">
+        <h2 id="converter-title">转换规则</h2>
+        <p>V2Fly · Mihomo · YAML</p>
+      </header>
 
       <div className="converter-grid">
         <article className="workspace-card input-card">
           <header className="card-header">
-            <span className="card-index">INPUT</span>
+            <span className="card-index">输入</span>
             <button
               className="text-button"
               type="button"
@@ -207,7 +202,7 @@ export function ConverterWorkspace() {
 
         <article className="workspace-card output-card" aria-live="polite">
           <header className="card-header">
-            <span className="card-index">OUTPUT</span>
+            <span className="card-index">输出</span>
             {conversion.result ? (
               <span className="result-count">{conversion.result.count} 条</span>
             ) : null}
@@ -216,7 +211,7 @@ export function ConverterWorkspace() {
           {conversion.error ? (
             <div className="result-state error-state" role="alert">
               <FileCode aria-hidden="true" />
-              <h3>无法转换</h3>
+              <h3>转换失败</h3>
               <p>{conversion.error}</p>
             </div>
           ) : conversion.result ? (
@@ -261,7 +256,7 @@ export function ConverterWorkspace() {
             <div className="result-state empty-state">
               <ShieldCheck aria-hidden="true" />
               <h3>等待输入</h3>
-              <p>转换结果会显示在这里。你的内容不会离开当前浏览器。</p>
+              <p>输入规则后运行转换。</p>
             </div>
           )}
         </article>

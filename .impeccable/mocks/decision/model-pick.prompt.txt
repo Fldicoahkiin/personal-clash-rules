@@ -1,0 +1,60 @@
+Use case: ui-mockup
+Asset type: high-fidelity desktop website direction comp, first viewport
+Primary request: Create exactly one shippable-looking desktop web interface for “Flacier Rules” in a “Railway Dispatch Desk” design world. It must look like a real Chinese product UI that could be implemented in HTML/CSS, not a mood board, poster, concept art, or photographed physical object.
+
+Canvas and composition: exact 1440×900 landscape desktop viewport, straight-on screen capture, edge-to-edge website. A slim 68px top navigation. Below it, a compact URL testing control spans the content width. The main content is a large operational railway dispatch diagram whose tracks are the actual information architecture for the routing result. A lower integrated strip lists subscription clients. Keep the entire first viewport readable, calm, precise, and spacious.
+
+Brand and top navigation, text verbatim:
+- Left wordmark: “Flacier Rules”
+- Navigation: “路由测试”, “规则目录”, “客户端导入”, “GitHub”
+- Make “路由测试” the active item with a restrained navy underline, not a pill.
+
+URL test area, text verbatim:
+- Section label: “URL 路由测试”
+- A wide functional input containing exactly “https://api.openai.com/v1/models”
+- Primary action button: “检测路径”
+- Small source note: “使用已发布规则进行检测”
+- Do not use a large marketing headline, hero copy, metric, statistic, testimonial, or invented product claim.
+
+Operational track diagram:
+- Title: “调度路径”
+- Show one clear left-to-right route on a railway track with four major stations, each label rendered exactly and legibly:
+  “api.openai.com” → “AI.list” → “AI” → “美国节点”
+- The active route is visibly lit through all four stages using filled railway signal lamps and a solid green path over charcoal track lines.
+- Include two named functional junction annotations, small but readable: “规则匹配道岔” between the first and second station, and “策略分流道岔” between the third and fourth station.
+- Provide factual supporting labels under the four stations: “请求主机”, “命中规则集”, “路由策略”, “默认选择”.
+- A narrow right-side dispatch ledger integrated into the same board, not a floating card, repeats the result as rows:
+  “匹配规则  api.openai.com”
+  “规则集  AI.list”
+  “策略  AI”
+  “默认选择  美国节点”
+- Track switches and signal shapes must carry information. Use red signal lamps only for inactive alternate sidings; navy for labels and structural hierarchy; green only for the current live path. Avoid decorative rails that do not explain routing.
+
+Subscription client strip:
+- Heading: “订阅客户端”
+- One aligned row of compact text labels separated by thin vertical dividers, all rendered verbatim:
+  “Mihomo”, “sing-box”, “Surge”, “Stash”, “Shadowrocket”, “Loon”, “Quantumult X”
+- Add the factual privacy note “订阅链接仅在浏览器中处理” in small Chinese text.
+- Client labels are not floating cards and not logos.
+
+Style and visual grammar:
+- Off-white enamel station-board background with very subtle age and material texture, mostly flat and screen-native.
+- Charcoal ink rules and typography; deep navy section labels; muted railway green active signals/path; restrained signal red for inactive branches.
+- Grotesk sans-serif typography for all UI copy; monospaced type only for the URL and code-like route values.
+- Square or slightly chamfered corners, crisp 1px borders, disciplined grid, tactile small metal screw details only at the outer board corners.
+- Dense enough to feel operational, with generous breathing room; high contrast and legible at 1440×900.
+- The website must read immediately as a dispatch desk transformed into a usable rule-testing interface.
+
+Exact text requirement: Render every quoted UI string verbatim, with no extra characters and no mistranslation. The route must read exactly “api.openai.com → AI.list → AI → 美国节点”.
+
+Constraints:
+- One desktop web viewport only.
+- No orange anywhere.
+- No gradients.
+- No glassmorphism or translucent blur.
+- No floating rounded SaaS cards.
+- No cyberpunk, neon, futuristic HUD, terminal aesthetic, skeuomorphic control room, dashboard analytics, hero metrics, decorative numbers, emoji, photographs, people, illustrations, app window chrome, watermark, or invented claims.
+- No excessive shadows; only nearly imperceptible grounding if needed.
+- No tiny unreadable filler text.
+- No duplicated or misspelled client labels.
+- No elements outside the 1440×900 viewport.

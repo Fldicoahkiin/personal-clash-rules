@@ -1,0 +1,40 @@
+{
+  "title": "选择规则 × 铁路的首页布局",
+  "question": "三张使用同一套视觉语言，只比较信息结构。选择一张，也可以在下方写要保留或修改的地方。",
+  "options": [
+    {
+      "id": "overview",
+      "label": "线路总图",
+      "lineage": "规则地图册中的一条联锁主线",
+      "thesis": "先测试网址，再沿一条横向路线看清域名、规则集、策略和国家出口。",
+      "palette": ["#F3F1EA", "#18324B", "#0C7A7A", "#B9D4D1", "#C82E38"],
+      "materials": ["地图纸", "路线油墨", "联锁信号点"],
+      "viewport": "主路线占首屏三分之二，规则索引在右，订阅入口在下。",
+      "risk": "规则很多时，主线路径之外的管理信息需要下移。",
+      "comp": ".impeccable/mocks/route-rail/overview.webp"
+    },
+    {
+      "id": "workbench",
+      "label": "调度工作台",
+      "lineage": "规则索引、联锁画布与出口检查器",
+      "thesis": "左边选规则，中央看路径，右边切换策略和国家出口。",
+      "palette": ["#F3F1EA", "#18324B", "#0C7A7A", "#B9D4D1", "#C82E38"],
+      "materials": ["搪瓷工作台", "线路刻线", "状态格"],
+      "viewport": "三栏工作区占满首屏，网址测试是一条固定命令栏。",
+      "risk": "功能最完整，也比另外两张更像桌面管理后台。",
+      "comp": ".impeccable/mocks/route-rail/workbench.webp"
+    },
+    {
+      "id": "ledger",
+      "label": "路线台账",
+      "lineage": "规则清单与策略线路表",
+      "thesis": "顶部展示当前命中链，下面用一张可扫描台账管理所有规则与出口。",
+      "palette": ["#F3F1EA", "#18324B", "#0C7A7A", "#B9D4D1", "#C82E38"],
+      "materials": ["线路台账", "细轨标记", "索引侧栏"],
+      "viewport": "命中链横跨顶部，规则台账占主要面积，当前策略固定在右侧。",
+      "risk": "规则管理最清楚，但第一次访问时的视觉记忆点更弱。",
+      "comp": ".impeccable/mocks/route-rail/ledger.webp"
+    }
+  ],
+  "steer": true
+}

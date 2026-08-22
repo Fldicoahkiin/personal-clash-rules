@@ -6,37 +6,71 @@ sources:
     url: https://github.com/v2fly/domain-list-community
     license: MIT
 ruleSets:
-  - id: ai-openai
-    path: rules/ai/openai.list
-  - id: ai-anthropic
-    path: rules/ai/anthropic.list
-  - id: ai-xai
-    path: rules/ai/xai.list
-  - id: ai-google
-    path: rules/ai/google.list
-  - id: ai-coding
-    path: rules/ai/coding.list
-  - id: ai-general
-    path: rules/ai/general.list
-  - id: steam
-    path: rules/gaming/steam.list
-  - id: steam-download
-    path: rules/gaming/steam-download.list
-  - id: steam-online
-    path: rules/gaming/steam-online.list
-  - id: discord
-    path: rules/messaging/discord.list
-  - id: developer
-    path: rules/developer/developer.list
-  - id: media
-    path: rules/media/media.list
-  - id: bilibili
-    path: rules/media/bilibili.list
-  - id: anigamer
-    path: rules/media/anigamer.list
-  - id: social
-    path: rules/social/social.list
   - id: private-domain
+    label: 本地网络
+    policy: DIRECT
     path: rules/local/private-domain.list
   - id: private-ip
+    label: 本地地址
+    policy: DIRECT
     path: rules/local/private-ip.list
+  - id: ai-openai
+    label: OpenAI
+    policy: AI
+    path: rules/ai/openai.list
+  - id: ai-anthropic
+    label: Claude
+    policy: AI
+    path: rules/ai/anthropic.list
+  - id: ai-xai
+    label: Grok
+    policy: AI
+    path: rules/ai/xai.list
+  - id: ai-google
+    label: Gemini
+    policy: AI
+    path: rules/ai/google.list
+  - id: ai-coding
+    label: AI Coding
+    policy: AI
+    path: rules/ai/coding.list
+  - id: ai-general
+    label: AI General
+    policy: AI
+    path: rules/ai/general.list
+  - id: steam-download
+    label: Steam 下载
+    policy: STEAM-DOWNLOAD
+    path: rules/gaming/steam-download.list
+  - id: steam-online
+    label: Steam 联机
+    policy: STEAM-ONLINE
+    path: rules/gaming/steam-online.list
+  - id: steam
+    label: Steam
+    policy: STEAM
+    path: rules/gaming/steam.list
+  - id: discord
+    label: Discord
+    policy: DISCORD
+    path: rules/messaging/discord.list
+  - id: developer
+    label: 开发服务
+    policy: DEV
+    path: rules/developer/developer.list
+  - id: bilibili
+    label: Bilibili
+    policy: BILIBILI
+    path: rules/media/bilibili.list
+  - id: anigamer
+    label: AniGamer
+    policy: ANIGAMER
+    path: rules/media/anigamer.list
+  - id: media
+    label: 流媒体
+    policy: MEDIA
+    path: rules/media/media.list
+  - id: social
+    label: 社交服务
+    policy: SOCIAL
+    path: rules/social/social.list

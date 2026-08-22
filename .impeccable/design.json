@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-22T18:46:41Z",
+  "title": "Design System: Flacier Rules",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "冷白地图纸",
+        "tonalRamp": ["#292824", "#46443f", "#66635d", "#89857e", "#aca8a1", "#cfcbc5", "#e7e3de", "#faf8f4"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "连续纸面",
+        "tonalRamp": ["#292824", "#46443f", "#66635d", "#89857e", "#aca8a1", "#cfcbc5", "#e7e3de", "#faf8f4"]
+      },
+      "surface-muted": {
+        "role": "neutral",
+        "displayName": "浅青灰分区",
+        "tonalRamp": ["#172321", "#30413e", "#4d625e", "#6c8580", "#8eaaa4", "#b2cfca", "#d1e4e1", "#eef7f5"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "深蓝墨色",
+        "tonalRamp": ["#050f1d", "#102943", "#244762", "#436780", "#6789a1", "#91aec0", "#bed3df", "#edf6fb"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "说明蓝灰",
+        "tonalRamp": ["#101b21", "#293840", "#465860", "#657982", "#879ca5", "#acc1c8", "#d0e2e6", "#f0f8fa"]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "索引青灰",
+        "tonalRamp": ["#142020", "#2d3f40", "#486061", "#648284", "#82a6a9", "#a6cacc", "#cce5e6", "#f0f9f9"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "制图细线",
+        "tonalRamp": ["#1b2224", "#354044", "#526065", "#718187", "#92a4aa", "#b6c5c8", "#d8e2e4", "#f3f7f7"]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "结构深线",
+        "tonalRamp": ["#050f1d", "#102943", "#244762", "#436780", "#6789a1", "#91aec0", "#bed3df", "#edf6fb"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "线路青",
+        "tonalRamp": ["#032126", "#063c43", "#085f68", "#247e86", "#4b9fa5", "#78c1c5", "#abe0e1", "#e3f7f6"]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "深线路青",
+        "tonalRamp": ["#021d21", "#04363b", "#064e56", "#1e6e76", "#449198", "#72b5ba", "#a8dade", "#e1f5f5"]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "柔和线路底",
+        "tonalRamp": ["#132220", "#2b413d", "#46625d", "#63847e", "#83a8a1", "#a7ccc6", "#d3e4e1", "#eff8f6"]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "错误红",
+        "tonalRamp": ["#2d0b10", "#521820", "#772830", "#a23e46", "#c36067", "#df8b90", "#f1b9bc", "#fbeaec"]
+      },
+      "code": {
+        "role": "neutral",
+        "displayName": "代码深底",
+        "tonalRamp": ["#08131d", "#152a3b", "#2a4659", "#48657a", "#69869a", "#8eabba", "#b7d0db", "#e8f3f7"]
+      },
+      "code-ink": {
+        "role": "neutral",
+        "displayName": "代码浅字",
+        "tonalRamp": ["#202523", "#3d4541", "#5d6762", "#7e8a84", "#a1aea8", "#c5d2cc", "#dde7e2", "#eef2ef"]
+      },
+      "action-ink": {
+        "role": "neutral",
+        "displayName": "动作浅字",
+        "tonalRamp": ["#202624", "#3d4643", "#5d6965", "#7e8d88", "#a0b1ab", "#c4d6d0", "#dfeae6", "#f7faf8"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "任务标题",
+        "purpose": "首页任务标题，使用自托管得意黑。"
+      },
+      "headline": {
+        "displayName": "区段标题",
+        "purpose": "转换、策略、规则等主要区段标题。"
+      },
+      "title": {
+        "displayName": "扫描锚点",
+        "purpose": "索引标题、品牌名和表格行主标签。"
+      },
+      "body": {
+        "displayName": "正文",
+        "purpose": "说明、覆盖范围和操作文案。"
+      },
+      "label": {
+        "displayName": "字段标签",
+        "purpose": "字段名、表头和状态说明。"
+      },
+      "mono": {
+        "displayName": "机器文本",
+        "purpose": "URL、规则、策略、数量、出口代号和转换输出。"
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "route-trace",
+        "value": "420ms ease-out",
+        "purpose": "成功测试后将主线路从输入端描画到默认出口，每次结果只播放一次。"
+      },
+      {
+        "name": "route-node-settle",
+        "value": "240ms ease-out, 70ms stagger",
+        "purpose": "四个当前节点按顺序落位；reduced-motion 下禁用。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "route-stack",
+        "value": "1100px"
+      },
+      {
+        "name": "mobile-layout",
+        "value": "820px"
+      },
+      {
+        "name": "compact-mobile",
+        "value": "520px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "用于测试、转换、导入和主要下载的线路青动作按钮。",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">检查 <span aria-hidden=\"true\">→</span></button>",
+      "css": ".ds-btn-primary { display:inline-flex; min-height:42px; align-items:center; justify-content:center; gap:8px; padding:0 15px; border:1px solid var(--accent, #085f68); border-radius:2px; background:var(--accent, #085f68); color:#f7faf8; cursor:pointer; font:700 .79rem 'SF Pro Text','PingFang SC',sans-serif; transition:background-color 160ms ease-out,border-color 160ms ease-out; } .ds-btn-primary:hover { border-color:var(--accent-hover, #064e56); background:var(--accent-hover, #064e56); } .ds-btn-primary:focus-visible { outline:3px solid color-mix(in srgb, var(--accent, #085f68) 34%, transparent); outline-offset:2px; } .ds-btn-primary:active { background:var(--accent-hover, #064e56); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "用于复制、下载和次要文件入口的平面描边按钮。",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">复制</button>",
+      "css": ".ds-btn-secondary { display:inline-flex; min-height:42px; align-items:center; justify-content:center; padding:0 15px; border:1px solid var(--line, #b6c5c8); border-radius:2px; background:var(--surface, #faf8f4); color:var(--ink, #091e37); cursor:pointer; font:700 .79rem 'SF Pro Text','PingFang SC',sans-serif; transition:border-color 160ms ease-out; } .ds-btn-secondary:hover { border-color:var(--line-strong, #091e37); } .ds-btn-secondary:focus-visible { outline:3px solid color-mix(in srgb, var(--accent, #085f68) 34%, transparent); outline-offset:2px; } .ds-btn-secondary:active { border-color:var(--accent, #085f68); }"
+    },
+    {
+      "name": "Route URL Field",
+      "kind": "input",
+      "refersTo": "route-field",
+      "description": "首屏路线测试使用的高 52px 等宽网址输入框。",
+      "html": "<label class=\"ds-route-field\"><span>网址</span><input value=\"https://api.openai.com/v1/models\" aria-label=\"网址\"></label>",
+      "css": ".ds-route-field { display:grid; gap:7px; color:var(--muted, #4a5e6e); font:650 .72rem 'SF Pro Text','PingFang SC',sans-serif; } .ds-route-field input { width:100%; height:52px; padding:0 16px; border:1px solid var(--line-strong, #091e37); border-radius:2px; background:var(--surface, #faf8f4); color:var(--ink, #091e37); caret-color:var(--accent, #085f68); font:.86rem 'SFMono-Regular',Consolas,monospace; } .ds-route-field input:hover { border-color:var(--accent, #085f68); } .ds-route-field input:focus-visible { outline:3px solid color-mix(in srgb, var(--accent, #085f68) 34%, transparent); outline-offset:2px; }"
+    },
+    {
+      "name": "Client Selector",
+      "kind": "chip",
+      "refersTo": "client-tab",
+      "description": "共享边界的客户端选择网格，当前项由浅青灰底和底部青线标出。",
+      "html": "<div class=\"ds-client-picker\" role=\"group\" aria-label=\"选择客户端\"><button class=\"ds-client-tab is-active\" type=\"button\">Mihomo</button><button class=\"ds-client-tab\" type=\"button\">Stash</button><button class=\"ds-client-tab\" type=\"button\">Surge</button></div>",
+      "css": ".ds-client-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-top:1px solid var(--line, #b6c5c8); border-left:1px solid var(--line, #b6c5c8); } .ds-client-tab { min-height:42px; padding:7px 9px; border:0; border-right:1px solid var(--line, #b6c5c8); border-bottom:1px solid var(--line, #b6c5c8); border-radius:0; background:transparent; color:var(--muted, #4a5e6e); cursor:pointer; font:.73rem 'SF Pro Text','PingFang SC',sans-serif; } .ds-client-tab:hover,.ds-client-tab.is-active { background:var(--surface-muted, #e8efed); color:var(--ink, #091e37); } .ds-client-tab.is-active { box-shadow:inset 0 -3px 0 var(--accent, #085f68); font-weight:700; } .ds-client-tab:focus-visible { outline:3px solid color-mix(in srgb, var(--accent, #085f68) 34%, transparent); outline-offset:-3px; }"
+    },
+    {
+      "name": "Route Diagram",
+      "kind": "custom",
+      "refersTo": "route-node",
+      "description": "把域名、规则集、策略和默认出口连接成一条可读路线。",
+      "html": "<div class=\"ds-route\"><svg viewBox=\"0 0 800 120\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path class=\"ds-route-active\" d=\"M70 50 H730\"/><path class=\"ds-route-branch\" d=\"M270 50 L320 98 H410\"/><circle class=\"ds-route-end\" cx=\"410\" cy=\"98\" r=\"7\"/></svg><ol><li><code>DOMAIN</code><i></i><strong>api.openai.com</strong></li><li><code>RULE SET</code><i></i><strong>openai.list</strong></li><li><code>POLICY</code><i></i><strong>AI</strong></li><li><code>DEFAULT</code><i></i><strong>GLOBAL</strong></li></ol></div>",
+      "css": ".ds-route { position:relative; min-height:170px; color:var(--ink, #091e37); font-family:'SF Pro Text','PingFang SC',sans-serif; } .ds-route svg { position:absolute; inset:34px 0 0; width:100%; height:120px; overflow:visible; } .ds-route-active,.ds-route-branch { fill:none; vector-effect:non-scaling-stroke; } .ds-route-active { stroke:var(--accent, #085f68); stroke-width:5; stroke-dasharray:700; animation:ds-route-trace 420ms ease-out both; } .ds-route-branch { stroke:var(--ink, #091e37); stroke-width:2.5; } .ds-route-end { fill:var(--paper, #faf8f4); stroke:var(--ink, #091e37); stroke-width:2.5; vector-effect:non-scaling-stroke; } .ds-route ol { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:0; padding:0; list-style:none; } .ds-route li { display:flex; min-width:0; flex-direction:column; align-items:center; text-align:center; } .ds-route code { padding:6px 8px; border:1px solid var(--line-strong, #091e37); background:var(--paper, #faf8f4); font:.65rem 'SFMono-Regular',Consolas,monospace; } .ds-route i { width:21px; height:21px; margin:34px 0 13px; border-radius:50%; background:var(--accent, #085f68); animation:ds-node-settle 240ms ease-out both; } .ds-route strong { overflow:hidden; max-width:100%; font-size:.8rem; text-overflow:ellipsis; white-space:nowrap; } @keyframes ds-route-trace { from { stroke-dashoffset:700; } to { stroke-dashoffset:0; } } @keyframes ds-node-settle { from { opacity:.35; transform:scale(.55); } to { opacity:1; transform:scale(1); } } @media (prefers-reduced-motion:reduce) { .ds-route-active,.ds-route i { animation:none; } }"
+    },
+    {
+      "name": "Rule Index Row",
+      "kind": "custom",
+      "description": "规则目录中的紧凑信息行，以细线和等宽策略标签支持快速扫描。",
+      "html": "<div class=\"ds-rule-row\"><span class=\"ds-rule-name\">AI<small>6 个</small></span><span class=\"ds-rule-coverage\">OpenAI · Claude · Grok · Gemini</span><code>AI</code><a href=\"#\">查看 ↗</a></div>",
+      "css": ".ds-rule-row { display:grid; grid-template-columns:.7fr 2fr .55fr .4fr; gap:20px; align-items:center; min-height:76px; border-top:1px solid var(--line, #b6c5c8); color:var(--ink, #091e37); font-family:'SF Pro Text','PingFang SC',sans-serif; } .ds-rule-name { display:flex; flex-direction:column; gap:4px; font-weight:680; } .ds-rule-name small { color:var(--faint, #65959c); font-size:.65rem; font-weight:500; } .ds-rule-coverage { color:var(--muted, #4a5e6e); font-size:.82rem; line-height:1.5; } .ds-rule-row code { width:max-content; padding:4px 6px; background:var(--surface-muted, #e8efed); color:var(--accent-hover, #064e56); font:.68rem 'SFMono-Regular',Consolas,monospace; } .ds-rule-row a { justify-self:end; color:var(--accent, #085f68); font-size:.76rem; font-weight:680; text-decoration:none; } .ds-rule-row a:hover { color:var(--accent-hover, #064e56); } .ds-rule-row a:focus-visible { outline:3px solid color-mix(in srgb, var(--accent, #085f68) 34%, transparent); outline-offset:2px; }"
+    },
+    {
+      "name": "Code Output",
+      "kind": "card",
+      "description": "规则转换结果的深色反转区域，保留等宽文本和滚动能力。",
+      "html": "<pre class=\"ds-code-output\"><code>DOMAIN-SUFFIX,openai.com,AI\nDOMAIN,api.openai.com,AI</code></pre>",
+      "css": ".ds-code-output { min-height:180px; max-height:280px; overflow:auto; margin:0; padding:18px; background:var(--code, #152a3b); color:var(--code-ink, #eef2ef); font:.76rem/1.7 'SFMono-Regular',Consolas,monospace; white-space:pre-wrap; word-break:break-word; } .ds-code-output:focus-visible { outline:3px solid color-mix(in srgb, var(--accent, #085f68) 34%, transparent); outline-offset:2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "线路总图",
+    "overview": "Flacier Rules 像一张正在工作的规则地图册：冷白纸面承载深蓝细线、索引、表格和普通圆点，青色只标出当前选择与可执行动作。信息以可读线路组织，用户能从网址一路读到命中规则、策略与默认出口，而不是在卡片之间猜测关系。\n\n界面属于操作工具，不采用营销首屏、玻璃拟态或装饰性信号灯。密度来自清楚的表格分隔、紧凑标签和稳定对齐；品牌感来自自托管得意黑标题与路线图语法。",
+    "keyCharacteristics": [
+      "冷白地图纸、深蓝描线、单一青色状态色。",
+      "线路、索引和表格优先于卡片与插画。",
+      "小圆角控件配合方正容器，节点保持普通实心圆。",
+      "简体中文短句承载任务；机器可读值才切换为等宽字体。",
+      "动效只解释一次成功的线路计算，并尊重 reduced-motion。"
+    ],
+    "rules": [
+      {
+        "name": "The One Route Color Rule",
+        "body": "青色只表达可操作、已选中或当前命中的状态；不要再引入另一种强调色，尤其不要使用橙色。",
+        "section": "colors"
+      },
+      {
+        "name": "The Machine Text Rule",
+        "body": "只有需要被复制、匹配或逐字识别的值使用等宽字体；产品标题和操作文案始终使用中文显示或正文体系。",
+        "section": "typography"
+      },
+      {
+        "name": "The Continuous Sheet Rule",
+        "body": "同一任务的相邻区块应通过共享边框或连续纸面连接；只有任务阶段真正变化时才使用较大的纵向留白和分隔线。",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Map Rule",
+        "body": "所有工作区在静止状态保持平面；不要为容器、按钮或表格添加投影、模糊或玻璃效果。",
+        "section": "elevation"
+      },
+      {
+        "name": "The Diagram Geometry Rule",
+        "body": "方框承载信息，圆点承载路线状态；不要把区块普遍改成胶囊或大圆角卡片。",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do 把规则决定画成从输入到出口的可读线路，并让节点、标签和值共享对齐轴。",
+      "Do 用表格、索引、细线和连续纸面组织高密度配置内容。",
+      "Do 让青色稀缺，只标记主动作、当前选择、焦点或命中路线。",
+      "Do 在移动端把横向关系转换为纵向顺序，并保持原有信息与操作。",
+      "Do 仅对 URL、规则文本、策略代码和出口代号使用等宽字体。"
+    ],
+    "donts": [
+      "Don't 使用玻璃拟态、漂浮卡片堆、营销式大标题或装饰性插画。",
+      "Don't 引入橙色、红绿信号灯、发光节点或多套竞争性的强调色。",
+      "Don't 给平面工作区添加投影、模糊、渐变或大圆角。",
+      "Don't 把导入链接描述成服务端订阅格式转换；界面只陈述已经实现的浏览器内能力。",
+      "Don't 让装饰动效循环播放，或在 reduced-motion 下保留线路动画。"
+    ]
+  }
+}
