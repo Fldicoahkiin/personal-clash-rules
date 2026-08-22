@@ -21,10 +21,10 @@ export interface LoadedRuleSet extends RuleSetDefinition {
 
 export interface RouteMatch {
   hostname: string;
+  matched: boolean;
   rule: string;
   ruleSetId: string;
   ruleSetLabel: string;
-  ruleSetPath: string;
   policy: string;
 }
 
@@ -145,10 +145,10 @@ export function matchUrl(
     if (rule) {
       return {
         hostname,
+        matched: true,
         rule: rule.source,
         ruleSetId: ruleSet.id,
         ruleSetLabel: ruleSet.label,
-        ruleSetPath: ruleSet.path,
         policy: ruleSet.policy,
       };
     }
@@ -156,10 +156,10 @@ export function matchUrl(
 
   return {
     hostname,
+    matched: false,
     rule: "MATCH",
     ruleSetId: "default",
     ruleSetLabel: "默认规则",
-    ruleSetPath: "",
     policy: "DEFAULT",
   };
 }

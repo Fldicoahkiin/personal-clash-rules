@@ -7,6 +7,7 @@ import {
   type LoadedRuleSet,
   type RouteMatch,
 } from "../lib/rule-matcher";
+import { describePolicyRoute } from "../lib/policy-groups";
 
 const sampleUrl = "https://api.openai.com/v1/models";
 
@@ -18,10 +19,6 @@ const featuredRules = [
   { name: "Bilibili", policy: "BILIBILI" },
   { name: "AniGamer", policy: "ANIGAMER" },
 ];
-
-function fileName(path: string): string {
-  return path.split("/").at(-1) || "MATCH";
-}
 
 export function RouteTester() {
   const [input, setInput] = useState(sampleUrl);
@@ -70,21 +67,42 @@ export function RouteTester() {
     }
   }
 
+  const policyRoute = result ? describePolicyRoute(result.policy) : null;
   const steps = [
-    { code: "DOMAIN", value: result?.hostname || "—" },
     {
-      code: "RULE SET",
-      value: result ? fileName(result.ruleSetPath) : "—",
+      label: "查询地址",
+      value: result?.hostname || "—",
+      detail: "",
+      machine: true,
     },
-    { code: "POLICY", value: result?.policy || "—" },
+    {
+      label: result ? (result.matched ? "已命中" : "未命中") : "匹配规则",
+      value: result
+        ? result.matched
+          ? result.rule
+          : "MATCH（默认规则）"
+        : "—",
+      detail: result
+        ? result.matched
+          ? `${result.ruleSetLabel} 规则集`
+          : "进入 DEFAULT"
+        : "",
+      machine: true,
+    },
+    {
+      label: "处理方式",
+      value: policyRoute?.mode || "—",
+      detail: policyRoute?.route || "",
+      machine: false,
+    },
   ];
 
   return (
     <section className="route-section page-width" id="tester" aria-labelledby="page-title">
       <div className="route-main">
         <div className="route-intro">
-          <h1 id="page-title">网址怎么处理</h1>
-          <p>命中规则、策略组。</p>
+          <h1 id="page-title">网址规则测试</h1>
+          <p>查看命中的规则和默认去向。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -104,29 +122,29 @@ export function RouteTester() {
         </form>
 
         <div className="route-result" aria-live="polite" key={resultVersion}>
-          <svg
-            className="route-lines"
-            viewBox="0 0 1000 240"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path className="route-line-active" d="M110 68 H890" />
-          </svg>
           <ol className="route-steps">
             {steps.map((step) => (
-              <li key={step.code}>
-                <code>{step.code}</code>
+              <li key={step.label}>
+                <span className="route-step-label">{step.label}</span>
                 <span className="route-node" aria-hidden="true" />
-                <strong>{step.value}</strong>
+                <strong
+                  className={
+                    step.machine
+                      ? "route-value route-value-machine"
+                      : "route-value"
+                  }
+                >
+                  {step.value}
+                </strong>
+                {step.detail ? (
+                  <small className="route-step-detail">{step.detail}</small>
+                ) : null}
               </li>
             ))}
           </ol>
         </div>
 
-        <div className="route-status">
-          <span>{message || result?.rule}</span>
-          <span>域名 / IPv4 规则</span>
-        </div>
+        {message ? <p className="route-message">{message}</p> : null}
       </div>
 
       <aside className="route-index" aria-label="规则索引">

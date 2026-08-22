@@ -75,6 +75,7 @@ describe("matchUrl", () => {
   it("matches a scheme-less OpenAI URL", () => {
     expect(matchUrl("api.openai.com/v1/models", ruleSets)).toMatchObject({
       hostname: "api.openai.com",
+      matched: true,
       rule: "DOMAIN-SUFFIX,openai.com",
       ruleSetId: "ai-openai",
       ruleSetLabel: "OpenAI",
@@ -116,6 +117,7 @@ describe("matchUrl", () => {
 
   it("does not treat a partial suffix as a domain match", () => {
     expect(matchUrl("https://notopenai.com", ruleSets)).toMatchObject({
+      matched: false,
       rule: "MATCH",
       policy: "DEFAULT",
     });

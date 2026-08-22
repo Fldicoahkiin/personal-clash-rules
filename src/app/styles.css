@@ -277,28 +277,8 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 220px;
+  min-height: 224px;
   margin-top: 20px;
-}
-
-.route-lines {
-  position: absolute;
-  inset: 50px 0 0;
-  width: 100%;
-  height: 230px;
-  overflow: visible;
-}
-
-.route-line-active {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 5;
-  vector-effect: non-scaling-stroke;
-}
-
-.route-result .route-line-active {
-  animation: route-trace 420ms ease-out both;
-  stroke-dasharray: 900;
 }
 
 .route-result .route-node {
@@ -324,6 +304,7 @@ summary:focus-visible {
 }
 
 .route-steps li {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -331,51 +312,62 @@ summary:focus-visible {
   text-align: center;
 }
 
-.route-steps code {
-  min-width: 88px;
+.route-steps li:not(:last-child)::after {
+  position: absolute;
+  top: 85px;
+  left: calc(50% + 13px);
+  width: calc(100% - 26px);
+  height: 4px;
+  background: var(--accent);
+  content: "";
+}
+
+.route-step-label {
+  min-width: 96px;
   padding: 7px 9px;
   border: 1px solid var(--line-strong);
   background: var(--paper);
   color: var(--ink);
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  font-weight: 680;
 }
 
 .route-node {
   width: 21px;
   height: 21px;
   margin-block: 46px 16px;
+  border: 3px solid var(--accent);
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--paper);
 }
 
-.route-steps strong {
+.route-value {
   max-width: 100%;
-  overflow: hidden;
   color: var(--ink);
   font-size: 0.92rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.route-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-.route-status span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink);
+.route-value-machine,
+.route-step-detail {
   font-family: "SFMono-Regular", Consolas, monospace;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.route-step-detail {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.route-message {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.78rem;
 }
 
 .route-index {
@@ -995,16 +987,6 @@ summary:focus-visible {
   letter-spacing: -0.015em;
 }
 
-@keyframes route-trace {
-  from {
-    stroke-dashoffset: 900;
-  }
-
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 @keyframes route-node-settle {
   from {
     opacity: 0.35;
@@ -1115,10 +1097,6 @@ summary:focus-visible {
     margin-block: 24px;
   }
 
-  .route-lines {
-    display: none;
-  }
-
   .route-steps {
     grid-template-columns: 1fr;
     gap: 0;
@@ -1126,9 +1104,9 @@ summary:focus-visible {
   }
 
   .route-steps li {
-    position: relative;
     display: grid;
-    grid-template-columns: 88px 20px minmax(0, 1fr);
+    grid-template-columns: 96px 20px minmax(0, 1fr);
+    grid-template-rows: auto auto;
     gap: 14px;
     align-items: center;
     min-height: 62px;
@@ -1139,8 +1117,9 @@ summary:focus-visible {
     position: absolute;
     top: 40px;
     bottom: -22px;
-    left: 111px;
+    left: 115px;
     width: 2px;
+    height: auto;
     background: var(--accent);
     content: "";
   }
@@ -1152,17 +1131,13 @@ summary:focus-visible {
     margin: 0;
   }
 
-  .route-steps strong {
-    white-space: normal;
+  .route-step-detail {
+    grid-column: 3;
+    margin-top: -9px;
   }
 
-  .route-status {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .route-status span:first-child {
-    white-space: normal;
+  .route-message {
+    padding-top: 12px;
   }
 
   .route-index {
@@ -1306,7 +1281,6 @@ summary:focus-visible {
     scroll-behavior: auto;
   }
 
-  .route-result .route-line-active,
   .route-result .route-node {
     animation: none;
   }

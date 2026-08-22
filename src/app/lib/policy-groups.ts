@@ -60,3 +60,22 @@ export const displayedPolicyGroups = [
     options: ["GLOBAL", "DIRECT", "AUTO"],
   },
 ] as const;
+
+export function describePolicyRoute(policy: string): {
+  mode: string;
+  route: string;
+} {
+  if (policy === "DIRECT") {
+    return { mode: "直连", route: "DIRECT" };
+  }
+
+  const group = displayedPolicyGroups.find((item) => item.name === policy);
+  if (!group) {
+    return { mode: "策略组", route: policy };
+  }
+
+  return {
+    mode: group.initial === "DIRECT" ? "默认直连" : "默认代理",
+    route: `${group.name} → ${group.initial}`,
+  };
+}
