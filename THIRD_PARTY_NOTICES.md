@@ -29,3 +29,17 @@ remain the property of their owners.
   [`SagerNet/sing-box-for-desktop`](https://github.com/SagerNet/sing-box-for-desktop).
 - Surfboard: product logo from the
   [official Surfboard website](https://getsurfboard.com/).
+
+The source URL and usage note are also embedded in each PNG's XMP metadata.
+
+## Sub-Store runtime
+
+[`deploy/sub-store/Dockerfile`](deploy/sub-store/Dockerfile) downloads the
+unmodified `sub-store.bundle.js` asset from the official Sub-Store `2.36.39`
+release and verifies its published SHA-256 digest while building the VPS image.
+Sub-Store is licensed under AGPL-3.0; this repository's MIT License does not
+apply to that runtime.
+
+- Source: [sub-store-org/Sub-Store](https://github.com/sub-store-org/Sub-Store)
+- Release: [2.36.39](https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.39)
+- License: [AGPL-3.0](https://github.com/sub-store-org/Sub-Store/blob/master/LICENSE)

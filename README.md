@@ -1,12 +1,13 @@
-<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> Flacier Rules</h1>
+<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> Flacierの订阅转换</h1>
 
-个人分流规则、订阅入口和规则转换工具。
+个人订阅转换、分流规则和网址测试。
 
 [在线页面](https://rules.flacier.com/) ·
+[订阅管理](https://rules.flacier.com/manage) ·
 [Mihomo 覆写](https://rules.flacier.com/overrides/clash-party.yaml) ·
 [规则目录](public/rules/manifest.yaml)
 
-![Personal Clash Rules architecture](docs/architecture.svg)
+![订阅转换结构](docs/architecture.svg)
 
 ## 策略
 
@@ -53,6 +54,8 @@ pnpm build
 ```
 
 Cloudflare Workers 从 GitHub `main` 分支构建。
+
+[Cloudflare 与 Sub-Store 部署](docs/cloudflare-setup.md)
 
 ## License
 

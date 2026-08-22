@@ -12,7 +12,7 @@ The primary user manages a personal proxy subscription and uses Mihomo or anothe
 
 ## Product Purpose
 
-Flacier Rules publishes personal routing rules and gives the user browser tools to inspect, convert, and import subscription-related data. Success means the user can see what a URL will match and move a subscription into the client they use without reading YAML first.
+Flacierの订阅转换 combines remote subscriptions and individual node URIs, converts them for supported clients, and publishes revocable links whose addresses do not change after refresh. The public page also tests the rules served by the same Worker.
 
 ## Positioning
 
@@ -21,23 +21,28 @@ The same public site serves the rule files and tests those published files, so t
 ## Operating Context
 
 - Public source and automated updates live on GitHub.
-- Cloudflare Workers serves the site and rule files from `rules.flacier.com`.
+- Cloudflare Workers serves the public site and rule files from `rules.flacier.com`.
+- The management page is `/manage`; `sub.flacier.com` is the intended management domain.
+- D1 stores profiles, encrypted sources, generated outputs, refresh runs, and share links.
+- Sub-Store runs as a separate conversion dependency on the personal VPS.
 - Private nodes and subscriptions come from a separate 3x-ui installation.
 - Users may use Mihomo, Clash-compatible clients, sing-box, Surge, Stash, Shadowrocket, Loon, or Quantumult X.
 
 ## Capabilities and Constraints
 
 - Published rules cover AI, Apple, Steam, Discord, developer tools, media, social services, Bilibili, AniGamer, and local networks.
-- Rule text conversion runs in the browser.
-- URL testing must report the matching rule, rule set, and policy.
+- Remote subscriptions and node URIs can be combined into 13 output formats.
+- Source values and active share tokens are encrypted before D1 storage.
+- Fixed subscription links can be refreshed without changing their addresses and can be revoked.
+- The management API accepts Cloudflare Access identity or the control token used by automation.
+- Rule text conversion runs in the browser and remains separate from subscription conversion.
+- URL testing reports the matched rule, policy group, and final `DIRECT` or proxy route.
 - Country groups filter subscription nodes by their names; the site does not report the client's current exit node.
-- Subscription URLs stay in the browser when generating client import links.
-- A client import link is not the same as converting a node subscription into another configuration format. Real cross-format conversion requires a conversion backend; that backend is not present in this repository yet.
 - The repository is public and must not contain node credentials, subscription tokens, or private configuration.
 
 ## Brand Commitments
 
-- Product name: Flacier Rules.
+- Product name: Flacierの订阅转换.
 - Public domain: `rules.flacier.com` under `flacier.com`.
 - Interface copy is concise and factual.
 - Orange is not used.
@@ -56,6 +61,6 @@ No client usage metrics, testimonials, conversion benchmarks, or commercial clai
 ## Product Principles
 
 - Show the route decision before exposing configuration detail.
-- Keep subscription data in the browser unless the user explicitly chooses a backend.
+- Encrypt subscription data at the Worker boundary and never return stored source values.
 - Name actions after outcomes, not protocols.
 - Use the published rule files as the source for tests and explanations.
