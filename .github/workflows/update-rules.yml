@@ -1,0 +1,39 @@
+name: Update rules
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm sync:rules
+      - run: pnpm test
+
+      - name: Commit updated rules
+        run: |
+          if git diff --quiet -- public/rules/media/bilibili.list public/rules/media/anigamer.list; then
+            exit 0
+          fi
+          git config user.name "Flacier"
+          git config user.email "Flacier@outlook.com"
+          git add public/rules/media/bilibili.list public/rules/media/anigamer.list
+          git commit -m "chore: sync regional media rules"
+          git push

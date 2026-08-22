@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "pnpm cf-typegen && tsc -b && vite build",
+    "sync:rules": "node scripts/sync-rules.mjs",
     "test": "vitest run",
     "test:worker": "WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=.wrangler.log vitest run --config vitest.worker.config.ts",
     "test:watch": "vitest",
