@@ -1,5 +1,6 @@
 import { stringify as stringifyYaml } from "yaml";
 
+import { mihomoProxyGroups } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
@@ -35,6 +36,49 @@ const targetNames: Record<OutputTarget, string> = {
 interface SubStoreSuccess<T> {
   status: "success";
   data: T;
+}
+
+function prepareNodes(value: unknown): unknown[] {
+  if (!Array.isArray(value)) {
+    throw new ApiError(502, "converter_invalid_response", "Sub-Store returned no node list");
+  }
+
+  const fingerprints = new Set<string>();
+  const names = new Set(["DIRECT", "REJECT", ...mihomoProxyGroups.map((group) => group.name)]);
+  return value.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+      throw new ApiError(502, "converter_invalid_response", "Sub-Store returned an invalid node");
+    }
+    const node = Object.fromEntries(
+      Object.entries(candidate as Record<string, unknown>)
+        .filter(([key]) => key !== "id" && !key.startsWith("_")),
+    );
+    if (typeof node.name !== "string" || !node.name.trim()) {
+      throw new ApiError(502, "converter_invalid_response", "Sub-Store returned a node without a name");
+    }
+
+    const fingerprint = JSON.stringify(Object.fromEntries(
+      Object.entries(node)
+        .sort(([left], [right]) => left.localeCompare(right)),
+    ));
+    if (fingerprints.has(fingerprint)) {
+      return [];
+    }
+    fingerprints.add(fingerprint);
+
+    const name = node.name.trim();
+    let uniqueName = name;
+    let suffix = 2;
+    while (names.has(uniqueName)) {
+      uniqueName = `${name} · ${suffix}`;
+      suffix += 1;
+    }
+    names.add(uniqueName);
+    return [{
+      ...node,
+      name: uniqueName,
+    }];
+  });
 }
 
 function converterUrl(env: SubscriptionEnv, path: string): URL {
@@ -136,10 +180,7 @@ export async function normalizeSources(
     },
   );
 
-  if (!Array.isArray(data.processed)) {
-    throw new ApiError(502, "converter_invalid_response", "Sub-Store returned no node list");
-  }
-  return data.processed;
+  return prepareNodes(data.processed);
 }
 
 export async function produceTarget(

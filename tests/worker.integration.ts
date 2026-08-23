@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
 import { finishRefresh, startRefresh } from "../src/worker/subscription-store";
+import { normalizeSources } from "../src/worker/sub-store";
 import { managedProfileUrlPlaceholder } from "../src/worker/surge-profile";
 
 const authorization = { Authorization: "Bearer worker-test-token" };
@@ -110,6 +111,93 @@ describe("Worker entrypoint", () => {
         converter: "ready",
         refreshSchedule: "0 */6 * * *",
       });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("deduplicates identical nodes and makes repeated names unique", async () => {
+    const first = {
+      type: "ss",
+      server: "one.example",
+      port: 8388,
+      cipher: "aes-128-gcm",
+      password: "first",
+      name: "Tokyo",
+      id: 0,
+      _subName: "合并订阅",
+    };
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({
+      status: "success",
+      data: {
+        processed: [
+          first,
+          { ...first, id: 1 },
+          {
+            ...first,
+            server: "two.example",
+            password: "second",
+            name: "Tokyo · 2",
+            id: 2,
+          },
+          {
+            ...first,
+            server: "three.example",
+            password: "third",
+            id: 3,
+          },
+          {
+            ...first,
+            server: "policy-name.example",
+            password: "reserved",
+            name: "AI",
+            id: 4,
+          },
+        ],
+      },
+    }));
+
+    try {
+      const nodes = await normalizeSources(testEnv, {
+        profileName: "合并订阅",
+        subscriptionUrls: [],
+        nodes: ["ss://local-test"],
+      });
+
+      expect(nodes).toEqual([
+        {
+          type: "ss",
+          server: "one.example",
+          port: 8388,
+          cipher: "aes-128-gcm",
+          password: "first",
+          name: "Tokyo",
+        },
+        {
+          type: "ss",
+          server: "two.example",
+          port: 8388,
+          cipher: "aes-128-gcm",
+          password: "second",
+          name: "Tokyo · 2",
+        },
+        {
+          type: "ss",
+          server: "three.example",
+          port: 8388,
+          cipher: "aes-128-gcm",
+          password: "third",
+          name: "Tokyo · 3",
+        },
+        {
+          type: "ss",
+          server: "policy-name.example",
+          port: 8388,
+          cipher: "aes-128-gcm",
+          password: "reserved",
+          name: "AI · 2",
+        },
+      ]);
     } finally {
       fetchSpy.mockRestore();
     }
