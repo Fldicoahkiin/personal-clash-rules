@@ -33,6 +33,7 @@ import { targetForUserAgent } from "./subscription-target";
 const encoder = new TextEncoder();
 const maximumSourceBytes = 64 * 1024;
 const maximumOutputBytes = 1_800_000;
+const maximumScheduledProfiles = Math.floor(50 / (outputTargets.length + 1));
 
 function json(data: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -51,7 +52,20 @@ async function probeDatabase(
   db: D1Database,
 ): Promise<"ready" | "migration_required"> {
   try {
-    await db.prepare("SELECT id FROM profiles LIMIT 1").first();
+    await db.prepare(`
+      SELECT
+        profiles.include_pattern,
+        profiles.exclude_pattern,
+        profiles.rename_rules,
+        profiles.sort_mode,
+        share_links.token_ciphertext,
+        share_links.token_iv,
+        refresh_runs.status
+      FROM profiles
+      LEFT JOIN share_links ON share_links.profile_id = profiles.id
+      LEFT JOIN refresh_runs ON refresh_runs.profile_id = profiles.id
+      LIMIT 1
+    `).first();
     return "ready";
   } catch {
     return "migration_required";
@@ -213,7 +227,7 @@ export async function refreshProfile(
 
 export async function refreshDueProfiles(env: SubscriptionEnv) {
   const db = requireDatabase(env);
-  const profileIds = await listRefreshableProfileIds(db, 3);
+  const profileIds = await listRefreshableProfileIds(db, maximumScheduledProfiles);
   const results = await Promise.allSettled(
     profileIds.map((profileId) => refreshProfile(db, profileId, env)),
   );

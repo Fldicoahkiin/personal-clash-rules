@@ -51,6 +51,17 @@ export default {
       return withResponseHeaders(subscriptionResponse, url.pathname);
     }
 
+    if (
+      url.hostname === "sub.flacier.com"
+      && url.pathname === "/"
+      && (request.method === "GET" || request.method === "HEAD")
+    ) {
+      return withResponseHeaders(
+        Response.redirect(`${url.origin}/manage${url.search}`, 302),
+        url.pathname,
+      );
+    }
+
     if (request.method !== "GET" && request.method !== "HEAD") {
       return Response.json(
         { error: "Method not allowed" },

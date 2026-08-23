@@ -2,9 +2,12 @@ import { env, exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
+import worker from "../src/worker";
+import { refreshDueProfiles, routeSubscriptionRequest } from "../src/worker/subscriptions";
 import { finishRefresh, startRefresh } from "../src/worker/subscription-store";
 import { normalizeSources } from "../src/worker/sub-store";
 import { managedProfileUrlPlaceholder } from "../src/worker/surge-profile";
+import type { SubscriptionEnv } from "../src/worker/types";
 
 const authorization = { Authorization: "Bearer worker-test-token" };
 const testEnv = env as typeof env & { DB: D1Database };
@@ -46,6 +49,16 @@ describe("Worker entrypoint", () => {
       status: "ok",
       service: "personal-clash-rules",
     });
+  });
+
+  it("opens the management page from the subscription domain root", async () => {
+    const response = await worker.fetch(
+      new Request("https://sub.flacier.com/") as Parameters<typeof worker.fetch>[0],
+      testEnv,
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("https://sub.flacier.com/manage");
   });
 
   it("prevents Cloudflare from injecting scripts into HTML", async () => {
@@ -114,6 +127,60 @@ describe("Worker entrypoint", () => {
     } finally {
       fetchSpy.mockRestore();
     }
+  });
+
+  it("reports a pending migration when the latest profile columns are missing", async () => {
+    const database = {
+      prepare(query: string) {
+        if (query.includes("include_pattern")) {
+          throw new Error("no such column: include_pattern");
+        }
+        return {
+          async first() {
+            return { id: "existing-profile" };
+          },
+        };
+      },
+    } as unknown as D1Database;
+    const request = new Request("https://example.com/api/manage/status", {
+      headers: { Authorization: "Bearer test-token" },
+    });
+
+    const response = await routeSubscriptionRequest(
+      request,
+      new URL(request.url),
+      {
+        DB: database,
+        CONTROL_API_TOKEN: "test-token",
+      } as SubscriptionEnv,
+    );
+
+    expect(response?.status).toBe(200);
+    await expect(response?.json()).resolves.toMatchObject({
+      database: "migration_required",
+    });
+  });
+
+  it("keeps one scheduled refresh within the free external subrequest limit", async () => {
+    let selectedLimit: number | null = null;
+    const statement = {
+      bind(limit: number) {
+        selectedLimit = limit;
+        return this;
+      },
+      async all() {
+        return { results: [] };
+      },
+    };
+    const database = {
+      prepare() {
+        return statement;
+      },
+    } as unknown as D1Database;
+
+    await refreshDueProfiles({ DB: database } as SubscriptionEnv);
+
+    expect(selectedLimit).toBe(2);
   });
 
   it("deduplicates identical nodes and makes repeated names unique", async () => {

@@ -14,6 +14,8 @@
 
 D1 免费档当前包含每日 500 万行读取、10 万行写入和总计 5 GB 存储；单个免费数据库上限 500 MB。Workers 免费档包含每日 10 万次动态请求，静态资源请求不计入该额度。个人订阅管理通常低于这些额度，达到每日上限后相应操作会失败并在次日重置。
 
+定时任务每轮最多刷新两个方案，使 Sub-Store 请求数保持在 Workers 免费档单次 50 个外部请求以内；其余方案按最久未刷新顺序留到下一轮。
+
 - [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)
 - [D1 limits](https://developers.cloudflare.com/d1/platform/limits/)
 - [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)
