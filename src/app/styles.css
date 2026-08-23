@@ -314,18 +314,18 @@ summary:focus-visible {
 .route-steps li:not(:last-child)::after {
   position: absolute;
   z-index: 0;
-  top: 144px;
-  left: calc(50% + 20px);
-  width: calc(100% - 40px);
-  height: 12px;
+  top: 145px;
+  left: calc(50% + 26px);
+  width: calc(100% - 52px);
+  height: 10px;
   background:
-    linear-gradient(var(--accent), var(--accent)) top / 100% 2px no-repeat,
-    linear-gradient(var(--accent), var(--accent)) bottom / 100% 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) top / 100% 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom / 100% 2px no-repeat,
     repeating-linear-gradient(
       90deg,
-      transparent 0 12px,
-      var(--accent) 12px 14px,
-      transparent 14px 26px
+      transparent 0 11px,
+      var(--ink) 11px 12px,
+      transparent 12px 22px
     );
   content: "";
 }
@@ -384,13 +384,8 @@ summary:focus-visible {
 }
 
 .route-node-signal {
-  width: 13px;
-  height: 13px;
   border: 2px solid var(--ink);
   background: var(--paper);
-  box-shadow:
-    0 0 0 1px var(--paper),
-    0 0 0 7px var(--paper);
 }
 
 .route-node-switch {
@@ -422,51 +417,48 @@ summary:focus-visible {
 .route-signal {
   position: absolute;
   z-index: 4;
-  top: -29px;
-  left: 50%;
+  bottom: 25px;
+  left: calc(50% + 30px);
   display: grid;
   grid-template-columns: 18px auto;
   align-items: center;
   gap: 8px;
-  transform: translateX(-50%);
   white-space: nowrap;
 }
 
-.route-signal-head {
+.route-signal-lamp {
   position: relative;
   display: grid;
   width: 18px;
-  height: 34px;
+  height: 18px;
   place-items: center;
-  padding-block: 4px;
   border: 1px solid var(--ink);
-  border-radius: 9px;
+  border-radius: 50%;
   background: var(--ink);
 }
 
-.route-signal-head::after {
+.route-signal-lamp::after {
   position: absolute;
   top: 100%;
   left: 50%;
-  width: 1px;
-  height: 18px;
+  width: 2px;
+  height: 14px;
   background: var(--ink);
   content: "";
+  transform: translateX(-50%);
 }
 
-.route-signal-head i {
+.route-signal-lamp i {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 18%, transparent);
+  background: currentColor;
 }
 
 .route-signal b {
-  padding: 3px 6px;
-  border: 1px solid currentColor;
-  background: var(--paper);
   font-size: 0.72rem;
+  font-weight: 760;
   line-height: 1.2;
 }
 
@@ -478,13 +470,11 @@ summary:focus-visible {
   color: var(--danger);
 }
 
-.route-signal-pass .route-signal-green {
-  background: var(--success);
+.route-signal-pass .route-signal-lamp i {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 22%, transparent);
 }
 
-.route-signal-stop .route-signal-red {
-  background: var(--danger);
+.route-signal-stop .route-signal-lamp i {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
@@ -1251,22 +1241,7 @@ summary:focus-visible {
   }
 
   .route-steps::before {
-    position: absolute;
-    z-index: 0;
-    top: 28px;
-    bottom: 28px;
-    left: calc(var(--route-label-column) + 15px);
-    width: 12px;
-    background:
-      linear-gradient(var(--accent), var(--accent)) left / 2px 100% no-repeat,
-      linear-gradient(var(--accent), var(--accent)) right / 2px 100% no-repeat,
-      repeating-linear-gradient(
-        0deg,
-        transparent 0 12px,
-        var(--accent) 12px 14px,
-        transparent 14px 26px
-      );
-    content: "";
+    display: none;
   }
 
   .route-steps li {
@@ -1280,7 +1255,20 @@ summary:focus-visible {
   }
 
   .route-steps li:not(:last-child)::after {
-    display: none;
+    display: block;
+    top: calc(50% + 14px);
+    left: calc(var(--route-label-column) + 21px);
+    width: 10px;
+    height: calc(100% - 28px);
+    background:
+      linear-gradient(var(--ink), var(--ink)) left / 2px 100% no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right / 2px 100% no-repeat,
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 11px,
+        var(--ink) 11px 12px,
+        transparent 12px 22px
+      );
   }
 
   .route-step-copy {
@@ -1336,7 +1324,7 @@ summary:focus-visible {
     justify-self: start;
   }
 
-  .route-signal::after {
+  .route-signal-lamp::after {
     display: none;
   }
 

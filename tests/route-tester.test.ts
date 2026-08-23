@@ -66,4 +66,36 @@ describe("createRouteSteps", () => {
       }),
     ]);
   });
+
+  it("shows direct routing without making the policy name the final result", () => {
+    const result = {
+      hostname: "gsa.apple.com",
+      matched: true,
+      rule: "DOMAIN,gsa.apple.com",
+      ruleSetId: "apple",
+      ruleSetLabel: "Apple",
+      policy: "APPLE",
+    };
+
+    expect(createRouteSteps(result)).toEqual([
+      expect.objectContaining({ label: "网址", value: "gsa.apple.com" }),
+      expect.objectContaining({
+        label: "规则",
+        value: "DOMAIN,gsa.apple.com",
+        detail: "Apple",
+        state: "pass",
+        status: "通过",
+      }),
+      expect.objectContaining({
+        label: "策略",
+        value: "APPLE → DIRECT",
+        detail: "APPLE",
+      }),
+      expect.objectContaining({
+        label: "结果",
+        value: "DIRECT",
+        detail: "直连",
+      }),
+    ]);
+  });
 });

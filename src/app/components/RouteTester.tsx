@@ -126,9 +126,8 @@ export function RouteTester() {
                       }
                       aria-label={`规则${step.status}`}
                     >
-                      <span className="route-signal-head" aria-hidden="true">
-                        <i className="route-signal-red" />
-                        <i className="route-signal-green" />
+                      <span className="route-signal-lamp" aria-hidden="true">
+                        <i />
                       </span>
                       <b>{step.status}</b>
                     </span>
