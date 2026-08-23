@@ -11,4 +11,5 @@ deploy/sub-store/secrets/
 .DS_Store
 playwright-report/
 test-results/
+output/playwright/
 .impeccable/questions/

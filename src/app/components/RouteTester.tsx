@@ -8,6 +8,7 @@ import {
   type RouteMatch,
 } from "../lib/rule-matcher";
 import { describePolicyRoute } from "../lib/policy-groups";
+import { createRouteSteps } from "../lib/route-steps";
 
 const sampleUrl = "https://api.openai.com/v1/models";
 
@@ -67,56 +68,13 @@ export function RouteTester() {
     }
   }
 
-  const policyRoute = result ? describePolicyRoute(result.policy) : null;
-  const steps = [
-    {
-      label: "网址",
-      value: result?.hostname || "—",
-      detail: "",
-      machine: true,
-      state: null,
-      kind: "station",
-    },
-    {
-      label: "检查规则",
-      value: result
-        ? result.matched
-          ? result.rule
-          : "未命中具体规则"
-        : "—",
-      detail: result
-        ? result.matched
-          ? result.ruleSetLabel
-          : "转入 MATCH"
-        : "",
-      machine: true,
-      state: result ? (result.matched ? "pass" : "stop") : null,
-      kind: "signal",
-    },
-    {
-      label: "策略",
-      value: policyRoute?.route || "—",
-      detail: result ? result.policy : "",
-      machine: true,
-      state: null,
-      kind: "station",
-    },
-    {
-      label: "去向",
-      value: policyRoute?.target || "—",
-      detail: policyRoute?.mode || "",
-      machine: true,
-      state: null,
-      kind: "terminal",
-    },
-  ];
+  const steps = createRouteSteps(result);
 
   return (
     <section className="route-section page-width" id="tester" aria-labelledby="page-title">
       <div className="route-main">
         <div className="route-intro">
           <h1 id="page-title">网址怎么处理</h1>
-          <p>输入网址，查看命中规则与最终去向。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -166,9 +124,13 @@ export function RouteTester() {
                           ? "route-signal route-signal-pass"
                           : "route-signal route-signal-stop"
                       }
+                      aria-label={`规则${step.status}`}
                     >
-                      <i aria-hidden="true" />
-                      <b>{step.state === "pass" ? "通过" : "未通过"}</b>
+                      <span className="route-signal-head" aria-hidden="true">
+                        <i className="route-signal-red" />
+                        <i className="route-signal-green" />
+                      </span>
+                      <b>{step.status}</b>
                     </span>
                   ) : null}
                   <span
@@ -176,8 +138,10 @@ export function RouteTester() {
                       step.kind === "terminal"
                         ? "route-node route-node-terminal"
                         : step.kind === "signal"
-                          ? `route-node route-node-signal route-node-signal-${step.state}`
-                          : "route-node"
+                          ? "route-node route-node-signal"
+                          : step.kind === "switch"
+                            ? "route-node route-node-switch"
+                            : "route-node"
                     }
                     aria-hidden="true"
                   >

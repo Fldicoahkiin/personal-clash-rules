@@ -208,12 +208,6 @@ summary:focus-visible {
   line-height: 1.02;
 }
 
-.route-intro p {
-  margin: 16px 0 0;
-  color: var(--muted);
-  font-size: 0.96rem;
-}
-
 .route-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -292,6 +286,10 @@ summary:focus-visible {
 
 .route-result .route-steps li:nth-child(3) .route-node {
   animation-delay: 140ms;
+}
+
+.route-result .route-node-switch {
+  animation-name: route-switch-settle;
 }
 
 .route-steps {
@@ -386,19 +384,21 @@ summary:focus-visible {
 }
 
 .route-node-signal {
-  border-color: var(--paper);
-  background: currentColor;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
   box-shadow:
-    0 0 0 1px var(--ink),
+    0 0 0 1px var(--paper),
     0 0 0 7px var(--paper);
 }
 
-.route-node-signal-pass {
-  color: var(--success);
-}
-
-.route-node-signal-stop {
-  color: var(--danger);
+.route-node-switch {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--accent);
+  border-radius: 2px;
+  transform: rotate(45deg);
 }
 
 .route-value {
@@ -422,26 +422,50 @@ summary:focus-visible {
 .route-signal {
   position: absolute;
   z-index: 4;
-  top: 40px;
+  top: -29px;
   left: 50%;
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 18px auto;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   transform: translateX(-50%);
   white-space: nowrap;
 }
 
-.route-signal i {
+.route-signal-head {
+  position: relative;
+  display: grid;
+  width: 18px;
+  height: 34px;
+  place-items: center;
+  padding-block: 4px;
+  border: 1px solid var(--ink);
+  border-radius: 9px;
+  background: var(--ink);
+}
+
+.route-signal-head::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1px;
+  height: 18px;
+  background: var(--ink);
+  content: "";
+}
+
+.route-signal-head i {
   display: block;
-  width: 8px;
-  height: 8px;
-  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 24%, transparent);
+  background: color-mix(in srgb, var(--paper) 18%, transparent);
 }
 
 .route-signal b {
+  padding: 3px 6px;
+  border: 1px solid currentColor;
+  background: var(--paper);
   font-size: 0.72rem;
   line-height: 1.2;
 }
@@ -452,6 +476,16 @@ summary:focus-visible {
 
 .route-signal-stop {
   color: var(--danger);
+}
+
+.route-signal-pass .route-signal-green {
+  background: var(--success);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.route-signal-stop .route-signal-red {
+  background: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
 .route-step-detail {
@@ -1096,6 +1130,18 @@ summary:focus-visible {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes route-switch-settle {
+  from {
+    opacity: 0.35;
+    transform: rotate(45deg) scale(0.55);
+  }
+
+  to {
+    opacity: 1;
+    transform: rotate(45deg) scale(1);
   }
 }
 
@@ -2224,11 +2270,37 @@ summary:focus-visible {
   font-size: 0.72rem;
 }
 
+.format-block + .format-block {
+  margin-top: 24px;
+}
+
+.format-block-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 9px;
+}
+
+.format-block-title h3 {
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.format-block-title span {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
 .format-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid var(--line-strong);
   border-left: 1px solid var(--line);
+}
+
+.config-format-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .format-row {
