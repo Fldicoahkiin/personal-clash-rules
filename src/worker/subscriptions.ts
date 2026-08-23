@@ -205,7 +205,7 @@ async function routeControlApi(
     }
     if (request.method === "POST") {
       const body = await readObject(request);
-      const name = readTextField(body, "name", { fallback: "Flacier", maximum: 64 });
+      const name = readTextField(body, "name", { fallback: "个人订阅", maximum: 64 });
       return json({ profile: await createProfile(db, name) }, { status: 201 });
     }
   }

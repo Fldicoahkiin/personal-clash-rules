@@ -62,6 +62,22 @@ describe("Worker entrypoint", () => {
     });
   });
 
+  it("uses the personal subscription name when no profile name is provided", async () => {
+    const response = await exports.default.fetch(
+      "https://example.com/api/manage/profiles",
+      {
+        method: "POST",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      profile: { name: "个人订阅" },
+    });
+  });
+
   it("creates a profile and stores subscription sources encrypted", async () => {
     const profile = await createProfile("旅行设备");
     const secretUrl = "https://provider.example/subscription?token=private-value";

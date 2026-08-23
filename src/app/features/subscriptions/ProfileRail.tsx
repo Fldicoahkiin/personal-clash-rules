@@ -19,7 +19,7 @@ export const ProfileRail: FC<ProfileRailProps> = ({
   onSelect,
   onCreate,
 }) => {
-  const [name, setName] = useState("Flacier");
+  const [name, setName] = useState("个人订阅");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
