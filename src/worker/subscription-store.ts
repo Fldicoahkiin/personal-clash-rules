@@ -187,7 +187,7 @@ export async function readProfile(db: D1Database, profileId: string) {
       SELECT id, status, node_count, target_count, error, started_at, finished_at
       FROM refresh_runs
       WHERE profile_id = ?
-      ORDER BY started_at DESC
+      ORDER BY started_at DESC, rowid DESC
       LIMIT 8
     `).bind(profileId).all<RefreshRow>(),
   ]);
@@ -475,18 +475,39 @@ export async function finishRefresh(
   },
 ) {
   const finishedAt = new Date().toISOString();
-  await db.prepare(`
-    UPDATE refresh_runs
-    SET status = ?, node_count = ?, target_count = ?, error = ?, finished_at = ?
-    WHERE id = ?
-  `).bind(
-    input.status,
-    input.nodeCount ?? null,
-    input.targetCount ?? null,
-    input.error ?? null,
-    finishedAt,
-    input.id,
-  ).run();
+  await db.batch([
+    db.prepare(`
+      UPDATE refresh_runs
+      SET status = ?, node_count = ?, target_count = ?, error = ?, finished_at = ?
+      WHERE id = ?
+    `).bind(
+      input.status,
+      input.nodeCount ?? null,
+      input.targetCount ?? null,
+      input.error ?? null,
+      finishedAt,
+      input.id,
+    ),
+    db.prepare(`
+      DELETE FROM refresh_runs
+      WHERE profile_id = (
+        SELECT profile_id
+        FROM refresh_runs
+        WHERE id = ?
+      )
+      AND rowid NOT IN (
+        SELECT rowid
+        FROM refresh_runs
+        WHERE profile_id = (
+          SELECT profile_id
+          FROM refresh_runs
+          WHERE id = ?
+        )
+        ORDER BY started_at DESC, rowid DESC
+        LIMIT 8
+      )
+    `).bind(input.id, input.id),
+  ]);
   return {
     id: input.id,
     status: input.status,

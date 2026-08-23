@@ -2,6 +2,7 @@ import { env, exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
+import { finishRefresh, startRefresh } from "../src/worker/subscription-store";
 import { managedProfileUrlPlaceholder } from "../src/worker/surge-profile";
 
 const authorization = { Authorization: "Bearer worker-test-token" };
@@ -600,6 +601,38 @@ describe("Worker entrypoint", () => {
     } finally {
       fetchSpy.mockRestore();
     }
+  });
+
+  it("retains only the eight latest refresh runs", async () => {
+    const profile = await createProfile("刷新记录");
+
+    for (let index = 0; index < 10; index += 1) {
+      const refresh = await startRefresh(testEnv.DB, profile.id);
+      await finishRefresh(testEnv.DB, {
+        id: refresh.id,
+        status: "succeeded",
+        nodeCount: index + 1,
+        targetCount: 20,
+      });
+    }
+
+    const stored = await testEnv.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM refresh_runs
+      WHERE profile_id = ?
+    `).bind(profile.id).first<{ count: number }>();
+    expect(stored?.count).toBe(8);
+
+    const detail = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      { headers: authorization },
+    );
+    const data = await detail.json<{
+      profile: { refreshHistory: Array<{ nodeCount: number }> };
+    }>();
+    expect(data.profile.refreshHistory).toHaveLength(8);
+    expect(data.profile.refreshHistory[0]?.nodeCount).toBe(10);
+    expect(data.profile.refreshHistory.at(-1)?.nodeCount).toBe(3);
   });
 
   it("does not publish an empty client conversion", async () => {
