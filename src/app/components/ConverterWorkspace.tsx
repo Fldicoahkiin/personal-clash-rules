@@ -106,7 +106,7 @@ export function ConverterWorkspace() {
       aria-labelledby="converter-title"
     >
       <header className="plain-heading">
-        <h2 id="converter-title">转换规则</h2>
+        <h2 id="converter-title">规则格式转换</h2>
         <p>V2Fly · Mihomo · YAML</p>
       </header>
 

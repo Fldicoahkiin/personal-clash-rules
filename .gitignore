@@ -7,7 +7,6 @@ dist/
 worker-configuration.d.ts
 .dev.vars
 .env
-deploy/sub-store/secrets/
 .DS_Store
 playwright-report/
 test-results/

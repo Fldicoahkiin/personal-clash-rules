@@ -1,4 +1,4 @@
-import { ArrowLeft, GithubLogo, SignOut } from "@phosphor-icons/react";
+import { ArrowLeft, SignOut } from "@phosphor-icons/react";
 import type { FC } from "react";
 
 type ControlHeaderProps = {
@@ -22,7 +22,7 @@ export const ControlHeader: FC<ControlHeaderProps> = ({ onExit }) => {
           target="_blank"
           rel="noreferrer"
         >
-          <GithubLogo aria-hidden="true" weight="fill" />
+          <img src="/brand/github-mark.svg" alt="" width="18" height="18" />
           GitHub
         </a>
         {onExit ? (

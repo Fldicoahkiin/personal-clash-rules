@@ -1,82 +1,74 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title description">
-  <title id="title">Flacier subscription conversion architecture</title>
-  <desc id="description">GitHub deploys the Cloudflare Worker. The Worker stores encrypted sources and generated outputs in D1, calls a private Sub-Store service, and publishes stable links for subscription clients.</desc>
+  <title id="title">订阅转换部署结构</title>
+  <desc id="description">GitHub 推送由 Cloudflare 构建为一个 Worker。Worker 读取远程订阅，将标准化节点保存到 D1，并按固定链接请求生成客户端格式。</desc>
   <style>
     .paper { fill: #faf8f4; }
     .panel { fill: #faf8f4; stroke: #091e37; stroke-width: 1.5; }
-    .selected { fill: #d3e4e1; stroke: #085f68; stroke-width: 1.5; }
+    .active { fill: #d3e4e1; stroke: #085f68; stroke-width: 1.5; }
     .ink { fill: #091e37; font-family: Arial, "PingFang SC", sans-serif; }
     .muted { fill: #4a5e6e; font-family: Arial, "PingFang SC", sans-serif; }
-    .accent { fill: #085f68; font-family: Arial, "PingFang SC", sans-serif; }
     .mono { font-family: "SFMono-Regular", Consolas, monospace; }
     .line { fill: none; stroke: #b6c5c8; stroke-width: 1.5; }
-    .rail { fill: none; stroke: #085f68; stroke-width: 2; }
+    .flow { fill: none; stroke: #085f68; stroke-width: 2; }
     .label { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; }
     .title { font-size: 29px; font-weight: 700; }
-    .node-title { font-size: 17px; font-weight: 700; }
+    .item { font-size: 17px; font-weight: 700; }
     .body { font-size: 13px; }
     .small { font-size: 11px; }
   </style>
 
   <rect class="paper" width="1200" height="560" />
-  <text x="48" y="48" class="ink title">订阅转换</text>
-  <text x="48" y="75" class="muted body">GitHub 推送 · Worker 转换 · 固定订阅链接</text>
-  <text x="1152" y="52" text-anchor="end" class="accent mono label">FLACIER / 2026</text>
-  <line x1="48" y1="98" x2="1152" y2="98" class="line" />
+  <text x="48" y="50" class="ink title">订阅转换</text>
+  <text x="48" y="76" class="muted body">一个 Worker · 一个 D1 · 一个固定链接</text>
+  <text x="1152" y="52" text-anchor="end" class="ink mono label">RULES.FLACIER.COM</text>
+  <line x1="48" y1="100" x2="1152" y2="100" class="line" />
 
-  <line x1="141" y1="238" x2="1061" y2="238" class="rail" />
-  <line x1="141" y1="246" x2="1061" y2="246" class="rail" />
+  <path d="M220 202H332M598 202H710M976 202H1080" class="flow" />
+  <path d="M465 262V346M843 246V346" class="line" />
 
   <g>
-    <text x="141" y="135" text-anchor="middle" class="muted mono label">SOURCE</text>
-    <rect x="48" y="155" width="186" height="72" class="panel" />
-    <text x="141" y="184" text-anchor="middle" class="ink node-title">GitHub</text>
-    <text x="141" y="207" text-anchor="middle" class="muted mono small">main · rules · UI</text>
-    <circle cx="141" cy="242" r="10" class="paper" stroke="#085f68" stroke-width="3" />
+    <text x="48" y="143" class="muted mono label">DEPLOY</text>
+    <rect x="48" y="158" width="172" height="88" class="panel" />
+    <text x="134" y="195" text-anchor="middle" class="ink item">GitHub</text>
+    <text x="134" y="220" text-anchor="middle" class="muted mono small">push main</text>
   </g>
 
   <g>
-    <text x="371" y="135" text-anchor="middle" class="muted mono label">CONTROL</text>
-    <rect x="278" y="155" width="186" height="72" class="selected" />
-    <text x="371" y="184" text-anchor="middle" class="ink node-title">Worker + D1</text>
-    <text x="371" y="207" text-anchor="middle" class="muted small">加密来源 · 生成结果</text>
-    <circle cx="371" cy="242" r="10" fill="#085f68" />
+    <text x="332" y="127" class="muted mono label">RUN</text>
+    <rect x="332" y="142" width="266" height="120" class="active" />
+    <text x="465" y="179" text-anchor="middle" class="ink item">Cloudflare Worker</text>
+    <text x="465" y="207" text-anchor="middle" class="muted body">网页 · 管理 API · 定时刷新</text>
+    <text x="465" y="232" text-anchor="middle" class="muted body">解析节点 · 按需生成格式</text>
   </g>
 
   <g>
-    <text x="601" y="135" text-anchor="middle" class="muted mono label">CONVERT</text>
-    <rect x="508" y="155" width="186" height="72" class="panel" />
-    <text x="601" y="184" text-anchor="middle" class="ink node-title">Sub-Store</text>
-    <text x="601" y="207" text-anchor="middle" class="muted mono small">2.36.39 · private VPS</text>
-    <circle cx="601" cy="242" r="10" class="paper" stroke="#085f68" stroke-width="3" />
+    <text x="710" y="143" class="muted mono label">PUBLISH</text>
+    <rect x="710" y="158" width="266" height="88" class="panel" />
+    <text x="843" y="195" text-anchor="middle" class="ink item">固定订阅链接</text>
+    <text x="843" y="220" text-anchor="middle" class="muted mono small">/s/:token/:target</text>
   </g>
 
   <g>
-    <text x="831" y="135" text-anchor="middle" class="muted mono label">PUBLISH</text>
-    <rect x="738" y="155" width="186" height="72" class="panel" />
-    <text x="831" y="184" text-anchor="middle" class="ink node-title">固定链接</text>
-    <text x="831" y="207" text-anchor="middle" class="muted mono small">/s/:token/:target</text>
-    <circle cx="831" cy="242" r="10" class="paper" stroke="#085f68" stroke-width="3" />
+    <text x="1080" y="143" class="muted mono label">CLIENT</text>
+    <rect x="1080" y="158" width="72" height="88" class="panel" />
+    <text x="1116" y="194" text-anchor="middle" class="ink item">20</text>
+    <text x="1116" y="220" text-anchor="middle" class="muted small">格式</text>
   </g>
 
   <g>
-    <text x="1061" y="135" text-anchor="middle" class="muted mono label">CLIENT</text>
-    <rect x="968" y="155" width="184" height="72" class="panel" />
-    <text x="1060" y="184" text-anchor="middle" class="ink node-title">20 个输出</text>
-    <text x="1060" y="207" text-anchor="middle" class="muted small">7 种配置 · 13 种节点资源</text>
-    <circle cx="1061" cy="242" r="10" class="paper" stroke="#085f68" stroke-width="3" />
+    <rect x="332" y="346" width="266" height="90" class="panel" />
+    <text x="465" y="381" text-anchor="middle" class="ink item">远程订阅与单节点</text>
+    <text x="465" y="408" text-anchor="middle" class="muted body">每次刷新只读取并整理一次</text>
   </g>
 
-  <text x="486" y="274" text-anchor="middle" class="accent mono small">BEARER TOKEN</text>
+  <g>
+    <rect x="710" y="346" width="266" height="90" class="panel" />
+    <text x="843" y="381" text-anchor="middle" class="ink item">D1</text>
+    <text x="843" y="408" text-anchor="middle" class="muted body">加密来源 · 标准化节点 · 链接</text>
+  </g>
 
-  <line x1="601" y1="252" x2="601" y2="346" class="line" />
-  <circle cx="601" cy="346" r="6" fill="#091e37" />
-  <rect x="466" y="366" width="270" height="76" class="panel" />
-  <text x="601" y="395" text-anchor="middle" class="ink node-title">订阅源与单个节点</text>
-  <text x="601" y="419" text-anchor="middle" class="muted small">机场订阅 · 3x-ui · URI</text>
-
-  <line x1="48" y1="478" x2="1152" y2="478" class="line" />
-  <text x="48" y="511" class="muted mono small">RULES</text>
-  <text x="112" y="511" class="ink body">规则文件由 Worker 直接发布；Mihomo 覆写单独导入。</text>
-  <text x="1152" y="511" text-anchor="end" class="muted body">节点流量不经过 Worker</text>
+  <line x1="48" y1="480" x2="1152" y2="480" class="line" />
+  <text x="48" y="516" class="muted mono small">REQUEST</text>
+  <text x="122" y="516" class="ink body">刷新保存节点；客户端请求链接时只生成所选格式。</text>
+  <text x="1152" y="516" text-anchor="end" class="muted body">节点流量不经过 Worker</text>
 </svg>

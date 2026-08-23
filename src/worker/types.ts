@@ -30,10 +30,6 @@ export interface SubscriptionEnv extends Env {
   ACCESS_AUD?: string;
   ACCESS_ADMIN_EMAIL?: string;
   CONTROL_API_TOKEN?: string;
-  SUB_STORE_URL?: string;
-  SUB_STORE_TOKEN?: string;
-  SUB_STORE_ACCESS_CLIENT_ID?: string;
-  SUB_STORE_ACCESS_CLIENT_SECRET?: string;
 }
 
 export function isOutputTarget(value: string): value is OutputTarget {

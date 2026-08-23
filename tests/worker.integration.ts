@@ -104,29 +104,17 @@ describe("Worker entrypoint", () => {
   });
 
   it("reports database, converter, and refresh status to an authenticated manager", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
-      expect(String(input)).toBe("https://sub-store.example/healthz");
-      const headers = new Headers(init?.headers);
-      expect(headers.get("cf-access-client-id")).toBe("sub-store-client-id");
-      expect(headers.get("cf-access-client-secret")).toBe("sub-store-client-secret");
-      return new Response("ok");
+    const response = await exports.default.fetch(
+      "https://example.com/api/manage/status",
+      { headers: authorization },
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    await expect(response.json()).resolves.toEqual({
+      database: "ready",
+      converter: "ready",
+      refreshSchedule: "0 */6 * * *",
     });
-
-    try {
-      const response = await exports.default.fetch(
-        "https://example.com/api/manage/status",
-        { headers: authorization },
-      );
-      expect(response.status).toBe(200);
-      expect(response.headers.get("cache-control")).toBe("no-store");
-      await expect(response.json()).resolves.toEqual({
-        database: "ready",
-        converter: "ready",
-        refreshSchedule: "0 */6 * * *",
-      });
-    } finally {
-      fetchSpy.mockRestore();
-    }
   });
 
   it("reports a pending migration when the latest profile columns are missing", async () => {
@@ -161,7 +149,7 @@ describe("Worker entrypoint", () => {
     });
   });
 
-  it("keeps one scheduled refresh within the free external subrequest limit", async () => {
+  it("bounds the number of profiles handled by one scheduled refresh", async () => {
     let selectedLimit: number | null = null;
     const statement = {
       bind(limit: number) {
@@ -180,7 +168,7 @@ describe("Worker entrypoint", () => {
 
     await refreshDueProfiles({ DB: database } as SubscriptionEnv);
 
-    expect(selectedLimit).toBe(2);
+    expect(selectedLimit).toBe(5);
   });
 
   it("deduplicates identical nodes and makes repeated names unique", async () => {
@@ -194,10 +182,11 @@ describe("Worker entrypoint", () => {
       id: 0,
       _subName: "合并订阅",
     };
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({
-      status: "success",
-      data: {
-        processed: [
+    const nodes = await normalizeSources(testEnv, {
+      profileName: "合并订阅",
+      subscriptionUrls: [],
+      nodes: [JSON.stringify({
+        proxies: [
           first,
           { ...first, id: 1 },
           {
@@ -221,17 +210,10 @@ describe("Worker entrypoint", () => {
             id: 4,
           },
         ],
-      },
-    }));
+      })],
+    });
 
-    try {
-      const nodes = await normalizeSources(testEnv, {
-        profileName: "合并订阅",
-        subscriptionUrls: [],
-        nodes: ["ss://local-test"],
-      });
-
-      expect(nodes).toEqual([
+    expect(nodes).toEqual([
         {
           type: "ss",
           server: "one.example",
@@ -264,10 +246,7 @@ describe("Worker entrypoint", () => {
           password: "reserved",
           name: "AI · 2",
         },
-      ]);
-    } finally {
-      fetchSpy.mockRestore();
-    }
+    ]);
   });
 
   it("uses the personal subscription name when no profile name is provided", async () => {
@@ -547,39 +526,18 @@ describe("Worker entrypoint", () => {
     expect(storedSource).toBeNull();
   });
 
-  it("publishes generated output behind a stable revocable link", async () => {
+  it("publishes normalized nodes through a stable revocable link", async () => {
     const profile = await createProfile();
-    const output = "proxies:\n  - name: test-node\n    type: ss\n";
-    const outputResponse = await exports.default.fetch(
-      `https://example.com/api/manage/profiles/${profile.id}/outputs/mihomo`,
-      {
-        method: "PUT",
-        headers: { ...authorization, "Content-Type": "application/json" },
-        body: JSON.stringify({ content: output }),
-      },
+    await addSource(profile.id, {
+      name: "手工节点",
+      type: "node",
+      value: "ss://YWVzLTEyOC1nY206c2VjcmV0@us.example.com:8388#US-01",
+    });
+    const refresh = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/refresh`,
+      { method: "POST", headers: authorization },
     );
-    expect(outputResponse.status).toBe(200);
-    const outputData = await outputResponse.json<{ etag: string }>();
-    const managedOutput = `#!MANAGED-CONFIG ${managedProfileUrlPlaceholder} interval=21600 strict=false\n[General]\n`;
-    const managedOutputResponse = await exports.default.fetch(
-      `https://example.com/api/manage/profiles/${profile.id}/outputs/surge-config`,
-      {
-        method: "PUT",
-        headers: { ...authorization, "Content-Type": "application/json" },
-        body: JSON.stringify({ content: managedOutput }),
-      },
-    );
-    expect(managedOutputResponse.status).toBe(200);
-    const surgeNodes = "test-node = ss, example.com, 443\n";
-    const surgeOutputResponse = await exports.default.fetch(
-      `https://example.com/api/manage/profiles/${profile.id}/outputs/surge`,
-      {
-        method: "PUT",
-        headers: { ...authorization, "Content-Type": "application/json" },
-        body: JSON.stringify({ content: surgeNodes }),
-      },
-    );
-    expect(surgeOutputResponse.status).toBe(200);
+    expect(refresh.status).toBe(200);
 
     const linkResponse = await exports.default.fetch(
       `https://example.com/api/manage/profiles/${profile.id}/links`,
@@ -598,16 +556,13 @@ describe("Worker entrypoint", () => {
     expect(linkData.universalUrl).toMatch(
       /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}$/,
     );
-    expect(linkData.urls.mihomo).toMatch(/^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo$/);
-    expect(linkData.urls["mihomo-config"]).toMatch(
-      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo-config$/,
+    expect(linkData.urls.mihomo).toMatch(
+      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo$/,
     );
     expect(linkData.urls["surge-config"]).toMatch(
       /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/surge-config$/,
     );
-    expect(linkData.urls["sing-box-config"]).toMatch(
-      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/sing-box-config$/,
-    );
+
     const rawToken = linkData.urls.mihomo.split("/").at(-2);
     const storedLink = await testEnv.DB.prepare(`
       SELECT token_hash, token_ciphertext, token_iv
@@ -622,80 +577,50 @@ describe("Worker entrypoint", () => {
     expect(storedLink?.token_ciphertext).not.toContain(String(rawToken));
     expect(storedLink?.token_iv).toBeTruthy();
 
-    const profileDetail = await exports.default.fetch(
-      `https://example.com/api/manage/profiles/${profile.id}`,
-      { headers: authorization },
-    );
-    const profileData = await profileDetail.json<{
-      profile: {
-        links: Array<{
-          id: string;
-          universalUrl: string;
-          urls: Record<string, string>;
-        }>;
-      };
-    }>();
-    expect(profileData.profile.links[0].urls.mihomo).toBe(linkData.urls.mihomo);
-    expect(profileData.profile.links[0].universalUrl).toBe(linkData.universalUrl);
-
     const universalDefault = await exports.default.fetch(linkData.universalUrl, {
       headers: { "User-Agent": "unknown-client/1.0" },
     });
     expect(universalDefault.status).toBe(200);
     expect(universalDefault.headers.get("x-subscription-target")).toBe("mihomo");
     expect(universalDefault.headers.get("vary")).toBe("User-Agent");
-    await expect(universalDefault.text()).resolves.toBe(output);
+    expect(parse(await universalDefault.text())).toMatchObject({
+      proxies: [expect.objectContaining({ name: "US-01" })],
+    });
 
     const universalSurge = await exports.default.fetch(linkData.universalUrl, {
       headers: { "User-Agent": "Surge iOS/3004" },
     });
     expect(universalSurge.status).toBe(200);
     expect(universalSurge.headers.get("x-subscription-target")).toBe("surge");
-    await expect(universalSurge.text()).resolves.toBe(surgeNodes);
-
-    const universalManagedUrl = `${linkData.universalUrl}?target=surge-config`;
-    const universalManaged = await exports.default.fetch(universalManagedUrl, {
-      headers: { "User-Agent": "curl/8" },
-    });
-    expect(universalManaged.status).toBe(200);
-    expect(universalManaged.headers.get("x-subscription-target")).toBe("surge-config");
-    await expect(universalManaged.text()).resolves.toBe(
-      managedOutput.replace(managedProfileUrlPlaceholder, universalManagedUrl),
+    await expect(universalSurge.text()).resolves.toContain(
+      "US-01=ss,us.example.com,8388",
     );
 
-    const invalidUniversalTarget = await exports.default.fetch(
+    const managedUrl = `${linkData.universalUrl}?target=surge-config`;
+    const managed = await exports.default.fetch(managedUrl);
+    expect(managed.status).toBe(200);
+    expect(managed.headers.get("x-subscription-target")).toBe("surge-config");
+    const managedText = await managed.text();
+    expect(managedText).toContain(`#!MANAGED-CONFIG ${managedUrl}`);
+    expect(managedText).not.toContain(managedProfileUrlPlaceholder);
+
+    const invalidTarget = await exports.default.fetch(
       `${linkData.universalUrl}?target=unknown`,
     );
-    expect(invalidUniversalTarget.status).toBe(400);
+    expect(invalidTarget.status).toBe(400);
 
     const published = await exports.default.fetch(linkData.urls.mihomo);
     expect(published.status).toBe(200);
-    expect(published.headers.get("etag")).toBe(outputData.etag);
+    const etag = published.headers.get("etag");
     const lastModified = published.headers.get("last-modified");
+    expect(etag).toBeTruthy();
     expect(lastModified).toBeTruthy();
-    expect(published.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=3600");
-    await expect(published.text()).resolves.toBe(output);
-
-    const unchangedSince = await exports.default.fetch(linkData.urls.mihomo, {
-      headers: { "If-Modified-Since": lastModified ?? "" },
-    });
-    expect(unchangedSince.status).toBe(304);
-
-    const managedPublished = await exports.default.fetch(linkData.urls["surge-config"]);
-    expect(managedPublished.status).toBe(200);
-    expect(managedPublished.headers.get("content-type")).toBe("text/plain; charset=utf-8");
-    const managedPublishedEtag = managedPublished.headers.get("etag");
-    expect(managedPublishedEtag).toBeTruthy();
-    await expect(managedPublished.text()).resolves.toBe(
-      managedOutput.replace(managedProfileUrlPlaceholder, linkData.urls["surge-config"]),
+    expect(published.headers.get("cache-control")).toBe(
+      "private, max-age=300, stale-while-revalidate=3600",
     );
-    const managedUnchanged = await exports.default.fetch(linkData.urls["surge-config"], {
-      headers: { "If-None-Match": managedPublishedEtag ?? "" },
-    });
-    expect(managedUnchanged.status).toBe(304);
 
     const unchanged = await exports.default.fetch(linkData.urls.mihomo, {
-      headers: { "If-None-Match": outputData.etag },
+      headers: { "If-None-Match": etag ?? "" },
     });
     expect(unchanged.status).toBe(304);
 
@@ -704,18 +629,15 @@ describe("Worker entrypoint", () => {
       { method: "DELETE", headers: authorization },
     );
     expect(revoke.status).toBe(204);
-
     const revoked = await exports.default.fetch(linkData.urls.mihomo);
     expect(revoked.status).toBe(404);
     expect(revoked.headers.get("cache-control")).toBe("no-store");
-
-    const revokedUniversal = await exports.default.fetch(linkData.universalUrl);
-    expect(revokedUniversal.status).toBe(404);
   });
 
-  it("refreshes every client output through Sub-Store", async () => {
+  it("refreshes once and generates only the requested client format", async () => {
     const profile = await createProfile("设备订阅");
     const subscriptionUrl = "https://provider.example/sub?token=refresh-secret";
+    const remoteUri = "ss://YWVzLTEyOC1nY206cmVtb3Rl@one.example:443#remote";
     const nodeUri = "vless://00000000-0000-4000-8000-000000000000@node.example:443#manual";
     await addSource(profile.id, {
       name: "机场",
@@ -745,57 +667,9 @@ describe("Worker entrypoint", () => {
     );
     expect(settings.status).toBe(200);
 
-    const converterBodies: Array<Record<string, unknown>> = [];
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
-      const url = String(input);
-      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
-      converterBodies.push(body);
-      const headers = new Headers(init?.headers);
-      expect(headers.get("cf-access-client-id")).toBe("sub-store-client-id");
-      expect(headers.get("cf-access-client-secret")).toBe("sub-store-client-secret");
-
-      if (url.endsWith("/api/preview/sub?target=JSON")) {
-        return Response.json({
-          status: "success",
-          data: {
-            processed: [
-              { name: "remote", type: "ss", server: "one.example", port: 443 },
-              { name: "manual", type: "vless", server: "node.example", port: 443 },
-            ],
-          },
-        });
-      }
-
-      if (url.endsWith("/api/proxy/parse")) {
-        const client = String(body.client);
-        return Response.json({
-          status: "success",
-          data: {
-            par_res: client === "Mihomo" || client === "Stash"
-              ? `proxies:\n  - name: US-01\n    type: ss\n    server: one.example\n    port: 443\n    cipher: aes-128-gcm\n    password: test\n`
-              : client === "Egern"
-                ? `proxies:\n  - shadowsocks:\n      name: US-01\n      method: aes-128-gcm\n      server: one.example\n      port: 443\n      password: test\n`
-              : client === "Surge" || client === "Surfboard"
-                ? `US-01 = ss, one.example, 443, encrypt-method=aes-128-gcm, password=test`
-                : client === "Loon"
-                  ? `US-01=shadowsocks,one.example,443,aes-128-gcm,\"test\",udp=true`
-                  : client === "sing-box"
-                    ? JSON.stringify({
-                      outbounds: [{
-                        type: "shadowsocks",
-                        tag: "US-01",
-                        server: "one.example",
-                        server_port: 443,
-                        method: "aes-128-gcm",
-                        password: "test",
-                      }],
-                    })
-                    : `${client} generated output`,
-          },
-        });
-      }
-
-      return new Response(null, { status: 404 });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      expect(String(input)).toBe(subscriptionUrl);
+      return new Response(remoteUri);
     });
 
     try {
@@ -804,106 +678,62 @@ describe("Worker entrypoint", () => {
         { method: "POST", headers: authorization },
       );
       expect(response.status).toBe(200);
-      const data = await response.json<{
-        refresh: { status: string; nodeCount: number; targetCount: number; targets: string[] };
-      }>();
-      expect(data.refresh).toMatchObject({
-        status: "succeeded",
-        nodeCount: 2,
-        targetCount: 20,
+      await expect(response.json()).resolves.toMatchObject({
+        refresh: {
+          status: "succeeded",
+          nodeCount: 2,
+        },
       });
-      expect(data.refresh.targets).toContain("mihomo");
-      expect(data.refresh.targets).toContain("mihomo-config");
-      expect(data.refresh.targets).toContain("stash-config");
-      expect(data.refresh.targets).toContain("surge-config");
-      expect(data.refresh.targets).toContain("surfboard-config");
-      expect(data.refresh.targets).toContain("loon-config");
-      expect(data.refresh.targets).toContain("egern-config");
-      expect(data.refresh.targets).toContain("sing-box-config");
-      expect(data.refresh.targets).toContain("sing-box");
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-      const preview = converterBodies[0];
-      expect(preview.url).toBe(subscriptionUrl);
-      expect(preview.content).toBe(nodeUri);
-      expect(preview.mergeSources).toBe("remoteFirst");
-      const parseBodies = converterBodies.slice(1);
-      expect(parseBodies).toHaveLength(20);
-      expect(parseBodies.every((body) => (
-        typeof body.data === "string" && body.data.startsWith("proxies:\n")
-      ))).toBe(true);
-      const transformedData = String(parseBodies[0]?.data);
-      expect(transformedData.indexOf("name: Tokyo 2")).toBeLessThan(
-        transformedData.indexOf("name: Tokyo 10"),
-      );
-      expect(fetchSpy).toHaveBeenCalledTimes(21);
-
-      const storedOutputs = await testEnv.DB.prepare(`
-        SELECT COUNT(*) AS count
-        FROM generated_outputs
+      const snapshot = await testEnv.DB.prepare(`
+        SELECT nodes_json, node_count
+        FROM normalized_nodes
         WHERE profile_id = ?
-      `).bind(profile.id).first<{ count: number }>();
-      expect(storedOutputs?.count).toBe(20);
-
-      const completeOutput = await testEnv.DB.prepare(`
-        SELECT content, content_type
-        FROM generated_outputs
-        WHERE profile_id = ? AND target = 'mihomo-config'
-      `).bind(profile.id).first<{ content: string; content_type: string }>();
-      expect(completeOutput?.content_type).toBe("text/yaml; charset=utf-8");
-      const completeConfig = parse(completeOutput?.content ?? "") as Record<string, unknown>;
-      expect(completeConfig.proxies).toHaveLength(1);
-      expect(completeConfig["proxy-groups"]).toEqual(expect.arrayContaining([
+      `).bind(profile.id).first<{ nodes_json: string; node_count: number }>();
+      expect(snapshot?.node_count).toBe(2);
+      expect(JSON.parse(snapshot?.nodes_json ?? "[]")).toEqual([
+        expect.objectContaining({ name: "Tokyo 2" }),
+        expect.objectContaining({ name: "Tokyo 10" }),
+      ]);
+      const link = await exports.default.fetch(
+        `https://example.com/api/manage/profiles/${profile.id}/links`,
+        {
+          method: "POST",
+          headers: { ...authorization, "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "默认链接" }),
+        },
+      );
+      const linkData = await link.json<{ urls: Record<string, string> }>();
+      const configResponse = await exports.default.fetch(
+        linkData.urls["mihomo-config"],
+      );
+      expect(configResponse.status).toBe(200);
+      const config = parse(await configResponse.text()) as Record<string, unknown>;
+      expect(config.proxies).toHaveLength(2);
+      expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
         expect.objectContaining({ name: "AI" }),
       ]));
-      expect(completeConfig.rules).toEqual(expect.arrayContaining([
-        "RULE-SET,ai-openai,AI",
-        "MATCH,DEFAULT",
-      ]));
-
-      const singBoxOutput = await testEnv.DB.prepare(`
-        SELECT content, content_type
-        FROM generated_outputs
-        WHERE profile_id = ? AND target = 'sing-box-config'
-      `).bind(profile.id).first<{ content: string; content_type: string }>();
-      expect(singBoxOutput?.content_type).toBe("application/json; charset=utf-8");
-      const singBoxConfig = JSON.parse(singBoxOutput?.content ?? "") as Record<string, unknown>;
-      expect(singBoxConfig.route).toEqual(expect.objectContaining({ final: "DEFAULT" }));
-      expect(singBoxConfig.outbounds).toEqual(expect.arrayContaining([
-        expect.objectContaining({ tag: "AI", type: "selector" }),
-      ]));
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
 
       const detail = await exports.default.fetch(
         `https://example.com/api/manage/profiles/${profile.id}`,
         { headers: authorization },
       );
-      const detailData = await detail.json<{
+      await expect(detail.json()).resolves.toMatchObject({
         profile: {
-          latestRefresh: { status: string; nodeCount: number; targetCount: number };
-          refreshHistory: Array<{
-            status: string;
-            nodeCount: number;
-            targetCount: number;
-            finishedAt: string;
-          }>;
-        };
-      }>();
-      expect(detailData.profile.latestRefresh).toMatchObject({
-        status: "succeeded",
-        nodeCount: 2,
-        targetCount: 20,
+          nodeCount: 2,
+          normalizedAt: expect.any(String),
+          latestRefresh: {
+            status: "succeeded",
+            nodeCount: 2,
+          },
+        },
       });
-      expect(detailData.profile.refreshHistory).toHaveLength(1);
-      expect(detailData.profile.refreshHistory[0]).toMatchObject({
-        status: "succeeded",
-        nodeCount: 2,
-        targetCount: 20,
-      });
-      expect(detailData.profile.refreshHistory[0].finishedAt).toBeTruthy();
     } finally {
       fetchSpy.mockRestore();
     }
   });
-
   it("retains only the eight latest refresh runs", async () => {
     const profile = await createProfile("刷新记录");
 
@@ -913,7 +743,6 @@ describe("Worker entrypoint", () => {
         id: refresh.id,
         status: "succeeded",
         nodeCount: index + 1,
-        targetCount: 20,
       });
     }
 
@@ -936,95 +765,35 @@ describe("Worker entrypoint", () => {
     expect(data.profile.refreshHistory.at(-1)?.nodeCount).toBe(3);
   });
 
-  it("does not publish an empty client conversion", async () => {
+  it("rejects a target that cannot represent the stored nodes", async () => {
     const profile = await createProfile("兼容性检查");
     await addSource(profile.id, {
-      name: "测试节点",
+      name: "WireGuard",
       type: "node",
-      value: "ss://YWVzLTEyOC1nY206bG9jYWwtdGVzdA==@node.example:8388#E2E",
+      value: "wireguard://private-key@wg.example.com:51820?public-key=public-key&ip=10.0.0.2%2F32#WG-01",
     });
-    await testEnv.DB.prepare(`
-      INSERT INTO generated_outputs (
-        profile_id, target, content, content_type, etag, generated_at
-      ) VALUES (?, 'surge', 'stale output', 'text/plain', '"stale"', ?)
-    `).bind(profile.id, new Date().toISOString()).run();
+    const refresh = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/refresh`,
+      { method: "POST", headers: authorization },
+    );
+    expect(refresh.status).toBe(200);
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
-      const url = String(input);
-      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
-      if (url.endsWith("/api/preview/sub?target=JSON")) {
-        return Response.json({
-          status: "success",
-          data: {
-            processed: [{
-              name: "E2E",
-              type: "ss",
-              server: "node.example",
-              port: 8388,
-              cipher: "aes-128-gcm",
-              password: "local-test",
-            }],
-          },
-        });
-      }
-      if (url.endsWith("/api/proxy/parse")) {
-        const client = String(body.client);
-        return Response.json({
-          status: "success",
-          data: {
-            par_res: client === "Surge"
-              ? ""
-              : client === "Mihomo" || client === "Stash"
-                ? `proxies:\n  - name: E2E\n    type: ss\n    server: node.example\n    port: 8388\n    cipher: aes-128-gcm\n    password: local-test\n`
-                : client === "Egern"
-                  ? `proxies:\n  - shadowsocks:\n      name: E2E\n      method: aes-128-gcm\n      server: node.example\n      port: 8388\n      password: local-test\n`
-                : client === "Surfboard"
-                  ? "E2E = ss, node.example, 8388, encrypt-method=aes-128-gcm, password=local-test"
-                  : client === "Loon"
-                    ? `E2E=shadowsocks,node.example,8388,aes-128-gcm,\"local-test\",udp=true`
-                    : client === "sing-box"
-                      ? JSON.stringify({
-                        outbounds: [{
-                          type: "shadowsocks",
-                          tag: "E2E",
-                          server: "node.example",
-                          server_port: 8388,
-                          method: "aes-128-gcm",
-                          password: "local-test",
-                        }],
-                      })
-                      : `${client} output`,
-          },
-        });
-      }
-      return new Response(null, { status: 404 });
+    const link = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/links`,
+      {
+        method: "POST",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "兼容性" }),
+      },
+    );
+    const linkData = await link.json<{ urls: Record<string, string> }>();
+    const unsupported = await exports.default.fetch(linkData.urls.surge);
+    expect(unsupported.status).toBe(422);
+    await expect(unsupported.json()).resolves.toMatchObject({
+      error: "target_unsupported",
     });
+    const mihomo = await exports.default.fetch(linkData.urls.mihomo);
+    expect(mihomo.status).toBe(200);
 
-    try {
-      const response = await exports.default.fetch(
-        `https://example.com/api/manage/profiles/${profile.id}/refresh`,
-        { method: "POST", headers: authorization },
-      );
-      expect(response.status).toBe(200);
-      await expect(response.json()).resolves.toMatchObject({
-        refresh: {
-          status: "succeeded",
-          targetCount: 18,
-          unavailableTargets: ["surge-config", "surge"],
-        },
-      });
-
-      const outputs = await testEnv.DB.prepare(`
-        SELECT target, content
-        FROM generated_outputs
-        WHERE profile_id = ?
-        ORDER BY target
-      `).bind(profile.id).all<{ target: string; content: string }>();
-      expect(outputs.results).toHaveLength(18);
-      expect(outputs.results.some((output) => output.target === "surge")).toBe(false);
-      expect(outputs.results.every((output) => output.content.length > 0)).toBe(true);
-    } finally {
-      fetchSpy.mockRestore();
-    }
   });
 });

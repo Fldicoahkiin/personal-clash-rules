@@ -44,7 +44,7 @@ export const ProfileRail: FC<ProfileRailProps> = ({
             onClick={() => onSelect(profile.id)}
           >
             <strong>{profile.name}</strong>
-            <span>{profile.enabledSourceCount} 个启用 · {profile.outputCount} 个输出</span>
+            <span>{profile.enabledSourceCount} 个来源 · {profile.nodeCount} 个节点</span>
           </button>
         ))}
       </div>

@@ -27,16 +27,13 @@ export default defineConfig({
             TEST_MIGRATIONS: migrations,
             DATA_ENCRYPTION_KEY: "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
             CONTROL_API_TOKEN: "worker-test-token",
-            SUB_STORE_URL: "https://sub-store.example",
-            SUB_STORE_ACCESS_CLIENT_ID: "sub-store-client-id",
-            SUB_STORE_ACCESS_CLIENT_SECRET: "sub-store-client-secret",
           },
         },
       };
     }),
   ],
   test: {
-    include: ["tests/worker.integration.ts"],
+    include: ["tests/worker.integration.ts", "tests/subscription-converter.worker.ts"],
     setupFiles: ["./tests/worker.setup.ts"],
   },
 });

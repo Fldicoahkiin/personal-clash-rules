@@ -14,9 +14,7 @@ const databaseText: Record<RuntimeStatus["database"], string> = {
 };
 
 const converterText: Record<RuntimeStatus["converter"], string> = {
-  ready: "转换服务可用",
-  not_configured: "转换服务未配置",
-  unreachable: "转换服务无响应",
+  ready: "内置转换可用",
 };
 
 export const RuntimeStatusLine: FC<RuntimeStatusLineProps> = ({ failed, loading, status }) => (

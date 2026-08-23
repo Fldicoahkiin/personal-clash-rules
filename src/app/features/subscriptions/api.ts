@@ -41,7 +41,7 @@ export interface ProfileSummary {
   id: string;
   name: string;
   enabledSourceCount: number;
-  outputCount: number;
+  nodeCount: number;
   linkCount: number;
   createdAt: string;
   updatedAt: string;
@@ -70,7 +70,6 @@ export interface RefreshRun {
   id: string;
   status: "running" | "succeeded" | "failed";
   nodeCount: number | null;
-  targetCount: number | null;
   error: string | null;
   startedAt: string;
   finishedAt: string | null;
@@ -83,12 +82,8 @@ export interface ProfileDetail {
   updatedAt: string;
   nodeSettings: NodeSettings;
   sources: SubscriptionSource[];
-  outputs: Array<{
-    target: OutputTarget;
-    contentType: string;
-    etag: string;
-    generatedAt: string;
-  }>;
+  nodeCount: number;
+  normalizedAt: string | null;
   links: SubscriptionLink[];
   latestRefresh: RefreshRun | null;
   refreshHistory: RefreshRun[];
@@ -97,9 +92,27 @@ export interface ProfileDetail {
 export interface SubscriptionRefreshResult {
   status: "succeeded";
   nodeCount: number;
-  targetCount: number;
-  targets: OutputTarget[];
-  unavailableTargets: OutputTarget[];
+  normalizedAt: string;
+}
+
+export interface CreatedSubscriptionLink {
+  link: {
+    id: string;
+    name: string;
+    enabled: boolean;
+    createdAt: string;
+    revokedAt: null;
+  };
+  universalUrl: string;
+  urls: Record<OutputTarget, string>;
+}
+
+export interface ConvertedSubscription {
+  profileId: string;
+  profileName: string;
+  target: OutputTarget;
+  url: string;
+  universalUrl: string;
 }
 
 export interface ControlSession {
@@ -108,7 +121,7 @@ export interface ControlSession {
 
 export interface RuntimeStatus {
   database: "ready" | "migration_required";
-  converter: "ready" | "not_configured" | "unreachable";
+  converter: "ready";
   refreshSchedule: "0 */6 * * *";
 }
 
@@ -303,11 +316,34 @@ export async function refreshSubscriptionProfile(
 export async function createSubscriptionLink(
   profileId: string,
   name: string,
-): Promise<void> {
-  await requestJson(
+): Promise<CreatedSubscriptionLink> {
+  return await requestJson<CreatedSubscriptionLink>(
     `/api/manage/profiles/${profileId}/links`,
     jsonInit("POST", { name }),
   );
+}
+
+export async function createConvertedSubscription(input: {
+  name: string;
+  nodeSettings: NodeSettings;
+  sources: Array<{ name: string; type: SourceType; value: string }>;
+  target: OutputTarget;
+}): Promise<ConvertedSubscription> {
+  const profile = await createSubscriptionProfile(input.name);
+  for (const source of input.sources) {
+    await addSubscriptionSource(profile.id, source);
+  }
+  await updateSubscriptionNodeSettings(profile.id, input.nodeSettings);
+  await refreshSubscriptionProfile(profile.id);
+  const link = await createSubscriptionLink(profile.id, "默认链接");
+  const url = link.urls[input.target];
+  return {
+    profileId: profile.id,
+    profileName: profile.name,
+    target: input.target,
+    url,
+    universalUrl: link.universalUrl,
+  };
 }
 
 export async function revokeSubscriptionLink(linkId: string): Promise<void> {
@@ -321,10 +357,12 @@ export function subscriptionErrorText(error: unknown): string {
   const messages: Record<string, string> = {
     authentication_required: "登录已失效，请重新进入管理页",
     no_sources: "先添加一个订阅或节点",
-    converter_unavailable: "转换服务尚未配置",
-    converter_unreachable: "转换服务没有响应",
-    converter_invalid_response: "转换服务返回了无法识别的结果",
-    conversion_failed: "订阅转换失败，请检查订阅源",
+    source_unreachable: "订阅源没有响应",
+    source_failed: "订阅源返回错误",
+    source_response_too_large: "订阅源内容超过 1 MiB",
+    too_many_sources: "一个方案最多使用 10 个远程订阅",
+    no_nodes_found: "订阅源中没有可识别的节点",
+    normalized_nodes_too_large: "处理后的节点内容过大",
     invalid_node_pattern: "正则格式有误，请检查节点处理设置",
     invalid_node_settings: "节点处理设置有误",
     no_nodes_after_processing: "没有节点符合当前筛选条件",

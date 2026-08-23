@@ -37,7 +37,7 @@ const FormatRow: FC<FormatRowProps> = ({ format, url, profileName, copied, onCop
     : null;
   const isCopied = copied === format.target;
   const CopyIcon = !url ? Prohibit : isCopied ? Check : Copy;
-  const copyLabel = !url ? "未生成" : isCopied ? "已复制" : "复制";
+  const copyLabel = !url ? "先刷新" : isCopied ? "已复制" : "复制";
   return (
     <div className="format-row">
       {format.icon
@@ -70,7 +70,7 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const activeLink = activeLinks.find((link) => link.id === activeLinkId) ?? activeLinks[0];
   const universalUrl = activeLink?.universalUrl;
-  const availableTargets = new Set(profile.outputs.map((output) => output.target));
+  const linksReady = profile.nodeCount > 0;
 
   async function refreshQueries() {
     await Promise.all([
@@ -176,9 +176,7 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
                 <FormatRow
                   key={format.target}
                   format={format}
-                  url={availableTargets.has(format.target)
-                    ? activeLink.urls?.[format.target]
-                    : undefined}
+                  url={linksReady ? activeLink.urls?.[format.target] : undefined}
                   profileName={profile.name}
                   copied={copied}
                   onCopy={(target, url) => void copyUrl(target, url)}
@@ -196,9 +194,7 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
                 <FormatRow
                   key={format.target}
                   format={format}
-                  url={availableTargets.has(format.target)
-                    ? activeLink.urls?.[format.target]
-                    : undefined}
+                  url={linksReady ? activeLink.urls?.[format.target] : undefined}
                   profileName={profile.name}
                   copied={copied}
                   onCopy={(target, url) => void copyUrl(target, url)}
@@ -213,9 +209,7 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
                 <FormatRow
                   key={format.target}
                   format={format}
-                  url={availableTargets.has(format.target)
-                    ? activeLink.urls?.[format.target]
-                    : undefined}
+                  url={linksReady ? activeLink.urls?.[format.target] : undefined}
                   profileName={profile.name}
                   copied={copied}
                   onCopy={(target, url) => void copyUrl(target, url)}

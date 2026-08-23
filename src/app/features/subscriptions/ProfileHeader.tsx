@@ -110,7 +110,7 @@ export const ProfileHeader: FC<ProfileHeaderProps> = ({
           onClick={onRefresh}
         >
           <ArrowClockwise aria-hidden="true" />
-          {refreshing ? "正在刷新" : "刷新全部格式"}
+          {refreshing ? "正在刷新" : "刷新节点"}
         </button>
       </div>
     </header>

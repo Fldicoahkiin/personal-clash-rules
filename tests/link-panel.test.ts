@@ -21,7 +21,8 @@ describe("LinkPanel", () => {
         sortMode: "source",
       },
       sources: [],
-      outputs: [],
+      nodeCount: 1,
+      normalizedAt: "2026-08-23T00:00:00.000Z",
       links: [
         {
           id: "link-1",

@@ -1,5 +1,3 @@
-import { GithubLogo } from "@phosphor-icons/react";
-
 export function AppHeader() {
   return (
     <header className="site-header">
@@ -9,12 +7,11 @@ export function AppHeader() {
           <span>订阅转换</span>
         </a>
         <nav aria-label="页面导航">
+          <a href="#subscription">转换</a>
+          <a href="#tester">规则测试</a>
+          <a href="#rules">规则集</a>
+          <a href="#converter">格式转换</a>
           <a href="/manage">管理</a>
-          <a href="#tester">测试</a>
-          <a href="#subscription">订阅</a>
-          <a href="#converter">转换</a>
-          <a href="#policies">策略</a>
-          <a href="#rules">规则</a>
         </nav>
         <a
           className="header-github"
@@ -23,7 +20,7 @@ export function AppHeader() {
           rel="noreferrer"
           aria-label="打开 GitHub 仓库"
         >
-          <GithubLogo aria-hidden="true" weight="fill" />
+          <img src="/brand/github-mark.svg" alt="" width="18" height="18" />
           <span>GitHub</span>
         </a>
       </div>

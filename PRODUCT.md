@@ -23,15 +23,15 @@ The same public site serves the rule files and tests those published files, so t
 - Public source and automated updates live on GitHub.
 - Cloudflare Workers serves the public site and rule files from `rules.flacier.com`.
 - The management page is `/manage`; `sub.flacier.com` is the intended management domain.
-- D1 stores profiles, encrypted sources, generated outputs, refresh runs, and share links.
-- Sub-Store runs as a separate conversion dependency on the personal VPS.
+- One Worker serves the site, management API, scheduled refresh, and fixed subscription links.
+- D1 stores profiles, encrypted sources, normalized nodes, refresh runs, and share links.
 - Private nodes and subscriptions come from a separate 3x-ui installation.
 - Users may use Mihomo, Clash-compatible clients, sing-box, Surge, Stash, Shadowrocket, Loon, or Quantumult X.
 
 ## Capabilities and Constraints
 
 - Published rules cover AI, Apple, Steam, Discord, developer tools, media, social services, Bilibili, AniGamer, and local networks.
-- Remote subscriptions and node URIs can be combined into 13 output formats.
+- Remote subscriptions and node URIs can be combined into 20 output targets.
 - Saved sources can be renamed, replaced, enabled, disabled, or removed without changing published links.
 - Source values and active share tokens are encrypted before D1 storage.
 - Fixed subscription links can be refreshed without changing their addresses and can be revoked.
@@ -49,7 +49,7 @@ The same public site serves the rule files and tests those published files, so t
 - Public domain: `rules.flacier.com` under `flacier.com`.
 - Interface copy is concise and factual.
 - Orange is not used.
-- Source is public under the MIT License.
+- Source is public under the AGPL-3.0 License.
 
 ## Evidence on Hand
 
@@ -63,7 +63,7 @@ No client usage metrics, testimonials, conversion benchmarks, or commercial clai
 
 ## Product Principles
 
-- Show the route decision before exposing configuration detail.
+- Put subscription conversion before secondary rule tools.
 - Encrypt subscription data at the Worker boundary and never return stored source values.
 - Name actions after outcomes, not protocols.
 - Use the published rule files as the source for tests and explanations.

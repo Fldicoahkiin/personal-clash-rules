@@ -2,63 +2,34 @@
 
 个人订阅转换、分流规则和网址测试。
 
-[在线页面](https://rules.flacier.com/) ·
-[订阅管理](https://rules.flacier.com/manage) ·
-[Mihomo 覆写](https://rules.flacier.com/overrides/clash-party.yaml) ·
-[规则目录](public/rules/manifest.yaml)
+[在线页面](https://rules.flacier.com/) · [订阅管理](https://rules.flacier.com/manage) · [Mihomo 覆写](https://rules.flacier.com/overrides/clash-party.yaml) · [规则目录](public/rules/manifest.yaml)
 
-![订阅转换结构](docs/architecture.svg)
+![部署结构](docs/architecture.svg)
 
-管理页可合并多个远程订阅和单节点，按名称筛选、改名和排序，生成 Mihomo、Stash、Surge、Surfboard、Loon、Egern、sing-box 完整配置与 13 种节点资源。固定链接不随刷新变化；通用入口按客户端自动选择节点格式。保留最近 8 次刷新记录。
+## 功能
 
-## 策略
+- 合并多个订阅和单节点，生成不变的订阅链接
+- 刷新时保存处理后的节点，访问链接时生成所选客户端格式
+- 节点筛选、改名、排序；完整配置与节点资源共 20 种输出
+- AI、Apple、Steam、Discord、Bilibili、AniGamer 等分流规则
+- 网址规则测试与规则格式转换
 
-| 策略 | 内容 | 初始项 |
-| --- | --- | --- |
-| `AI` | OpenAI、Claude、Grok、Gemini、Codex | `GLOBAL` |
-| `APPLE` | Apple Account、iCloud、App Store、Siri | `DIRECT` |
-| `STEAM` | 商店与社区 | `DIRECT` |
-| `STEAM-DOWNLOAD` | 客户端与游戏下载 | `DIRECT` |
-| `STEAM-ONLINE` | 聊天、匹配与中继 | `DIRECT` |
-| `BILIBILI` | 视频、直播与漫画 | `DIRECT` |
-| `ANIGAMER` | 巴哈姆特动画疯 | `TW` |
-| `DISCORD` | 应用、媒体与语音 | `GLOBAL` |
-| `DEV` | GitHub、npm、PyPI、Docker、Rust | `GLOBAL` |
-| `MEDIA` | YouTube、Netflix、Disney+、Spotify、Twitch | `GLOBAL` |
-| `SOCIAL` | X、Reddit、Instagram、Telegram、TikTok | `GLOBAL` |
-
-节点名称分组：`US`、`JP`、`SG`、`HK`、`TW`、`KR`、`EU`。
-
-## 覆写
+规则文件位于 [`public/rules`](public/rules)，Mihomo 覆写单独导入：
 
 ```text
 https://rules.flacier.com/overrides/clash-party.yaml
 ```
-
-规则文件位于 [`public/rules`](public/rules)，格式为 Mihomo `classical` 文本。
-
-## 更新
-
-```bash
-pnpm sync:rules
-pnpm check
-```
-
-Apple 端点参考 Apple 官方网络清单；GitHub Actions 每周同步 Bilibili 与 Bahamut 规则。
-规则内容每 24 小时拉取；新增策略组或规则源后需刷新远程覆写。
 
 ## 开发
 
 ```bash
 pnpm install
 pnpm dev
-pnpm build
+pnpm check
 ```
 
-Cloudflare Workers 从 GitHub `main` 分支构建。
-
-[Cloudflare 与 Sub-Store 部署](docs/cloudflare-setup.md)
+部署使用 Cloudflare Git 集成，见 [Cloudflare 配置](docs/cloudflare-setup.md)。
 
 ## License
 
-[MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+[AGPL-3.0](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)

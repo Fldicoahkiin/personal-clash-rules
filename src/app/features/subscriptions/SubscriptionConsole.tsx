@@ -78,9 +78,7 @@ export function SubscriptionConsole() {
           queryKey: subscriptionQueries.detail(profileId ?? "").queryKey,
         }),
       ]);
-      showNotice(refresh.unavailableTargets.length > 0
-        ? `已更新 ${refresh.targetCount} 个输出，${refresh.unavailableTargets.length} 个未生成`
-        : "所有输出已更新");
+      showNotice(`已更新 ${refresh.nodeCount} 个节点`);
     },
     onError: (error) => showNotice(subscriptionErrorText(error), "error"),
   });
@@ -222,11 +220,6 @@ export function SubscriptionConsole() {
                     <strong>有效节点</strong>
                     <small>{profile.latestRefresh?.nodeCount ?? "—"}</small>
                   </li>
-                  <li className={profile.outputs.length > 0 ? "is-ready" : ""}>
-                    <span className="conversion-node" />
-                    <strong>生成输出</strong>
-                    <small>{profile.outputs.length || "—"}</small>
-                  </li>
                   <li className={profile.links.some((link) => link.enabled) ? "is-ready" : ""}>
                     <span className="conversion-node" />
                     <strong>固定链接</strong>
@@ -237,13 +230,13 @@ export function SubscriptionConsole() {
                 {profile.latestRefresh?.status === "succeeded" ? (
                   <p className="refresh-result">
                     <CheckCircle aria-hidden="true" />
-                    {profile.latestRefresh.nodeCount} 个节点，{profile.latestRefresh.targetCount} 个输出
+                    {profile.latestRefresh.nodeCount} 个节点已更新
                   </p>
                 ) : null}
                 {profile.latestRefresh?.status === "failed" ? (
                   <p className="refresh-result is-error">
                     <WarningCircle aria-hidden="true" />
-                    上次刷新失败，请检查订阅来源或转换服务
+                    上次刷新失败，请检查订阅来源
                   </p>
                 ) : null}
                 {profile.latestRefresh?.status === "running" ? (

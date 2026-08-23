@@ -13,9 +13,7 @@ const statusText: Record<RefreshRun["status"], string> = {
 };
 
 const errorText: Record<string, string> = {
-  "Sub-Store did not respond": "转换服务无响应",
-  "Sub-Store URL is not configured": "转换服务未配置",
-  "Subscription conversion failed": "转换失败",
+  "Subscription source did not respond": "订阅源无响应",
   "Stored source could not be decrypted": "来源解密失败",
 };
 
@@ -43,7 +41,6 @@ export const RefreshHistory: FC<RefreshHistoryProps> = ({ runs }) => {
               <th>时间</th>
               <th>结果</th>
               <th>节点</th>
-              <th>格式</th>
             </tr>
           </thead>
           <tbody>
@@ -57,7 +54,6 @@ export const RefreshHistory: FC<RefreshHistoryProps> = ({ runs }) => {
                   {run.error ? <small>{errorText[run.error] ?? run.error}</small> : null}
                 </td>
                 <td>{run.nodeCount ?? "—"}</td>
-                <td>{run.targetCount ?? "—"}</td>
               </tr>
             ))}
           </tbody>

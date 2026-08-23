@@ -1,5 +1,7 @@
-import type { NodeSettings, NodeSortMode } from "./node-transforms";
-import type { OutputTarget } from "./types";
+import type {
+  NodeSettings,
+  NodeSortMode,
+} from "./node-transforms";
 
 interface ProfileRow {
   id: string;
@@ -10,7 +12,7 @@ interface ProfileRow {
 
 interface ProfileSummaryRow extends ProfileRow {
   enabled_source_count: number;
-  output_count: number;
+  node_count: number;
   link_count: number;
 }
 
@@ -30,10 +32,8 @@ interface SourceRow {
   updated_at: string;
 }
 
-interface OutputRow {
-  target: OutputTarget;
-  content_type: string;
-  etag: string;
+interface NormalizedNodesRow {
+  node_count: number;
   generated_at: string;
 }
 
@@ -47,12 +47,10 @@ interface ShareRow {
   token_iv: string | null;
 }
 
-interface PublishedOutputRow {
+interface PublishedNodesRow {
   profile_name: string;
-  content: string;
-  content_type: string;
-  etag: string;
-  generated_at: string;
+  nodes_json: string | null;
+  generated_at: string | null;
 }
 
 interface StoredSourceRow {
@@ -72,7 +70,6 @@ interface RefreshRow {
   id: string;
   status: "running" | "succeeded" | "failed";
   node_count: number | null;
-  target_count: number | null;
   error: string | null;
   started_at: string;
   finished_at: string | null;
@@ -105,7 +102,11 @@ export async function listProfiles(db: D1Database) {
         FROM sources
         WHERE sources.profile_id = profiles.id AND sources.enabled = 1
       ) AS enabled_source_count,
-      (SELECT COUNT(*) FROM generated_outputs WHERE generated_outputs.profile_id = profiles.id) AS output_count,
+      COALESCE((
+        SELECT node_count
+        FROM normalized_nodes
+        WHERE normalized_nodes.profile_id = profiles.id
+      ), 0) AS node_count,
       (SELECT COUNT(*) FROM share_links WHERE share_links.profile_id = profiles.id AND enabled = 1) AS link_count
     FROM profiles
     ORDER BY updated_at DESC
@@ -114,7 +115,7 @@ export async function listProfiles(db: D1Database) {
   return result.results.map((row) => ({
     ...profileJson(row),
     enabledSourceCount: row.enabled_source_count,
-    outputCount: row.output_count,
+    nodeCount: row.node_count,
     linkCount: row.link_count,
   }));
 }
@@ -195,7 +196,7 @@ export async function readProfile(db: D1Database, profileId: string) {
     return null;
   }
 
-  const [sources, outputs, refreshes] = await Promise.all([
+  const [sources, snapshot, refreshes] = await Promise.all([
     db.prepare(`
       SELECT id, name, source_type, enabled, created_at, updated_at
       FROM sources
@@ -203,13 +204,12 @@ export async function readProfile(db: D1Database, profileId: string) {
       ORDER BY created_at ASC
     `).bind(profileId).all<SourceRow>(),
     db.prepare(`
-      SELECT target, content_type, etag, generated_at
-      FROM generated_outputs
+      SELECT node_count, generated_at
+      FROM normalized_nodes
       WHERE profile_id = ?
-      ORDER BY target ASC
-    `).bind(profileId).all<OutputRow>(),
+    `).bind(profileId).first<NormalizedNodesRow>(),
     db.prepare(`
-      SELECT id, status, node_count, target_count, error, started_at, finished_at
+      SELECT id, status, node_count, error, started_at, finished_at
       FROM refresh_runs
       WHERE profile_id = ?
       ORDER BY started_at DESC, rowid DESC
@@ -230,12 +230,8 @@ export async function readProfile(db: D1Database, profileId: string) {
       createdAt: source.created_at,
       updatedAt: source.updated_at,
     })),
-    outputs: outputs.results.map((output) => ({
-      target: output.target,
-      contentType: output.content_type,
-      etag: output.etag,
-      generatedAt: output.generated_at,
-    })),
+    nodeCount: snapshot?.node_count ?? 0,
+    normalizedAt: snapshot?.generated_at ?? null,
     latestRefresh: refreshHistory[0] ?? null,
     refreshHistory,
   };
@@ -442,80 +438,25 @@ export async function updateSource(
   };
 }
 
-export async function writeOutput(
-  db: D1Database,
-  input: {
-    profileId: string;
-    target: OutputTarget;
-    content: string;
-    contentType: string;
-    etag: string;
-  },
-): Promise<boolean> {
-  const profile = await db.prepare("SELECT id FROM profiles WHERE id = ?")
-    .bind(input.profileId)
-    .first<{ id: string }>();
-  if (!profile) {
-    return false;
-  }
-
-  const now = new Date().toISOString();
-  await db.prepare(`
-    INSERT INTO generated_outputs (
-      profile_id, target, content, content_type, etag, generated_at
-    ) VALUES (?, ?, ?, ?, ?, ?)
-    ON CONFLICT(profile_id, target) DO UPDATE SET
-      content = excluded.content,
-      content_type = excluded.content_type,
-      etag = excluded.etag,
-      generated_at = excluded.generated_at
-  `).bind(
-    input.profileId,
-    input.target,
-    input.content,
-    input.contentType,
-    input.etag,
-    now,
-  ).run();
-  await touchProfile(db, input.profileId, now);
-  return true;
-}
-
-export async function replaceOutputs(
+export async function replaceNormalizedNodes(
   db: D1Database,
   profileId: string,
-  outputs: Array<{
-    target: OutputTarget;
-    content: string;
-    contentType: string;
-    etag: string;
-  }>,
+  nodesJson: string,
+  nodeCount: number,
 ): Promise<void> {
   const now = new Date().toISOString();
-  const statements = [
-    db.prepare("DELETE FROM generated_outputs WHERE profile_id = ?").bind(profileId),
-    ...outputs.map((output) => db.prepare(`
-    INSERT INTO generated_outputs (
-      profile_id, target, content, content_type, etag, generated_at
-    ) VALUES (?, ?, ?, ?, ?, ?)
-    ON CONFLICT(profile_id, target) DO UPDATE SET
-      content = excluded.content,
-      content_type = excluded.content_type,
-      etag = excluded.etag,
-      generated_at = excluded.generated_at
-  `).bind(
-    profileId,
-    output.target,
-    output.content,
-    output.contentType,
-    output.etag,
-    now,
-  )),
-  ];
-  statements.push(
+  await db.batch([
+    db.prepare(`
+      INSERT INTO normalized_nodes (
+        profile_id, nodes_json, node_count, generated_at
+      ) VALUES (?, ?, ?, ?)
+      ON CONFLICT(profile_id) DO UPDATE SET
+        nodes_json = excluded.nodes_json,
+        node_count = excluded.node_count,
+        generated_at = excluded.generated_at
+    `).bind(profileId, nodesJson, nodeCount, now),
     db.prepare("UPDATE profiles SET updated_at = ? WHERE id = ?").bind(now, profileId),
-  );
-  await db.batch(statements);
+  ]);
 }
 
 export async function startRefresh(db: D1Database, profileId: string) {
@@ -534,7 +475,6 @@ export async function finishRefresh(
     id: string;
     status: "succeeded" | "failed";
     nodeCount?: number;
-    targetCount?: number;
     error?: string;
   },
 ) {
@@ -542,12 +482,11 @@ export async function finishRefresh(
   await db.batch([
     db.prepare(`
       UPDATE refresh_runs
-      SET status = ?, node_count = ?, target_count = ?, error = ?, finished_at = ?
+      SET status = ?, node_count = ?, target_count = NULL, error = ?, finished_at = ?
       WHERE id = ?
     `).bind(
       input.status,
       input.nodeCount ?? null,
-      input.targetCount ?? null,
       input.error ?? null,
       finishedAt,
       input.id,
@@ -576,7 +515,6 @@ export async function finishRefresh(
     id: input.id,
     status: input.status,
     nodeCount: input.nodeCount ?? null,
-    targetCount: input.targetCount ?? null,
     error: input.error ?? null,
     finishedAt,
   };
@@ -629,25 +567,21 @@ export async function revokeShareLink(db: D1Database, linkId: string): Promise<b
   return result.meta.changes > 0;
 }
 
-export async function readPublishedOutput(
+export async function readPublishedNodes(
   db: D1Database,
   tokenHash: string,
-  target: OutputTarget,
-): Promise<PublishedOutputRow | null> {
+): Promise<PublishedNodesRow | null> {
   return db.prepare(`
     SELECT
       profiles.name AS profile_name,
-      generated_outputs.content,
-      generated_outputs.content_type,
-      generated_outputs.etag,
-      generated_outputs.generated_at
+      normalized_nodes.nodes_json,
+      normalized_nodes.generated_at
     FROM share_links
     JOIN profiles ON profiles.id = share_links.profile_id
-    JOIN generated_outputs ON generated_outputs.profile_id = share_links.profile_id
+    LEFT JOIN normalized_nodes ON normalized_nodes.profile_id = share_links.profile_id
     WHERE share_links.token_hash = ?
       AND share_links.enabled = 1
-      AND generated_outputs.target = ?
-  `).bind(tokenHash, target).first<PublishedOutputRow>();
+  `).bind(tokenHash).first<PublishedNodesRow>();
 }
 
 async function touchProfile(db: D1Database, profileId: string, updatedAt: string): Promise<void> {
@@ -661,7 +595,6 @@ function refreshJson(row: RefreshRow) {
     id: row.id,
     status: row.status,
     nodeCount: row.node_count,
-    targetCount: row.target_count,
     error: row.error,
     startedAt: row.started_at,
     finishedAt: row.finished_at,

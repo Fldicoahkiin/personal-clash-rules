@@ -1,4 +1,4 @@
-import { ArrowUpRight, GithubLogo } from "@phosphor-icons/react";
+import { ArrowUpRight } from "@phosphor-icons/react";
 
 import { AppHeader } from "./components/AppHeader";
 import { ConverterWorkspace } from "./components/ConverterWorkspace";
@@ -12,11 +12,11 @@ export function App() {
     <div className="app-shell" id="top">
       <AppHeader />
       <main>
-        <RouteTester />
         <SubscriptionImport />
+        <RouteTester />
+        <RulesCatalog />
         <ConverterWorkspace />
         <PolicyMap />
-        <RulesCatalog />
 
         <section className="use-panel page-width" aria-labelledby="use-title">
           <div>
@@ -46,13 +46,13 @@ export function App() {
       </main>
 
       <footer className="site-footer page-width">
-        <p>订阅转换 · MIT</p>
+        <p>订阅转换 · AGPL-3.0</p>
         <a
           href="https://github.com/Fldicoahkiin/personal-clash-rules"
           target="_blank"
           rel="noreferrer"
         >
-          <GithubLogo aria-hidden="true" weight="fill" />
+          <img src="/brand/github-mark.svg" alt="" width="16" height="16" />
           GitHub
         </a>
       </footer>

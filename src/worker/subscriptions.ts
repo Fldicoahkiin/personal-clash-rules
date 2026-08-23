@@ -1,8 +1,12 @@
 import { authorizeControlRequest, isControlRequestAuthorized } from "./access";
 import { ApiError } from "./api-error";
-import { applyNodeTransforms, parseNodeSettings } from "./node-transforms";
+import {
+  applyNodeTransforms,
+  parseNodeSettings,
+  type SubscriptionNode,
+} from "./node-transforms";
 import { createShareToken, decryptSource, encryptSource, hashToken } from "./secrets";
-import { normalizeSources, probeSubStore, produceTarget } from "./sub-store";
+import { normalizeSources, probeConverter, produceTarget } from "./sub-store";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
 import {
   createProfile,
@@ -17,15 +21,14 @@ import {
   readEditableSource,
   readProfile,
   readProfileLinks,
-  readPublishedOutput,
-  replaceOutputs,
+  readPublishedNodes,
+  replaceNormalizedNodes,
   renameProfile,
   revokeShareLink,
   setSourceEnabled,
   startRefresh,
   updateSource,
   updateProfileNodeSettings,
-  writeOutput,
 } from "./subscription-store";
 import { isOutputTarget, outputTargets, type SubscriptionEnv } from "./types";
 import { targetForUserAgent } from "./subscription-target";
@@ -33,7 +36,8 @@ import { targetForUserAgent } from "./subscription-target";
 const encoder = new TextEncoder();
 const maximumSourceBytes = 64 * 1024;
 const maximumOutputBytes = 1_800_000;
-const maximumScheduledProfiles = Math.floor(50 / (outputTargets.length + 1));
+const maximumSnapshotBytes = 900_000;
+const maximumScheduledProfiles = 5;
 
 function json(data: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -60,10 +64,12 @@ async function probeDatabase(
         profiles.sort_mode,
         share_links.token_ciphertext,
         share_links.token_iv,
-        refresh_runs.status
+        refresh_runs.status,
+        normalized_nodes.node_count
       FROM profiles
       LEFT JOIN share_links ON share_links.profile_id = profiles.id
       LEFT JOIN refresh_runs ON refresh_runs.profile_id = profiles.id
+      LEFT JOIN normalized_nodes ON normalized_nodes.profile_id = profiles.id
       LIMIT 1
     `).first();
     return "ready";
@@ -132,6 +138,17 @@ function validateSource(type: "subscription" | "node", value: string): void {
   }
 }
 
+function isNormalizedNode(value: unknown): value is SubscriptionNode {
+  return Boolean(
+    value
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && typeof (value as { name?: unknown }).name === "string"
+    && (value as { name: string }).name.trim()
+    && typeof (value as { type?: unknown }).type === "string",
+  );
+}
+
 export async function refreshProfile(
   db: D1Database,
   profileId: string,
@@ -172,45 +189,23 @@ export async function refreshProfile(
         "Node processing removed every enabled node",
       );
     }
-    const attempts = await Promise.allSettled(outputTargets.map(async (target) => {
-      const content = await produceTarget(env, nodes, target);
-      if (encoder.encode(content).byteLength > maximumOutputBytes) {
-        throw new ApiError(413, "output_too_large", `${target} output exceeds the 1.8 MB limit`);
-      }
-      return {
-        target,
-        content,
-        contentType: contentTypeFor(target),
-        etag: `"${await hashToken(content)}"`,
-      };
-    }));
-
-    const converted = attempts.flatMap((attempt) => (
-      attempt.status === "fulfilled" ? [attempt.value] : []
-    ));
-    const unavailableTargets = outputTargets.filter((_, index) => (
-      attempts[index].status === "rejected"
-    ));
-    if (converted.length === 0) {
-      const failed = attempts.find((attempt) => attempt.status === "rejected");
-      throw failed?.status === "rejected" ? failed.reason : new ApiError(
-        502,
-        "conversion_failed",
-        "Subscription conversion produced no output",
+    const snapshot = JSON.stringify(nodes);
+    if (encoder.encode(snapshot).byteLength > maximumSnapshotBytes) {
+      throw new ApiError(
+        413,
+        "normalized_nodes_too_large",
+        "Normalized nodes exceed the 900 KiB storage limit",
       );
     }
-
-    await replaceOutputs(db, profileId, converted);
+    await replaceNormalizedNodes(db, profileId, snapshot, nodes.length);
     const result = await finishRefresh(db, {
       id: refresh.id,
       status: "succeeded",
       nodeCount: nodes.length,
-      targetCount: converted.length,
     });
     return {
       ...result,
-      targets: converted.map((output) => output.target),
-      unavailableTargets,
+      normalizedAt: result.finishedAt,
     };
   } catch (error) {
     const apiError = error instanceof ApiError
@@ -262,13 +257,10 @@ async function routeControlApi(
     && parts[2] === "status"
     && request.method === "GET"
   ) {
-    const [database, converter] = await Promise.all([
-      probeDatabase(db),
-      probeSubStore(env),
-    ]);
+    const database = await probeDatabase(db);
     return json({
       database,
-      converter,
+      converter: probeConverter(),
       refreshSchedule: "0 */6 * * *",
     });
   }
@@ -424,38 +416,6 @@ async function routeControlApi(
     return json({ source });
   }
 
-  if (
-    parts.length === 6
-    && parts[2] === "profiles"
-    && parts[4] === "outputs"
-    && request.method === "PUT"
-  ) {
-    const target = parts[5];
-    if (!isOutputTarget(target)) {
-      throw new ApiError(400, "unsupported_target", "Output target is not supported");
-    }
-    const body = await readObject(request);
-    if (typeof body.content !== "string" || !body.content) {
-      throw new ApiError(400, "invalid_content", "content must be a non-empty string");
-    }
-    if (encoder.encode(body.content).byteLength > maximumOutputBytes) {
-      throw new ApiError(413, "output_too_large", "Output exceeds the 1.8 MB limit");
-    }
-
-    const etag = `"${await hashToken(body.content)}"`;
-    const written = await writeOutput(db, {
-      profileId: parts[3],
-      target,
-      content: body.content,
-      contentType: contentTypeFor(target),
-      etag,
-    });
-    if (!written) {
-      throw new ApiError(404, "profile_not_found", "Profile not found");
-    }
-    return json({ target, etag });
-  }
-
   if (parts.length === 5 && parts[2] === "profiles" && parts[4] === "links" && request.method === "POST") {
     const body = await readObject(request);
     const name = readTextField(body, "name", { fallback: "默认链接", maximum: 80 });
@@ -515,31 +475,47 @@ async function routePublishedOutput(
     request.headers.get("user-agent") ?? "",
   );
 
-  const output = await readPublishedOutput(
+  const published = await readPublishedNodes(
     requireDatabase(env),
     await hashToken(parts[1]),
-    target,
   );
-  if (!output) {
+  if (!published) {
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
+  }
+  if (!published.nodes_json || !published.generated_at) {
+    throw new ApiError(409, "subscription_not_ready", "Refresh this subscription before using its link");
+  }
+
+  let nodes: unknown;
+  try {
+    nodes = JSON.parse(published.nodes_json);
+  } catch {
+    throw new ApiError(500, "normalized_nodes_invalid", "Stored nodes could not be read");
+  }
+  if (!Array.isArray(nodes) || !nodes.every(isNormalizedNode)) {
+    throw new ApiError(500, "normalized_nodes_invalid", "Stored nodes could not be read");
+  }
+  const generated = await produceTarget(env, nodes, target);
+  if (encoder.encode(generated).byteLength > maximumOutputBytes) {
+    throw new ApiError(413, "output_too_large", `${target} output exceeds the 1.8 MB limit`);
   }
 
   const content = target === "surge-config" || target === "surfboard-config"
-    ? output.content.replace(managedProfileUrlPlaceholder, url.toString())
-    : output.content;
-  const etag = content === output.content ? output.etag : `"${await hashToken(content)}"`;
+    ? generated.replace(managedProfileUrlPlaceholder, url.toString())
+    : generated;
+  const etag = `"${await hashToken(content)}"`;
 
   const headers = new Headers({
-    "Content-Type": output.content_type,
+    "Content-Type": contentTypeFor(target),
     ETag: etag,
-    "X-Subscription-Profile": encodeURIComponent(output.profile_name),
+    "X-Subscription-Profile": encodeURIComponent(published.profile_name),
     "X-Subscription-Target": target,
-    "X-Subscription-Updated-At": output.generated_at,
+    "X-Subscription-Updated-At": published.generated_at,
   });
   if (universal && !requestedTarget) {
     headers.set("Vary", "User-Agent");
   }
-  const generatedAt = new Date(output.generated_at);
+  const generatedAt = new Date(published.generated_at);
   const lastModified = Number.isNaN(generatedAt.valueOf())
     ? null
     : generatedAt.toUTCString();

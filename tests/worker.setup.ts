@@ -9,9 +9,6 @@ declare global {
       TEST_MIGRATIONS: D1Migration[];
       DATA_ENCRYPTION_KEY: string;
       CONTROL_API_TOKEN: string;
-      SUB_STORE_URL: string;
-      SUB_STORE_ACCESS_CLIENT_ID: string;
-      SUB_STORE_ACCESS_CLIENT_SECRET: string;
     }
   }
 }
