@@ -27,33 +27,25 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       kind: "station",
     },
     {
-      label: "规则",
-      value: result
-        ? result.matched
-          ? result.rule
-          : "未命中具体规则"
-        : "—",
-      detail: result
-        ? result.matched
-          ? result.ruleSetLabel
-          : "转入 MATCH"
-        : "",
+      label: "命中规则",
+      value: result?.rule || "—",
+      detail: result?.ruleSetLabel || "",
       status: result ? (result.matched ? "通过" : "未通过") : "",
       machine: true,
       state: result ? (result.matched ? "pass" : "stop") : null,
       kind: "signal",
     },
     {
-      label: "策略",
+      label: "策略组",
       value: policyRoute?.route || "—",
-      detail: result?.policy || "",
+      detail: "",
       status: "",
       machine: true,
       state: null,
       kind: "switch",
     },
     {
-      label: "结果",
+      label: "去向",
       value: policyRoute?.target || "—",
       detail: policyRoute?.mode || "",
       status: "",

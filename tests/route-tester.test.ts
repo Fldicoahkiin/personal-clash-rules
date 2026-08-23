@@ -16,19 +16,19 @@ describe("createRouteSteps", () => {
     expect(createRouteSteps(result)).toEqual([
       expect.objectContaining({ label: "网址", value: "api.openai.com" }),
       expect.objectContaining({
-        label: "规则",
+        label: "命中规则",
         value: "DOMAIN-SUFFIX,openai.com",
         detail: "OpenAI",
         state: "pass",
         status: "通过",
       }),
       expect.objectContaining({
-        label: "策略",
+        label: "策略组",
         value: "AI → GLOBAL",
-        detail: "AI",
+        detail: "",
       }),
       expect.objectContaining({
-        label: "结果",
+        label: "去向",
         value: "PROXY",
         detail: "代理",
       }),
@@ -48,19 +48,19 @@ describe("createRouteSteps", () => {
     expect(createRouteSteps(result)).toEqual([
       expect.objectContaining({ label: "网址", value: "baidu.com" }),
       expect.objectContaining({
-        label: "规则",
-        value: "未命中具体规则",
-        detail: "转入 MATCH",
+        label: "命中规则",
+        value: "MATCH",
+        detail: "默认规则",
         state: "stop",
         status: "未通过",
       }),
       expect.objectContaining({
-        label: "策略",
+        label: "策略组",
         value: "DEFAULT → GLOBAL",
-        detail: "DEFAULT",
+        detail: "",
       }),
       expect.objectContaining({
-        label: "结果",
+        label: "去向",
         value: "PROXY",
         detail: "代理",
       }),
@@ -80,19 +80,19 @@ describe("createRouteSteps", () => {
     expect(createRouteSteps(result)).toEqual([
       expect.objectContaining({ label: "网址", value: "gsa.apple.com" }),
       expect.objectContaining({
-        label: "规则",
+        label: "命中规则",
         value: "DOMAIN,gsa.apple.com",
         detail: "Apple",
         state: "pass",
         status: "通过",
       }),
       expect.objectContaining({
-        label: "策略",
+        label: "策略组",
         value: "APPLE → DIRECT",
-        detail: "APPLE",
+        detail: "",
       }),
       expect.objectContaining({
-        label: "结果",
+        label: "去向",
         value: "DIRECT",
         detail: "直连",
       }),

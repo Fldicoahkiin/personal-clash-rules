@@ -95,62 +95,84 @@ export function RouteTester() {
 
         <div className="route-result" aria-live="polite" key={resultVersion}>
           <ol className="route-steps" aria-label="网址规则处理路线">
-            {steps.map((step) => (
-              <li key={step.label}>
-                <div className="route-step-copy">
-                  <span className="route-step-label">{step.label}</span>
-                  <strong
-                    className={
-                      [
-                        "route-value",
-                        step.machine ? "route-value-machine" : "",
-                        step.kind === "terminal" ? "route-value-terminal" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")
-                    }
-                  >
-                    {step.value}
-                  </strong>
-                  {step.detail ? (
-                    <small className="route-step-detail">{step.detail}</small>
-                  ) : null}
-                </div>
-                <div className="route-track-stop">
-                  {step.kind === "signal" && step.state ? (
+            {steps.map((step) => {
+              const [ruleType, ruleValue] =
+                step.kind === "signal" ? step.value.split(",", 2) : ["", ""];
+
+              return (
+                <li
+                  className={`route-step route-step-${step.kind}`}
+                  key={step.label}
+                >
+                  <div className="route-step-copy">
+                    <span className="route-step-label">{step.label}</span>
+                    <strong
+                      className={
+                        [
+                          "route-value",
+                          step.machine ? "route-value-machine" : "",
+                          step.kind === "signal" ? "route-value-rule" : "",
+                          step.kind === "terminal" ? "route-value-terminal" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                      }
+                      aria-label={step.value}
+                    >
+                      {ruleValue ? (
+                        <>
+                          <span>{ruleType},</span>
+                          <span>{ruleValue}</span>
+                        </>
+                      ) : (
+                        step.value
+                      )}
+                    </strong>
+                    {step.detail && step.kind !== "terminal" ? (
+                      <small className="route-step-detail">{step.detail}</small>
+                    ) : null}
+                  </div>
+                  <div className="route-track-stop">
                     <span
                       className={
-                        step.state === "pass"
-                          ? "route-signal route-signal-pass"
-                          : "route-signal route-signal-stop"
+                        [
+                          "route-node",
+                          step.kind === "terminal" ? "route-node-terminal" : "",
+                          step.kind === "signal" ? "route-node-signal" : "",
+                          step.state === "pass" ? "route-node-pass" : "",
+                          step.state === "stop" ? "route-node-stop" : "",
+                          step.kind === "switch" ? "route-node-switch" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
                       }
-                      aria-label={`规则${step.status}`}
+                      aria-label={
+                        step.kind === "signal" ? `规则${step.status}` : undefined
+                      }
+                      aria-hidden={step.kind === "signal" ? undefined : "true"}
                     >
-                      <span className="route-signal-lamp" aria-hidden="true">
-                        <i />
-                      </span>
-                      <b>{step.status}</b>
+                      {step.kind === "terminal" ? (
+                        <TrainSimple weight="fill" />
+                      ) : null}
                     </span>
-                  ) : null}
-                  <span
-                    className={
-                      step.kind === "terminal"
-                        ? "route-node route-node-terminal"
-                        : step.kind === "signal"
-                          ? "route-node route-node-signal"
-                          : step.kind === "switch"
-                            ? "route-node route-node-switch"
-                            : "route-node"
-                    }
-                    aria-hidden="true"
-                  >
-                    {step.kind === "terminal" ? (
-                      <TrainSimple weight="fill" />
+                    {step.kind === "signal" && step.state ? (
+                      <span
+                        className={
+                          step.state === "pass"
+                            ? "route-signal-status route-signal-pass"
+                            : "route-signal-status route-signal-stop"
+                        }
+                      >
+                        {step.status}
+                      </span>
                     ) : null}
-                  </span>
-                </div>
-              </li>
-            ))}
+                    {step.kind === "terminal" && step.detail ? (
+                      <span className="route-terminal-caption">{step.detail}</span>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         </div>
 

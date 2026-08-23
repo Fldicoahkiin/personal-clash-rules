@@ -272,7 +272,7 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 244px;
+  min-height: 252px;
   margin-top: 20px;
 }
 
@@ -296,7 +296,7 @@ summary:focus-visible {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 0.95fr 1.35fr 1.15fr 0.9fr;
   margin: 0;
   padding: 20px 0 0;
   list-style: none;
@@ -305,7 +305,7 @@ summary:focus-visible {
 .route-steps li {
   position: relative;
   display: grid;
-  grid-template-rows: 126px 48px;
+  grid-template-rows: 136px 56px;
   min-width: 0;
   align-items: center;
   text-align: center;
@@ -314,18 +314,18 @@ summary:focus-visible {
 .route-steps li:not(:last-child)::after {
   position: absolute;
   z-index: 0;
-  top: 145px;
-  left: calc(50% + 26px);
-  width: calc(100% - 52px);
+  top: 159px;
+  left: calc(50% + 29px);
+  width: calc(100% - 58px);
   height: 10px;
   background:
     linear-gradient(var(--ink), var(--ink)) top / 100% 2px no-repeat,
     linear-gradient(var(--ink), var(--ink)) bottom / 100% 2px no-repeat,
     repeating-linear-gradient(
       90deg,
-      transparent 0 11px,
-      var(--ink) 11px 12px,
-      transparent 12px 22px
+      transparent 0 15px,
+      var(--ink) 15px 16px,
+      transparent 16px 30px
     );
   content: "";
 }
@@ -351,41 +351,52 @@ summary:focus-visible {
   position: relative;
   display: grid;
   width: 100%;
-  height: 48px;
+  height: 56px;
   place-items: center;
 }
 
 .route-node {
   position: relative;
   z-index: 3;
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
   border: 3px solid var(--accent);
   border-radius: 50%;
   background: var(--paper);
-  box-shadow: 0 0 0 5px var(--paper);
+  box-shadow: 0 0 0 7px var(--paper);
 }
 
 .route-node-terminal {
   display: grid;
-  width: 34px;
+  width: 42px;
   height: 34px;
   place-items: center;
   border: 1px solid var(--ink);
   border-radius: 2px;
   background: var(--paper);
   color: var(--ink);
-  box-shadow: 0 0 0 6px var(--paper);
+  box-shadow: 0 0 0 7px var(--paper);
 }
 
 .route-node-terminal svg {
-  width: 21px;
-  height: 21px;
+  width: 24px;
+  height: 24px;
 }
 
 .route-node-signal {
-  border: 2px solid var(--ink);
-  background: var(--paper);
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.route-node-pass {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.route-node-stop {
+  border-color: var(--danger);
+  background: var(--danger);
 }
 
 .route-node-switch {
@@ -402,7 +413,7 @@ summary:focus-visible {
   color: var(--ink);
   font-size: 0.92rem;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .route-value-machine {
@@ -411,55 +422,35 @@ summary:focus-visible {
 
 .route-value-terminal {
   font-size: 1.08rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
-.route-signal {
-  position: absolute;
-  z-index: 4;
-  bottom: 25px;
-  left: calc(50% + 30px);
+.route-value-rule {
   display: grid;
-  grid-template-columns: 18px auto;
-  align-items: center;
-  gap: 8px;
+  justify-items: center;
+  gap: 1px;
+}
+
+.route-value-rule span {
   white-space: nowrap;
 }
 
-.route-signal-lamp {
-  position: relative;
-  display: grid;
-  width: 18px;
-  height: 18px;
-  place-items: center;
-  border: 1px solid var(--ink);
-  border-radius: 50%;
-  background: var(--ink);
-}
-
-.route-signal-lamp::after {
+.route-signal-status,
+.route-terminal-caption {
   position: absolute;
-  top: 100%;
+  z-index: 4;
+  top: calc(50% + 21px);
   left: 50%;
-  width: 2px;
-  height: 14px;
-  background: var(--ink);
-  content: "";
+  font-size: 0.72rem;
+  font-weight: 760;
+  line-height: 1;
+  white-space: nowrap;
   transform: translateX(-50%);
 }
 
-.route-signal-lamp i {
-  display: block;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.route-signal b {
-  font-size: 0.72rem;
-  font-weight: 760;
-  line-height: 1.2;
+.route-terminal-caption {
+  color: var(--muted);
+  font-weight: 650;
 }
 
 .route-signal-pass {
@@ -468,14 +459,6 @@ summary:focus-visible {
 
 .route-signal-stop {
   color: var(--danger);
-}
-
-.route-signal-pass .route-signal-lamp i {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 22%, transparent);
-}
-
-.route-signal-stop .route-signal-lamp i {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
 .route-step-detail {
@@ -1256,18 +1239,18 @@ summary:focus-visible {
 
   .route-steps li:not(:last-child)::after {
     display: block;
-    top: calc(50% + 14px);
+    top: calc(50% + 18px);
     left: calc(var(--route-label-column) + 21px);
     width: 10px;
-    height: calc(100% - 28px);
+    height: calc(100% - 36px);
     background:
       linear-gradient(var(--ink), var(--ink)) left / 2px 100% no-repeat,
       linear-gradient(var(--ink), var(--ink)) right / 2px 100% no-repeat,
       repeating-linear-gradient(
         0deg,
-        transparent 0 11px,
-        var(--ink) 11px 12px,
-        transparent 12px 22px
+        transparent 0 15px,
+        var(--ink) 15px 16px,
+        transparent 16px 30px
       );
   }
 
@@ -1285,6 +1268,10 @@ summary:focus-visible {
     grid-column: 3;
     grid-row: 1;
     margin-top: 0;
+  }
+
+  .route-value-rule {
+    justify-items: start;
   }
 
   .route-step-detail {
@@ -1308,24 +1295,27 @@ summary:focus-visible {
   }
 
   .route-node-terminal {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 30px;
   }
 
   .route-node-terminal svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
-  .route-signal {
+  .route-node-signal {
+    width: 20px;
+    height: 20px;
+  }
+
+  .route-signal-status,
+  .route-terminal-caption {
     position: static;
     grid-column: 3;
     grid-row: 3;
     justify-self: start;
-  }
-
-  .route-signal-lamp::after {
-    display: none;
+    transform: none;
   }
 
   .route-message {
