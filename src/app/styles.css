@@ -278,7 +278,7 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 228px;
+  min-height: 244px;
   margin-top: 20px;
 }
 
@@ -385,6 +385,22 @@ summary:focus-visible {
   height: 21px;
 }
 
+.route-node-signal {
+  border-color: var(--paper);
+  background: currentColor;
+  box-shadow:
+    0 0 0 1px var(--ink),
+    0 0 0 7px var(--paper);
+}
+
+.route-node-signal-pass {
+  color: var(--success);
+}
+
+.route-node-signal-stop {
+  color: var(--danger);
+}
+
 .route-value {
   margin-top: 10px;
   max-width: 100%;
@@ -406,49 +422,28 @@ summary:focus-visible {
 .route-signal {
   position: absolute;
   z-index: 4;
-  bottom: 32px;
-  left: calc(50% + 17px);
+  top: 40px;
+  left: 50%;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  transform: translateX(-50%);
   white-space: nowrap;
 }
 
-.route-signal::after {
-  position: absolute;
-  top: 20px;
-  left: 7px;
-  width: 1px;
-  height: 19px;
-  background: var(--ink);
-  content: "";
-}
-
 .route-signal i {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  width: 15px;
-  height: 20px;
-  place-items: center;
-  border-radius: 2px;
-  background: var(--ink);
-}
-
-.route-signal i::after {
+  display: block;
   width: 8px;
   height: 8px;
+  flex: 0 0 auto;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 0 1px var(--paper);
-  content: "";
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 24%, transparent);
 }
 
 .route-signal b {
-  padding: 2px 4px;
-  background: var(--paper);
   font-size: 0.72rem;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .route-signal-pass {

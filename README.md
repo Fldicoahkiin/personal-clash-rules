@@ -1,4 +1,4 @@
-<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> Flacierの订阅转换</h1>
+<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> 订阅转换</h1>
 
 个人订阅转换、分流规则和网址测试。
 

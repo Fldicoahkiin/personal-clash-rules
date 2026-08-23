@@ -70,44 +70,44 @@ export function RouteTester() {
   const policyRoute = result ? describePolicyRoute(result.policy) : null;
   const steps = [
     {
-      label: "输入地址",
+      label: "网址",
       value: result?.hostname || "—",
       detail: "",
       machine: true,
       state: null,
-      terminal: false,
+      kind: "station",
     },
     {
-      label: "命中规则",
-      value: result?.rule || "—",
+      label: "检查规则",
+      value: result
+        ? result.matched
+          ? result.rule
+          : "未命中具体规则"
+        : "—",
       detail: result
         ? result.matched
           ? result.ruleSetLabel
-          : "默认规则"
+          : "转入 MATCH"
         : "",
       machine: true,
       state: result ? (result.matched ? "pass" : "stop") : null,
-      terminal: false,
+      kind: "signal",
     },
     {
-      label: "策略组",
-      value: result?.policy || "—",
-      detail: policyRoute
-        ? policyRoute.route.includes(" → ")
-          ? `默认 ${policyRoute.route.split(" → ")[1]}`
-          : "固定策略"
-        : "",
+      label: "策略",
+      value: policyRoute?.route || "—",
+      detail: result ? result.policy : "",
       machine: true,
       state: null,
-      terminal: false,
+      kind: "station",
     },
     {
-      label: "处理方式",
+      label: "去向",
       value: policyRoute?.target || "—",
       detail: policyRoute?.mode || "",
       machine: true,
       state: null,
-      terminal: true,
+      kind: "terminal",
     },
   ];
 
@@ -116,7 +116,7 @@ export function RouteTester() {
       <div className="route-main">
         <div className="route-intro">
           <h1 id="page-title">网址怎么处理</h1>
-          <p>命中规则、策略组、处理方式。</p>
+          <p>输入网址，查看命中规则与最终去向。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -146,7 +146,7 @@ export function RouteTester() {
                       [
                         "route-value",
                         step.machine ? "route-value-machine" : "",
-                        step.terminal ? "route-value-terminal" : "",
+                        step.kind === "terminal" ? "route-value-terminal" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")
@@ -159,7 +159,7 @@ export function RouteTester() {
                   ) : null}
                 </div>
                 <div className="route-track-stop">
-                  {step.state ? (
+                  {step.kind === "signal" && step.state ? (
                     <span
                       className={
                         step.state === "pass"
@@ -173,13 +173,17 @@ export function RouteTester() {
                   ) : null}
                   <span
                     className={
-                      step.terminal
+                      step.kind === "terminal"
                         ? "route-node route-node-terminal"
-                        : "route-node"
+                        : step.kind === "signal"
+                          ? `route-node route-node-signal route-node-signal-${step.state}`
+                          : "route-node"
                     }
                     aria-hidden="true"
                   >
-                    {step.terminal ? <TrainSimple weight="fill" /> : null}
+                    {step.kind === "terminal" ? (
+                      <TrainSimple weight="fill" />
+                    ) : null}
                   </span>
                 </div>
               </li>

@@ -10,7 +10,7 @@ export const ControlHeader: FC<ControlHeaderProps> = ({ onExit }) => {
     <header className="control-header">
       <a className="control-brand" href="/">
         <img src="/brand/flacier-mark.svg" alt="" />
-        <span>Flacierの订阅转换</span>
+        <span>订阅转换</span>
       </a>
       <nav aria-label="管理页导航">
         <a href="/">

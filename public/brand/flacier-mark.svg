@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
-  <title id="title">Flacierの订阅转换</title>
+  <title id="title">订阅转换</title>
   <rect x="5.5" y="5.5" width="37" height="37" fill="none" stroke="#091e37" stroke-width="2.5"/>
   <path d="M14 36V13H35" fill="none" stroke="#091e37" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
   <path d="M14 25H28V20H35" fill="none" stroke="#085f68" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>

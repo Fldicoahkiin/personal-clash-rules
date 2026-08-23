@@ -46,7 +46,7 @@ export function App() {
       </main>
 
       <footer className="site-footer page-width">
-        <p>Flacierの订阅转换 · MIT</p>
+        <p>订阅转换 · MIT</p>
         <a
           href="https://github.com/Fldicoahkiin/personal-clash-rules"
           target="_blank"
