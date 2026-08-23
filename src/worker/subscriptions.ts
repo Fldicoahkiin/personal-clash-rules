@@ -5,7 +5,7 @@ import {
   parseNodeSettings,
   type NodeSettings,
 } from "./node-transforms";
-import { hashText, openSubscriptionConfig, sealSubscriptionConfig } from "./secrets";
+import { decodeSubscriptionConfig, encodeSubscriptionConfig, hashText } from "./secrets";
 import {
   normalizeSources,
   parseRemoteSubscriptionUrl,
@@ -209,10 +209,7 @@ async function createSubscription(
   const config = readConfig(body);
 
   await generateTarget(env, config, body.target);
-  const token = await sealSubscriptionConfig(
-    JSON.stringify(config),
-    env.DATA_ENCRYPTION_KEY,
-  );
+  const token = encodeSubscriptionConfig(JSON.stringify(config));
   if (token.length > maximumTokenLength) {
     throw new ApiError(413, "subscription_link_too_long", "Subscription configuration is too large for one link");
   }
@@ -231,7 +228,7 @@ async function readSubscriptionConfig(
 ): Promise<SubscriptionConfig> {
   let value: unknown;
   try {
-    value = JSON.parse(await openSubscriptionConfig(token, env.DATA_ENCRYPTION_KEY));
+    value = JSON.parse(decodeSubscriptionConfig(token));
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;

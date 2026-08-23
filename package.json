@@ -9,7 +9,7 @@
     "sync:rules": "node scripts/sync-rules.mjs && pnpm sync:formats",
     "sync:formats": "node scripts/build-rule-formats.mjs",
     "test": "vitest run",
-    "test:worker": "DATA_ENCRYPTION_KEY=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8 WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=.wrangler.log vitest run --config vitest.worker.config.ts",
+    "test:worker": "WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=.wrangler.log vitest run --config vitest.worker.config.ts",
     "test:watch": "vitest",
     "typecheck": "pnpm cf-typegen && tsc -b --pretty false",
     "cf-typegen": "WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=.wrangler.log node node_modules/wrangler/bin/wrangler.js types worker-configuration.d.ts --config ./wrangler.jsonc --install-skills=false",

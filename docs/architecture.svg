@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title description">
   <title id="title">订阅转换部署结构</title>
-  <desc id="description">GitHub 推送由 Cloudflare 构建为一个 Worker。网页生成加密订阅链接，客户端刷新时由 Worker 临时读取远程订阅并返回所选格式，不使用数据库。</desc>
+  <desc id="description">GitHub 推送由 Cloudflare 构建为一个 Worker。网页生成固定订阅链接，客户端刷新时由 Worker 临时读取远程订阅并返回所选格式，不使用数据库。</desc>
   <style>
     .paper { fill: #faf8f4; }
     .panel { fill: #faf8f4; stroke: #091e37; stroke-width: 1.5; }
@@ -19,7 +19,7 @@
 
   <rect class="paper" width="1200" height="500" />
   <text x="48" y="50" class="ink title">订阅转换</text>
-  <text x="48" y="76" class="muted body">一个 Worker · 无数据库 · 一个加密链接</text>
+  <text x="48" y="76" class="muted body">一个 Worker · 无数据库 · 一个固定链接</text>
   <text x="1152" y="52" text-anchor="end" class="ink mono label">RULES.FLACIER.COM</text>
   <line x1="48" y1="100" x2="1152" y2="100" class="line" />
 
@@ -44,7 +44,7 @@
   <g>
     <text x="710" y="143" class="muted mono label">LINK</text>
     <rect x="710" y="158" width="266" height="88" class="panel" />
-    <text x="843" y="195" text-anchor="middle" class="ink item">加密订阅链接</text>
+    <text x="843" y="195" text-anchor="middle" class="ink item">固定订阅链接</text>
     <text x="843" y="220" text-anchor="middle" class="muted mono small">/s/:config/:target</text>
   </g>
 

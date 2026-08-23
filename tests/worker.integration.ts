@@ -89,14 +89,14 @@ describe("Worker entrypoint", () => {
 });
 
 describe("stateless subscription links", () => {
-  it("encrypts the configuration into a fixed link and renders it on demand", async () => {
+  it("encodes the configuration into a fixed link and renders it on demand", async () => {
     const { data, response } = await createSubscription();
     const responseText = JSON.stringify(data);
 
     expect(response.status).toBe(201);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(data.profileName).toBe("Flacier");
-    expect(data.url).toMatch(/^https:\/\/example\.com\/s\/v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\/mihomo-config$/u);
+    expect(data.url).toMatch(/^https:\/\/example\.com\/s\/v1\.[A-Za-z0-9_-]+\/mihomo-config$/u);
     expect(data.universalUrl).toMatch(/^https:\/\/example\.com\/s\/v1\./u);
     expect(responseText).not.toContain("private-node-password");
     expect(responseText).not.toContain("us.example.com");
@@ -117,7 +117,7 @@ describe("stateless subscription links", () => {
     ]);
   });
 
-  it("does not accept a modified encrypted link", async () => {
+  it("does not accept a malformed encoded link", async () => {
     const { data } = await createSubscription();
     const url = new URL(data.url);
     const parts = url.pathname.split("/");

@@ -12,7 +12,7 @@ The primary user manages a personal proxy subscription and uses Mihomo or anothe
 
 ## Product Purpose
 
-订阅转换 combines remote subscriptions and individual node URIs, encrypts their configuration into a fixed link, and converts them for supported clients when that link is refreshed. The public page also tests the rules served by the same Worker.
+订阅转换 combines remote subscriptions and individual node URIs, encodes their configuration into a fixed link, and converts them for supported clients when that link is refreshed. The public page also tests the rules served by the same Worker.
 
 ## Positioning
 
@@ -23,7 +23,7 @@ The same public site serves the rule files and tests those published files, so t
 - Public source and automated updates live on GitHub.
 - Cloudflare Workers serves the public site and rule files from `rules.flacier.com`.
 - One Worker serves the site, link creation API, rule files, and subscription links.
-- Subscription sources and node settings are encrypted into each link; no database stores them.
+- Subscription sources and node settings are encoded into each link; no database stores them.
 - Private nodes and subscriptions come from a separate 3x-ui installation.
 - Users may use Mihomo, Clash-compatible clients, sing-box, Surge, Stash, Shadowrocket, Loon, or Quantumult X.
 

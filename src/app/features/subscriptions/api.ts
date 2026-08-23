@@ -110,8 +110,6 @@ export function subscriptionErrorText(error: unknown): string {
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     no_nodes_after_processing: "没有节点符合当前筛选条件",
-    missing_encryption_key: "Worker 尚未配置数据密钥",
-    invalid_encryption_key: "Worker 数据密钥格式不正确",
     target_unsupported: "当前节点无法生成所选格式",
     output_too_large: "生成内容过大",
   };

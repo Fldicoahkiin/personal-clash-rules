@@ -13,16 +13,6 @@
 
 每次推送 `main` 后由 Cloudflare 构建并部署，不需要在本机执行部署命令。
 
-## Secrets
-
-在 Worker 的 **Settings → Variables and Secrets** 添加：
-
-| 名称 | 用途 |
-| --- | --- |
-| `DATA_ENCRYPTION_KEY` | 加密订阅链接中的来源和处理设置，32 字节 base64url |
-
-保持这个值不变，已经生成的订阅链接才会继续有效。
-
 ## 域名
 
 在 Worker 的 **Settings → Domains & Routes** 添加 `rules.flacier.com`。

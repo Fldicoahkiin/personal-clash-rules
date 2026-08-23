@@ -11,7 +11,7 @@ describe("Cloudflare deployment", () => {
     const config = projectFile("wrangler.jsonc");
     expect(config).toContain('"main": "src/worker.ts"');
     expect(config).toContain('"binding": "ASSETS"');
-    expect(config).toContain('"required": ["DATA_ENCRYPTION_KEY"]');
+    expect(config).not.toContain("DATA_ENCRYPTION_KEY");
     expect(config).not.toContain('"binding": "DB"');
     expect(config).not.toContain('"crons"');
   });

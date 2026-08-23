@@ -23,9 +23,7 @@ export const outputTargets = [
 
 export type OutputTarget = (typeof outputTargets)[number];
 
-export interface SubscriptionEnv extends Env {
-  DATA_ENCRYPTION_KEY: string;
-}
+export type SubscriptionEnv = Env;
 
 export function isOutputTarget(value: string): value is OutputTarget {
   return outputTargets.some((target) => target === value);
