@@ -69,6 +69,7 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const activeLink = activeLinks.find((link) => link.id === activeLinkId) ?? activeLinks[0];
+  const universalUrl = activeLink?.universalUrl;
   const availableTargets = new Set(profile.outputs.map((output) => output.target));
 
   async function refreshQueries() {
@@ -105,9 +106,13 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
   }
 
   async function copyUrl(target: string, url: string) {
-    await navigator.clipboard.writeText(url);
-    setCopied(target);
-    window.setTimeout(() => setCopied(null), 1400);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(target);
+      window.setTimeout(() => setCopied(null), 1400);
+    } catch {
+      onNotice("无法复制，请手动选择链接", "error");
+    }
   }
 
   return (
@@ -134,6 +139,33 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
 
       {activeLink?.urls ? (
         <>
+          {universalUrl ? (
+            <div className="universal-link-row">
+              <div className="universal-link-label">
+                <LinkSimple aria-hidden="true" />
+                <span>
+                  <strong>通用节点链接</strong>
+                  <small>自动识别客户端</small>
+                </span>
+              </div>
+              <code title={universalUrl}>{universalUrl}</code>
+              <button
+                className="button button-secondary universal-link-copy"
+                type="button"
+                aria-label={copied === "universal"
+                  ? "通用链接已复制"
+                  : "复制通用链接"}
+                onClick={() => void copyUrl("universal", universalUrl)}
+              >
+                {copied === "universal" ? (
+                  <Check aria-hidden="true" />
+                ) : (
+                  <Copy aria-hidden="true" />
+                )}
+                {copied === "universal" ? "已复制" : "复制"}
+              </button>
+            </div>
+          ) : null}
           <div className="format-block">
             <div className="format-block-title">
               <h3>完整配置</h3>

@@ -2,13 +2,14 @@
   "compilerOptions": {
     "composite": true,
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "jsx": "react-jsx"
   },
   "include": [
     "vite.config.ts",
@@ -16,6 +17,7 @@
     "vitest.worker.config.ts",
     "tests/**/*.test.ts",
     "src/app/lib",
+    "src/app/features/subscriptions",
     "src/config/**/*.ts",
     "src/worker/api-error.ts",
     "src/worker/subscription-target.ts",

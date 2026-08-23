@@ -2248,6 +2248,64 @@ summary:focus-visible {
   font-size: 0.72rem;
 }
 
+.universal-link-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+}
+
+.universal-link-label {
+  display: grid;
+  grid-template-columns: 20px auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.universal-link-label > svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+
+.universal-link-label > span {
+  display: grid;
+  gap: 2px;
+}
+
+.universal-link-label strong {
+  font-size: 0.76rem;
+}
+
+.universal-link-label small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.universal-link-row code {
+  min-width: 0;
+  overflow: hidden;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.universal-link-copy {
+  min-width: 88px;
+}
+
+.universal-link-copy svg {
+  width: 15px;
+  height: 15px;
+}
+
 .format-block + .format-block {
   margin-top: 24px;
 }
@@ -2661,6 +2719,14 @@ summary:focus-visible {
   .link-section-title {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .universal-link-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .universal-link-label {
+    grid-column: 1 / -1;
   }
 
   .link-create {
