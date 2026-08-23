@@ -59,14 +59,16 @@ export function SubscriptionConsole() {
 
   const refreshMutation = useMutation({
     mutationFn: refreshSubscriptionProfile,
-    onSuccess: async () => {
+    onSuccess: async (refresh) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: subscriptionQueries.all }),
         queryClient.invalidateQueries({
           queryKey: subscriptionQueries.detail(profileId ?? "").queryKey,
         }),
       ]);
-      showNotice("所有客户端配置已更新");
+      showNotice(refresh.unavailableTargets.length > 0
+        ? `已更新 ${refresh.targetCount} 种格式，${refresh.unavailableTargets.length} 种未生成`
+        : "所有客户端配置已更新");
     },
     onError: (error) => showNotice(subscriptionErrorText(error), "error"),
   });

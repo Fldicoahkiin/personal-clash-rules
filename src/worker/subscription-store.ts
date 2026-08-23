@@ -352,7 +352,7 @@ export async function writeOutput(
   return true;
 }
 
-export async function writeOutputs(
+export async function replaceOutputs(
   db: D1Database,
   profileId: string,
   outputs: Array<{
@@ -363,7 +363,9 @@ export async function writeOutputs(
   }>,
 ): Promise<void> {
   const now = new Date().toISOString();
-  const statements = outputs.map((output) => db.prepare(`
+  const statements = [
+    db.prepare("DELETE FROM generated_outputs WHERE profile_id = ?").bind(profileId),
+    ...outputs.map((output) => db.prepare(`
     INSERT INTO generated_outputs (
       profile_id, target, content, content_type, etag, generated_at
     ) VALUES (?, ?, ?, ?, ?, ?)
@@ -379,7 +381,8 @@ export async function writeOutputs(
     output.contentType,
     output.etag,
     now,
-  ));
+  )),
+  ];
   statements.push(
     db.prepare("UPDATE profiles SET updated_at = ? WHERE id = ?").bind(now, profileId),
   );

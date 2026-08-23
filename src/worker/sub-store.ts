@@ -1,3 +1,5 @@
+import { stringify as stringifyYaml } from "yaml";
+
 import { ApiError } from "./api-error";
 import type { OutputTarget, SubscriptionEnv } from "./types";
 
@@ -110,14 +112,22 @@ export async function produceTarget(
   target: OutputTarget,
 ): Promise<string> {
   const data = await postToSubStore<{ par_res?: unknown }>(env, "/api/proxy/parse", {
-    data: JSON.stringify(nodes),
+    data: stringifyYaml({ proxies: nodes }),
     client: targetNames[target],
   });
   if (typeof data.par_res === "string") {
-    return data.par_res;
+    if (data.par_res.trim()) {
+      return data.par_res;
+    }
+  } else if (data.par_res !== undefined) {
+    const serialized = JSON.stringify(data.par_res, null, 2);
+    if (serialized !== "null" && serialized !== "[]" && serialized !== "{}") {
+      return serialized;
+    }
   }
-  if (data.par_res !== undefined) {
-    return JSON.stringify(data.par_res, null, 2);
-  }
-  throw new ApiError(502, "converter_invalid_response", "Sub-Store returned no output");
+  throw new ApiError(
+    422,
+    "target_unsupported",
+    `${target} could not represent the enabled nodes`,
+  );
 }

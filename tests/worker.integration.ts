@@ -329,6 +329,11 @@ describe("Worker entrypoint", () => {
       expect(preview.url).toBe(subscriptionUrl);
       expect(preview.content).toBe(nodeUri);
       expect(preview.mergeSources).toBe("remoteFirst");
+      const parseBodies = converterBodies.slice(1);
+      expect(parseBodies).toHaveLength(13);
+      expect(parseBodies.every((body) => (
+        typeof body.data === "string" && body.data.startsWith("proxies:\n")
+      ))).toBe(true);
       expect(fetchSpy).toHaveBeenCalledTimes(14);
 
       const storedOutputs = await testEnv.DB.prepare(`
@@ -350,6 +355,74 @@ describe("Worker entrypoint", () => {
         nodeCount: 2,
         targetCount: 13,
       });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("does not publish an empty client conversion", async () => {
+    const profile = await createProfile("兼容性检查");
+    await addSource(profile.id, {
+      name: "测试节点",
+      type: "node",
+      value: "ss://YWVzLTEyOC1nY206bG9jYWwtdGVzdA==@node.example:8388#E2E",
+    });
+    await testEnv.DB.prepare(`
+      INSERT INTO generated_outputs (
+        profile_id, target, content, content_type, etag, generated_at
+      ) VALUES (?, 'surge', 'stale output', 'text/plain', '"stale"', ?)
+    `).bind(profile.id, new Date().toISOString()).run();
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      if (url.endsWith("/api/preview/sub?target=JSON")) {
+        return Response.json({
+          status: "success",
+          data: {
+            processed: [{
+              name: "E2E",
+              type: "ss",
+              server: "node.example",
+              port: 8388,
+              cipher: "aes-128-gcm",
+              password: "local-test",
+            }],
+          },
+        });
+      }
+      if (url.endsWith("/api/proxy/parse")) {
+        return Response.json({
+          status: "success",
+          data: { par_res: body.client === "Surge" ? "" : `${body.client} output` },
+        });
+      }
+      return new Response(null, { status: 404 });
+    });
+
+    try {
+      const response = await exports.default.fetch(
+        `https://example.com/api/manage/profiles/${profile.id}/refresh`,
+        { method: "POST", headers: authorization },
+      );
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        refresh: {
+          status: "succeeded",
+          targetCount: 12,
+          unavailableTargets: ["surge"],
+        },
+      });
+
+      const outputs = await testEnv.DB.prepare(`
+        SELECT target, content
+        FROM generated_outputs
+        WHERE profile_id = ?
+        ORDER BY target
+      `).bind(profile.id).all<{ target: string; content: string }>();
+      expect(outputs.results).toHaveLength(12);
+      expect(outputs.results.some((output) => output.target === "surge")).toBe(false);
+      expect(outputs.results.every((output) => output.content.length > 0)).toBe(true);
     } finally {
       fetchSpy.mockRestore();
     }

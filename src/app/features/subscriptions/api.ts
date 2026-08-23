@@ -69,6 +69,14 @@ export interface ProfileDetail {
   } | null;
 }
 
+export interface SubscriptionRefreshResult {
+  status: "succeeded";
+  nodeCount: number;
+  targetCount: number;
+  targets: OutputTarget[];
+  unavailableTargets: OutputTarget[];
+}
+
 interface ApiErrorBody {
   error?: string;
   message?: string;
@@ -218,8 +226,14 @@ export async function setSubscriptionSourceEnabled(
   );
 }
 
-export async function refreshSubscriptionProfile(profileId: string): Promise<void> {
-  await requestJson(`/api/manage/profiles/${profileId}/refresh`, jsonInit("POST"));
+export async function refreshSubscriptionProfile(
+  profileId: string,
+): Promise<SubscriptionRefreshResult> {
+  const data = await requestJson<{ refresh: SubscriptionRefreshResult }>(
+    `/api/manage/profiles/${profileId}/refresh`,
+    jsonInit("POST"),
+  );
+  return data.refresh;
 }
 
 export async function createSubscriptionLink(
@@ -245,8 +259,10 @@ export function subscriptionErrorText(error: unknown): string {
     no_sources: "先添加一个订阅或节点",
     converter_unavailable: "转换服务尚未配置",
     converter_unreachable: "转换服务没有响应",
+    converter_invalid_response: "转换服务返回了无法识别的结果",
     conversion_failed: "订阅转换失败，请检查订阅源",
     source_decryption_failed: "订阅源无法解密，请检查数据密钥",
+    target_unsupported: "当前节点无法生成可用的客户端格式",
   };
   return messages[error.code] ?? error.message;
 }

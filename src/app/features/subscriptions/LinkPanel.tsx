@@ -30,6 +30,9 @@ const FormatRow: FC<FormatRowProps> = ({ format, url, profileName, copied, onCop
   const action = url && format.clientId
     ? buildClientAction(format.clientId, url, profileName)
     : null;
+  const isCopied = copied === format.target;
+  const CopyIcon = !url ? Prohibit : isCopied ? Check : Copy;
+  const copyLabel = !url ? "未生成" : isCopied ? "已复制" : "复制";
   return (
     <div className="format-row">
       {format.icon
@@ -41,8 +44,8 @@ const FormatRow: FC<FormatRowProps> = ({ format, url, profileName, copied, onCop
         disabled={!url}
         onClick={() => url && onCopy(format.target, url)}
       >
-        {copied === format.target ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-        {copied === format.target ? "已复制" : "复制"}
+        <CopyIcon aria-hidden="true" />
+        {copyLabel}
       </button>
       {action?.kind === "link" ? (
         <a href={action.value} aria-label={`打开 ${format.name}`}>
@@ -61,6 +64,7 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const activeLink = activeLinks.find((link) => link.id === activeLinkId) ?? activeLinks[0];
+  const availableTargets = new Set(profile.outputs.map((output) => output.target));
 
   async function refreshQueries() {
     await Promise.all([
@@ -130,7 +134,9 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
               <FormatRow
                 key={format.target}
                 format={format}
-                url={activeLink.urls?.[format.target]}
+                url={availableTargets.has(format.target)
+                  ? activeLink.urls?.[format.target]
+                  : undefined}
                 profileName={profile.name}
                 copied={copied}
                 onCopy={(target, url) => void copyUrl(target, url)}
@@ -144,7 +150,9 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
                 <FormatRow
                   key={format.target}
                   format={format}
-                  url={activeLink.urls?.[format.target]}
+                  url={availableTargets.has(format.target)
+                    ? activeLink.urls?.[format.target]
+                    : undefined}
                   profileName={profile.name}
                   copied={copied}
                   onCopy={(target, url) => void copyUrl(target, url)}

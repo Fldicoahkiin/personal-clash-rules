@@ -15,12 +15,12 @@ import {
   readProfile,
   readProfileLinks,
   readPublishedOutput,
+  replaceOutputs,
   renameProfile,
   revokeShareLink,
   setSourceEnabled,
   startRefresh,
   writeOutput,
-  writeOutputs,
 } from "./subscription-store";
 import { isOutputTarget, outputTargets, type SubscriptionEnv } from "./types";
 
@@ -123,7 +123,7 @@ export async function refreshProfile(
         .filter((source) => source.type === "node")
         .map((source) => source.value),
     });
-    const converted = await Promise.all(outputTargets.map(async (target) => {
+    const attempts = await Promise.allSettled(outputTargets.map(async (target) => {
       const content = await produceTarget(env, nodes, target);
       if (encoder.encode(content).byteLength > maximumOutputBytes) {
         throw new ApiError(413, "output_too_large", `${target} output exceeds the 1.8 MB limit`);
@@ -136,14 +136,33 @@ export async function refreshProfile(
       };
     }));
 
-    await writeOutputs(db, profileId, converted);
+    const converted = attempts.flatMap((attempt) => (
+      attempt.status === "fulfilled" ? [attempt.value] : []
+    ));
+    const unavailableTargets = outputTargets.filter((_, index) => (
+      attempts[index].status === "rejected"
+    ));
+    if (converted.length === 0) {
+      const failed = attempts.find((attempt) => attempt.status === "rejected");
+      throw failed?.status === "rejected" ? failed.reason : new ApiError(
+        502,
+        "conversion_failed",
+        "Subscription conversion produced no output",
+      );
+    }
+
+    await replaceOutputs(db, profileId, converted);
     const result = await finishRefresh(db, {
       id: refresh.id,
       status: "succeeded",
       nodeCount: nodes.length,
       targetCount: converted.length,
     });
-    return { ...result, targets: converted.map((output) => output.target) };
+    return {
+      ...result,
+      targets: converted.map((output) => output.target),
+      unavailableTargets,
+    };
   } catch (error) {
     const apiError = error instanceof ApiError
       ? error

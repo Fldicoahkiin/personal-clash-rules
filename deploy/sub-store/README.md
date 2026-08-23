@@ -8,6 +8,12 @@ docker compose up -d --build
 docker compose ps
 ```
 
+检查实际转换接口：
+
+```bash
+pnpm check:sub-store
+```
+
 Cloudflare 控制台配置：
 
 1. 创建 Tunnel，把 `substore.flacier.com` 指向 `http://localhost:3010`。
