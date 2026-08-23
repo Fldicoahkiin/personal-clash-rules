@@ -43,6 +43,13 @@ describe("Worker entrypoint", () => {
     });
   });
 
+  it("prevents Cloudflare from injecting scripts into HTML", async () => {
+    const response = await exports.default.fetch("https://example.com/");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-cache, no-transform");
+  });
+
   it("rejects state-changing methods", async () => {
     const response = await exports.default.fetch("https://example.com/", {
       method: "POST",

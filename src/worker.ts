@@ -19,7 +19,7 @@ function cacheControl(pathname: string): string {
   if (pathname.startsWith("/s/")) {
     return "private, max-age=300, stale-while-revalidate=3600";
   }
-  return "no-cache";
+  return "no-cache, no-transform";
 }
 
 function withResponseHeaders(response: Response, pathname: string): Response {
