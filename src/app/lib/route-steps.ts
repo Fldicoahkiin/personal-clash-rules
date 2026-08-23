@@ -1,7 +1,7 @@
 import type { RouteMatch } from "./rule-matcher";
 import { describePolicyRoute } from "./policy-groups";
 
-type RouteStepKind = "station" | "signal" | "switch" | "terminal";
+type RouteStepKind = "station" | "signal" | "terminal";
 type RouteSignalState = "pass" | "stop" | null;
 
 export interface RouteStep {
@@ -27,7 +27,7 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       kind: "station",
     },
     {
-      label: "命中规则",
+      label: "规则",
       value: result?.rule || "—",
       detail: result?.ruleSetLabel || "",
       status: result ? (result.matched ? "通过" : "未通过") : "",
@@ -36,18 +36,9 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       kind: "signal",
     },
     {
-      label: "策略组",
-      value: policyRoute?.route || "—",
-      detail: "",
-      status: "",
-      machine: true,
-      state: null,
-      kind: "switch",
-    },
-    {
-      label: "结果",
+      label: "去向",
       value: policyRoute?.target || "—",
-      detail: policyRoute?.mode || "",
+      detail: policyRoute?.route || "",
       status: "",
       machine: true,
       state: null,

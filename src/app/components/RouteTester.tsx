@@ -22,10 +22,9 @@ const featuredRules = [
 ];
 
 const mainTrackSleepers = Array.from(
-  { length: 29 },
-  (_, index) => 150 + index * 25,
+  { length: 33 },
+  (_, index) => 180 + index * 20,
 );
-const sidingSleepers = [466, 483, 500, 517, 534];
 
 export function RouteTester() {
   const [input, setInput] = useState(sampleUrl);
@@ -106,19 +105,12 @@ export function RouteTester() {
             }`}
             aria-hidden="true"
           >
-            <svg viewBox="0 0 1000 112" preserveAspectRatio="none">
+            <svg viewBox="0 0 1000 24" preserveAspectRatio="none">
               <g className="route-rail-main">
-                <path d="M125 41H875" />
-                <path d="M125 49H875" />
+                <path d="M166 7H834" />
+                <path d="M166 17H834" />
                 {mainTrackSleepers.map((x) => (
-                  <path d={`M${x} 35V55`} key={`main-${x}`} />
-                ))}
-              </g>
-              <g className="route-rail-siding">
-                <path d="M395 41C435 41 420 91 470 91H530C580 91 565 41 605 41" />
-                <path d="M395 49C435 49 420 99 470 99H530C580 99 565 49 605 49" />
-                {sidingSleepers.map((x) => (
-                  <path d={`M${x} 85V105`} key={`siding-${x}`} />
+                  <path d={`M${x} 3V21`} key={`main-${x}`} />
                 ))}
               </g>
             </svg>
@@ -177,28 +169,31 @@ export function RouteTester() {
                     ) : null}
                   </div>
                   <div className="route-track-stop">
-                    <span
-                      className={
-                        [
-                          "route-node",
-                          step.kind === "terminal" ? "route-node-terminal" : "",
-                          step.kind === "signal" ? "route-node-signal" : "",
-                          step.state === "pass" ? "route-node-pass" : "",
-                          step.state === "stop" ? "route-node-stop" : "",
-                          step.kind === "switch" ? "route-node-switch" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")
-                      }
-                      aria-label={
-                        step.kind === "signal" ? `规则${step.status}` : undefined
-                      }
-                      aria-hidden={step.kind === "signal" ? undefined : "true"}
-                    >
-                      {step.kind === "terminal" ? (
-                        <TrainSimple weight="fill" />
-                      ) : null}
-                    </span>
+                    {step.kind === "signal" ? (
+                      <span
+                        className={`route-signal route-signal-${step.state || "idle"}`}
+                        aria-label={`规则${step.status}`}
+                      >
+                        <span className="route-signal-head" aria-hidden="true">
+                          <span className="route-signal-light route-signal-light-red" />
+                          <span className="route-signal-light route-signal-light-green" />
+                        </span>
+                        <span className="route-signal-post" aria-hidden="true" />
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          step.kind === "terminal"
+                            ? "route-node route-node-terminal"
+                            : "route-node"
+                        }
+                        aria-hidden="true"
+                      >
+                        {step.kind === "terminal" ? (
+                          <TrainSimple weight="fill" />
+                        ) : null}
+                      </span>
+                    )}
                   </div>
                 </li>
               );

@@ -272,17 +272,17 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 286px;
+  min-height: 264px;
   margin-top: 20px;
 }
 
 .route-railway {
   position: absolute;
   z-index: 0;
-  top: 169px;
+  top: 213px;
   left: 0;
   width: 100%;
-  height: 112px;
+  height: 24px;
   pointer-events: none;
 }
 
@@ -303,20 +303,12 @@ summary:focus-visible {
   stroke-width: 1.5;
 }
 
-.route-rail-siding path {
-  stroke: var(--line);
-  stroke-width: 1.5;
-}
-
-.route-railway-stop .route-rail-siding path {
-  stroke: var(--accent);
-}
-
-.route-result .route-node {
+.route-result .route-node,
+.route-result .route-signal-head {
   animation: route-node-settle 240ms ease-out both;
 }
 
-.route-result .route-steps li:nth-child(2) .route-node {
+.route-result .route-steps li:nth-child(2) .route-signal-head {
   animation-delay: 70ms;
 }
 
@@ -324,15 +316,11 @@ summary:focus-visible {
   animation-delay: 140ms;
 }
 
-.route-result .route-node-switch {
-  animation-name: route-switch-settle;
-}
-
 .route-steps {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
   padding: 20px 0 0;
   list-style: none;
@@ -341,7 +329,7 @@ summary:focus-visible {
 .route-steps li {
   position: relative;
   display: grid;
-  grid-template-rows: 136px 116px;
+  grid-template-rows: 156px 98px;
   min-width: 0;
   align-items: center;
   text-align: center;
@@ -375,7 +363,7 @@ summary:focus-visible {
   position: relative;
   display: grid;
   width: 100%;
-  height: 56px;
+  height: 98px;
   place-items: center;
 }
 
@@ -387,7 +375,7 @@ summary:focus-visible {
   border: 3px solid var(--accent);
   border-radius: 50%;
   background: var(--paper);
-  box-shadow: 0 0 0 5px var(--paper);
+  outline: 7px solid var(--paper);
 }
 
 .route-node-terminal {
@@ -399,7 +387,7 @@ summary:focus-visible {
   border-radius: 2px;
   background: var(--paper);
   color: var(--ink);
-  box-shadow: 0 0 0 5px var(--paper);
+  outline: 7px solid var(--paper);
 }
 
 .route-node-terminal svg {
@@ -407,28 +395,53 @@ summary:focus-visible {
   height: 24px;
 }
 
-.route-node-signal {
-  width: 24px;
-  height: 24px;
-  border-width: 2px;
+.route-signal {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  width: 30px;
+  height: 68px;
+  justify-items: center;
+  transform: translateY(-25px);
 }
 
-.route-node-pass {
-  border-color: var(--success);
-  background: var(--success);
+.route-signal-head {
+  display: grid;
+  width: 28px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  background: var(--ink);
 }
 
-.route-node-stop {
-  border-color: var(--danger);
+.route-signal-light {
+  width: 13px;
+  height: 13px;
+  border: 1px solid color-mix(in srgb, var(--paper) 24%, transparent);
+  border-radius: 50%;
+}
+
+.route-signal-light-red {
+  background: color-mix(in srgb, var(--danger) 30%, var(--ink));
+}
+
+.route-signal-light-green {
+  background: color-mix(in srgb, var(--success) 30%, var(--ink));
+}
+
+.route-signal-stop .route-signal-light-red {
   background: var(--danger);
 }
 
-.route-node-switch {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--accent);
-  border-radius: 2px;
-  transform: rotate(45deg);
+.route-signal-pass .route-signal-light-green {
+  background: var(--success);
+}
+
+.route-signal-post {
+  width: 2px;
+  height: 22px;
+  background: var(--ink);
 }
 
 .route-value {
@@ -1127,18 +1140,6 @@ summary:focus-visible {
   }
 }
 
-@keyframes route-switch-settle {
-  from {
-    opacity: 0.35;
-    transform: rotate(45deg) scale(0.55);
-  }
-
-  to {
-    opacity: 1;
-    transform: rotate(45deg) scale(1);
-  }
-}
-
 .use-panel p {
   margin: 7px 0 0;
   color: var(--muted);
@@ -1335,9 +1336,27 @@ summary:focus-visible {
     height: 20px;
   }
 
-  .route-node-signal {
-    width: 20px;
-    height: 20px;
+  .route-signal {
+    z-index: 1;
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    height: 54px;
+    justify-self: center;
+    transform: none;
+  }
+
+  .route-signal-head {
+    width: 26px;
+    height: 40px;
+  }
+
+  .route-signal-light {
+    width: 11px;
+    height: 11px;
+  }
+
+  .route-signal-post {
+    height: 14px;
   }
 
   .route-message {
@@ -1489,7 +1508,8 @@ summary:focus-visible {
     scroll-behavior: auto;
   }
 
-  .route-result .route-node {
+  .route-result .route-node,
+  .route-result .route-signal-head {
     animation: none;
   }
 }

@@ -10,8 +10,10 @@ describe("createRouteSteps", () => {
     const html = renderToStaticMarkup(createElement(RouteTester));
 
     expect(html).toContain('class="route-railway route-railway-idle"');
-    expect(html).toContain(">命中规则<");
-    expect(html).toContain(">结果<");
+    expect(html).toContain(">规则<");
+    expect(html).toContain(">去向<");
+    expect(html).toContain('class="route-signal-light route-signal-light-red"');
+    expect(html).toContain('class="route-signal-light route-signal-light-green"');
     expect(html).not.toContain("RULE SET");
     expect(html).not.toContain("POLICY");
   });
@@ -29,21 +31,16 @@ describe("createRouteSteps", () => {
     expect(createRouteSteps(result)).toEqual([
       expect.objectContaining({ label: "网址", value: "api.openai.com" }),
       expect.objectContaining({
-        label: "命中规则",
+        label: "规则",
         value: "DOMAIN-SUFFIX,openai.com",
         detail: "OpenAI",
         state: "pass",
         status: "通过",
       }),
       expect.objectContaining({
-        label: "策略组",
-        value: "AI → GLOBAL",
-        detail: "",
-      }),
-      expect.objectContaining({
-        label: "结果",
+        label: "去向",
         value: "PROXY",
-        detail: "代理",
+        detail: "AI → GLOBAL",
       }),
     ]);
   });
@@ -61,21 +58,16 @@ describe("createRouteSteps", () => {
     expect(createRouteSteps(result)).toEqual([
       expect.objectContaining({ label: "网址", value: "baidu.com" }),
       expect.objectContaining({
-        label: "命中规则",
+        label: "规则",
         value: "MATCH",
         detail: "默认规则",
         state: "stop",
         status: "未通过",
       }),
       expect.objectContaining({
-        label: "策略组",
-        value: "DEFAULT → GLOBAL",
-        detail: "",
-      }),
-      expect.objectContaining({
-        label: "结果",
+        label: "去向",
         value: "PROXY",
-        detail: "代理",
+        detail: "DEFAULT → GLOBAL",
       }),
     ]);
   });
@@ -93,21 +85,16 @@ describe("createRouteSteps", () => {
     expect(createRouteSteps(result)).toEqual([
       expect.objectContaining({ label: "网址", value: "gsa.apple.com" }),
       expect.objectContaining({
-        label: "命中规则",
+        label: "规则",
         value: "DOMAIN,gsa.apple.com",
         detail: "Apple",
         state: "pass",
         status: "通过",
       }),
       expect.objectContaining({
-        label: "策略组",
-        value: "APPLE → DIRECT",
-        detail: "",
-      }),
-      expect.objectContaining({
-        label: "结果",
+        label: "去向",
         value: "DIRECT",
-        detail: "直连",
+        detail: "APPLE → DIRECT",
       }),
     ]);
   });
