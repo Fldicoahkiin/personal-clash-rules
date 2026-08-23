@@ -4,6 +4,7 @@ import { parse } from "yaml";
 
 type CreatedSubscription = {
   profileName: string;
+  sourceMode: string;
   target: string;
   url: string;
   universalUrl: string;
@@ -113,7 +114,11 @@ describe("stateless subscription links", () => {
     expect(published.headers.get("x-subscription-profile")).toBe("Flacier");
     expect(published.headers.get("x-subscription-target")).toBe("mihomo-config");
     expect(profile.proxies).toEqual([
-      expect.objectContaining({ name: "US-01", password: "private-node-password" }),
+      expect.objectContaining({
+        name: "🇺🇸 US-01",
+        password: "private-node-password",
+        udp: true,
+      }),
     ]);
   });
 
@@ -151,7 +156,7 @@ describe("stateless subscription links", () => {
     const published = await exports.default.fetch(data.url);
     const profile = parse(await published.text()) as { proxies: Array<{ name: string }> };
 
-    expect(profile.proxies.map((proxy) => proxy.name)).toEqual(["United States 02"]);
+    expect(profile.proxies.map((proxy) => proxy.name)).toEqual(["🇺🇸 United States 02"]);
   });
 
   it("selects a format from the universal link user agent", async () => {
@@ -208,6 +213,38 @@ describe("stateless subscription links", () => {
       await expect(redirected.json()).resolves.toMatchObject({
         error: "invalid_subscription_url",
       });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("uses a Mihomo provider when the upstream rejects the Worker with 403", async () => {
+    const sourceUrl = "https://provider.example/subscription";
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 403 }),
+    );
+
+    try {
+      const { data, response } = await createSubscription({
+        name: "",
+        rulePreset: "flacier",
+        sources: [{ name: "订阅 1", type: "subscription", value: sourceUrl }],
+        target: "clash-party-config",
+      });
+      expect(response.status).toBe(201);
+      expect(data.profileName).toBe("");
+      expect(data.sourceMode).toBe("mihomo-provider");
+
+      const published = await exports.default.fetch(data.url);
+      const config = parse(await published.text()) as {
+        "proxy-providers": Record<string, Record<string, unknown>>;
+      };
+      expect(published.status).toBe(200);
+      expect(config["proxy-providers"]["订阅 1"]).toMatchObject({
+        type: "http",
+        url: sourceUrl,
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     } finally {
       fetchSpy.mockRestore();
     }

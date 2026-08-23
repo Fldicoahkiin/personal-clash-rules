@@ -1,4 +1,5 @@
 export const outputTargets = [
+  "clash-party-config",
   "mihomo-config",
   "stash-config",
   "surge-config",

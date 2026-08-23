@@ -10,6 +10,12 @@ export interface ClientFormat {
 
 export const completeConfigFormats: ClientFormat[] = [
   {
+    target: "clash-party-config",
+    name: "Clash Party",
+    icon: "/client-icons/clash-party.png",
+    clientId: "clash-party",
+  },
+  {
     target: "mihomo-config",
     name: "Mihomo",
     icon: "/client-icons/mihomo.png",

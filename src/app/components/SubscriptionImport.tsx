@@ -7,6 +7,7 @@ import {
   type ConvertedSubscription,
   type NodeSortMode,
   type OutputTarget,
+  type RulePreset,
 } from "../features/subscriptions/api";
 import {
   completeConfigFormats,
@@ -19,6 +20,7 @@ import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
 
 type FormState = {
+  addCountryFlag: boolean;
   copied: boolean;
   error: string;
   excludePattern: string;
@@ -27,10 +29,15 @@ type FormState = {
   renamePattern: string;
   renameReplacement: string;
   result: ConvertedSubscription | null;
+  rulePreset: RulePreset;
   pending: boolean;
+  showNodeType: boolean;
+  skipCertVerify: boolean;
   sourceText: string;
   sortMode: NodeSortMode;
   target: OutputTarget;
+  tfo: boolean;
+  udp: boolean;
 };
 
 type FormAction = {
@@ -38,22 +45,37 @@ type FormAction = {
 }[keyof FormState];
 
 const initialState: FormState = {
+  addCountryFlag: true,
   copied: false,
   error: "",
   excludePattern: "",
   includePattern: "",
-  name: "个人订阅",
+  name: "",
   renamePattern: "",
   renameReplacement: "",
   result: null,
+  rulePreset: "flacier",
   pending: false,
+  showNodeType: false,
+  skipCertVerify: false,
   sourceText: "",
   sortMode: "source",
-  target: "mihomo-config",
+  target: "clash-party-config",
+  tfo: false,
+  udp: true,
 };
 
 function reducer(state: FormState, action: FormAction): FormState {
-  return { ...state, [action.key]: action.value };
+  const next = { ...state, [action.key]: action.value };
+  if (
+    action.key !== "copied"
+    && action.key !== "error"
+    && action.key !== "pending"
+    && action.key !== "result"
+  ) {
+    next.result = null;
+  }
+  return next;
 }
 
 const allFormats = [
@@ -66,6 +88,8 @@ export function SubscriptionImport() {
   const [form, dispatch] = useReducer(reducer, initialState);
   const selectedFormat = allFormats.find((format) => format.target === form.target)
     ?? completeConfigFormats[0];
+  const supportsRulePreset = form.target === "clash-party-config"
+    || form.target === "mihomo-config";
 
   function validateInput(): boolean {
     if (!form.sourceText.trim()) {
@@ -107,15 +131,21 @@ export function SubscriptionImport() {
     dispatch({ key: "pending", value: true });
     try {
       const result = await createConvertedSubscription({
-        name: form.name.trim() || "个人订阅",
+        name: form.name.trim(),
         nodeSettings: {
+          addCountryFlag: form.addCountryFlag,
           includePattern: form.includePattern,
           excludePattern: form.excludePattern,
           renameRules: form.renamePattern
             ? [{ pattern: form.renamePattern, replacement: form.renameReplacement }]
             : [],
+          showNodeType: form.showNodeType,
+          skipCertVerify: form.skipCertVerify,
           sortMode: form.sortMode,
+          tfo: form.tfo,
+          udp: form.udp,
         },
+        rulePreset: form.rulePreset,
         sources: parseSubscriptionInput(form.sourceText),
         target: form.target,
       });
@@ -144,8 +174,8 @@ export function SubscriptionImport() {
       aria-labelledby="subscription-title"
     >
       <header className="subscription-heading">
-        <h1 id="subscription-title">订阅转换</h1>
-        <p>合并订阅和节点，生成一个固定链接。</p>
+        <h1 id="subscription-title">Flacierの订阅转换</h1>
+        <p>合并订阅 · 选择规则 · 生成链接</p>
       </header>
 
       <form className="subscription-workspace" onSubmit={submit}>
@@ -172,6 +202,7 @@ export function SubscriptionImport() {
                 key: "name",
                 value: event.target.value,
               })}
+              placeholder="留空"
               maxLength={64}
             />
           </label>
@@ -185,12 +216,34 @@ export function SubscriptionImport() {
           }}
         />
 
+        {supportsRulePreset ? (
+          <label className="field subscription-rule-preset">
+            <span>规则方案</span>
+            <select
+              value={form.rulePreset}
+              onChange={(event) => dispatch({
+                key: "rulePreset",
+                value: event.target.value as RulePreset,
+              })}
+            >
+              <option value="flacier">Flacier 分流</option>
+              <option value="global">全局代理</option>
+            </select>
+          </label>
+        ) : null}
+
         <SubscriptionMoreSettings
+          addCountryFlag={form.addCountryFlag}
           excludePattern={form.excludePattern}
           includePattern={form.includePattern}
           renamePattern={form.renamePattern}
           renameReplacement={form.renameReplacement}
+          showNodeType={form.showNodeType}
+          skipCertVerify={form.skipCertVerify}
           sortMode={form.sortMode}
+          tfo={form.tfo}
+          udp={form.udp}
+          onBooleanChange={(key, value) => dispatch({ key, value })}
           onTextChange={(key, value) => dispatch({ key, value })}
           onSortChange={(value) => dispatch({ key: "sortMode", value })}
         />

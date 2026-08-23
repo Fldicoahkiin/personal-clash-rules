@@ -1,4 +1,4 @@
-<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> 订阅转换</h1>
+<h1><img src="public/brand/flacier-mark.svg" alt="" width="32" height="32" /> Flacierの订阅转换</h1>
 
 个人订阅转换、分流规则和网址测试。
 
@@ -10,7 +10,8 @@
 
 - 合并多个订阅和单节点，生成固定订阅链接
 - 客户端刷新时读取上游并转换，不保存订阅或节点
-- 节点筛选、改名、排序；完整配置与节点资源共 20 种输出
+- Clash Party、Mihomo 等客户端；完整配置与节点资源共 21 种输出
+- 节点筛选、改名、国旗、类型、UDP 与排序
 - AI、Apple、Steam、Discord、Bilibili、AniGamer 等分流规则
 - 网址规则测试与规则格式转换
 

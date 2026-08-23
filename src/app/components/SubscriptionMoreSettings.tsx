@@ -1,11 +1,22 @@
+import type { FC } from "react";
+
 import type { NodeSortMode } from "../features/subscriptions/api";
 
 type SubscriptionMoreSettingsProps = {
+  addCountryFlag: boolean;
   excludePattern: string;
   includePattern: string;
   renamePattern: string;
   renameReplacement: string;
+  showNodeType: boolean;
+  skipCertVerify: boolean;
   sortMode: NodeSortMode;
+  tfo: boolean;
+  udp: boolean;
+  onBooleanChange: (
+    key: "addCountryFlag" | "showNodeType" | "skipCertVerify" | "tfo" | "udp",
+    value: boolean,
+  ) => void;
   onTextChange: (
     key:
       | "excludePattern"
@@ -17,15 +28,21 @@ type SubscriptionMoreSettingsProps = {
   onSortChange: (value: NodeSortMode) => void;
 };
 
-export function SubscriptionMoreSettings({
+export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
+  addCountryFlag,
   excludePattern,
   includePattern,
   renamePattern,
   renameReplacement,
+  showNodeType,
+  skipCertVerify,
   sortMode,
+  tfo,
+  udp,
+  onBooleanChange,
   onSortChange,
   onTextChange,
-}: SubscriptionMoreSettingsProps) {
+}) => {
   return (
     <details className="subscription-more-settings">
       <summary>更多设置</summary>
@@ -70,7 +87,7 @@ export function SubscriptionMoreSettings({
             spellCheck="false"
           />
         </label>
-        <label className="field">
+        <label className="field subscription-sort">
           <span>排序</span>
           <select
             value={sortMode}
@@ -81,7 +98,49 @@ export function SubscriptionMoreSettings({
             <option value="name-desc">名称降序</option>
           </select>
         </label>
+        <div className="subscription-option-list" aria-label="节点选项">
+          <label>
+            <input
+              type="checkbox"
+              checked={addCountryFlag}
+              onChange={(event) => onBooleanChange("addCountryFlag", event.target.checked)}
+            />
+            <span>添加国家旗帜</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={showNodeType}
+              onChange={(event) => onBooleanChange("showNodeType", event.target.checked)}
+            />
+            <span>显示节点类型</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={udp}
+              onChange={(event) => onBooleanChange("udp", event.target.checked)}
+            />
+            <span>启用 UDP</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={skipCertVerify}
+              onChange={(event) => onBooleanChange("skipCertVerify", event.target.checked)}
+            />
+            <span>跳过证书验证</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={tfo}
+              onChange={(event) => onBooleanChange("tfo", event.target.checked)}
+            />
+            <span>TCP Fast Open</span>
+          </label>
+        </div>
       </div>
     </details>
   );
-}
+};

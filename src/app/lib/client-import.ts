@@ -1,4 +1,5 @@
 export type ClientId =
+  | "clash-party"
   | "mihomo"
   | "stash-config"
   | "surge-config"
@@ -37,11 +38,12 @@ export function buildClientAction(
   const params = new URLSearchParams({ url: source });
   const title = name.trim();
 
-  if (client === "mihomo") {
+  if (client === "clash-party" || client === "mihomo") {
     if (title) {
       params.set("name", title);
     }
-    return { kind: "link", value: `mihomo://install-config?${params}` };
+    const scheme = client === "clash-party" ? "clash" : "mihomo";
+    return { kind: "link", value: `${scheme}://install-config?${params}` };
   }
   if (client === "stash-config") {
     return { kind: "link", value: `stash://install-config?${params}` };

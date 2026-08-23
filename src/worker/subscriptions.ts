@@ -5,6 +5,10 @@ import {
   parseNodeSettings,
   type NodeSettings,
 } from "./node-transforms";
+import {
+  createMihomoProviderProfile,
+  type MihomoRulePreset,
+} from "./mihomo-profile";
 import { decodeSubscriptionConfig, encodeSubscriptionConfig, hashText } from "./secrets";
 import {
   normalizeSources,
@@ -30,14 +34,19 @@ const maximumOutputBytes = 1_800_000;
 const nodeScheme = /^(?:anytls|socks5(?:\+tls)?|https?|ssr?|vmess|vless|trojan|hysteria2?|hy2|tuic|wireguard):\/\//iu;
 
 type SubscriptionSource = {
+  name: string;
   type: "subscription" | "node";
   value: string;
 };
+
+type SourceMode = "convert" | "mihomo-provider";
 
 type SubscriptionConfig = {
   version: 1;
   name: string;
   nodeSettings: NodeSettings;
+  rulePreset: MihomoRulePreset;
+  sourceMode: SourceMode;
   sources: SubscriptionSource[];
 };
 
@@ -49,16 +58,36 @@ function json(data: unknown, init: ResponseInit = {}): Response {
 
 function readName(value: unknown): string {
   if (value === undefined) {
-    return "个人订阅";
+    return "";
   }
   if (typeof value !== "string") {
     throw new ApiError(400, "invalid_field", "name must be a string");
   }
   const name = value.trim();
-  if (!name || name.length > 64) {
+  if (name.length > 64) {
     throw new ApiError(400, "invalid_field", "name is invalid");
   }
   return name;
+}
+
+function readRulePreset(value: unknown): MihomoRulePreset {
+  if (value === undefined || value === "flacier") {
+    return "flacier";
+  }
+  if (value === "global") {
+    return "global";
+  }
+  throw new ApiError(400, "invalid_rule_preset", "Rule preset is invalid");
+}
+
+function readSourceMode(value: unknown): SourceMode {
+  if (value === undefined || value === "convert") {
+    return "convert";
+  }
+  if (value === "mihomo-provider") {
+    return "mihomo-provider";
+  }
+  throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
 }
 
 function readSettings(value: unknown): NodeSettings {
@@ -82,11 +111,11 @@ function readSources(value: unknown): SubscriptionSource[] {
     throw new ApiError(413, "too_many_sources", `A link supports at most ${maximumSources} sources`);
   }
 
-  const sources = value.map((candidate) => {
+  const sources = value.map((candidate, index) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
       throw new ApiError(400, "invalid_source", "Source must be an object");
     }
-    const { type, value: sourceValue } = candidate as Record<string, unknown>;
+    const { name, type, value: sourceValue } = candidate as Record<string, unknown>;
     if (type !== "subscription" && type !== "node") {
       throw new ApiError(400, "invalid_source_type", "Source type is invalid");
     }
@@ -102,7 +131,10 @@ function readSources(value: unknown): SubscriptionSource[] {
     } else if (!nodeScheme.test(normalizedValue)) {
       throw new ApiError(400, "invalid_node_uri", "Node source uses an unsupported URI scheme");
     }
-    const source: SubscriptionSource = { type, value: normalizedValue };
+    const sourceName = typeof name === "string" && name.trim()
+      ? name.trim().slice(0, 64)
+      : type === "subscription" ? `订阅 ${index + 1}` : `节点 ${index + 1}`;
+    const source: SubscriptionSource = { name: sourceName, type, value: normalizedValue };
     return source;
   });
 
@@ -124,6 +156,8 @@ function readConfig(value: unknown): SubscriptionConfig {
     version: 1,
     name: readName(input.name),
     nodeSettings: readSettings(input.nodeSettings),
+    rulePreset: readRulePreset(input.rulePreset),
+    sourceMode: readSourceMode(input.sourceMode),
     sources: readSources(input.sources),
   };
 }
@@ -153,7 +187,12 @@ function contentTypeFor(target: OutputTarget): string {
   if (target === "json" || target === "sing-box" || target === "sing-box-config") {
     return "application/json; charset=utf-8";
   }
-  if (target === "mihomo-config" || target === "stash-config" || target === "egern-config") {
+  if (
+    target === "clash-party-config"
+    || target === "mihomo-config"
+    || target === "stash-config"
+    || target === "egern-config"
+  ) {
     return "text/yaml; charset=utf-8";
   }
   return "text/plain; charset=utf-8";
@@ -169,29 +208,96 @@ function universalUrlForToken(origin: string, token: string): string {
   return `${origin}/s/${token}`;
 }
 
-async function generateTarget(
+function isMihomoConfigTarget(target: OutputTarget): boolean {
+  return target === "clash-party-config" || target === "mihomo-config";
+}
+
+function canUseMihomoProvider(error: unknown): boolean {
+  return error instanceof ApiError
+    && error.code === "source_failed"
+    && /HTTP (?:403|429)$/u.test(error.message);
+}
+
+async function generateMihomoProviderTarget(
   env: SubscriptionEnv,
   config: SubscriptionConfig,
   target: OutputTarget,
 ): Promise<string> {
-  const normalized = await normalizeSources(env, {
-    profileName: config.name,
-    subscriptionUrls: config.sources
-      .filter((source) => source.type === "subscription")
-      .map((source) => source.value),
-    nodes: config.sources
-      .filter((source) => source.type === "node")
-      .map((source) => source.value),
-  });
-  const nodes = applyNodeTransforms(normalized, config.nodeSettings);
-  if (nodes.length === 0) {
-    throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
+  if (!isMihomoConfigTarget(target)) {
+    throw new ApiError(
+      422,
+      "source_client_fetch_only",
+      "This upstream can only be loaded directly by Mihomo or Clash Party",
+    );
   }
-  const output = await produceTarget(env, nodes, target);
+  if (config.nodeSettings.sortMode !== "source") {
+    throw new ApiError(
+      422,
+      "source_transform_unavailable",
+      "Client-fetched subscriptions cannot be sorted by the Worker",
+    );
+  }
+  const nodeSources = config.sources
+    .filter((source) => source.type === "node")
+    .map((source) => source.value);
+  let nodeResource = "proxies: []\n";
+  if (nodeSources.length > 0) {
+    const normalized = await normalizeSources(env, {
+      profileName: config.name,
+      subscriptionUrls: [],
+      nodes: nodeSources,
+    });
+    const nodes = applyNodeTransforms(normalized, config.nodeSettings);
+    nodeResource = await produceTarget(env, nodes, "mihomo");
+  }
+  return createMihomoProviderProfile({
+    nodeResource,
+    nodeSettings: config.nodeSettings,
+    providers: config.sources
+      .filter((source) => source.type === "subscription")
+      .map((source) => ({ name: source.name, url: source.value })),
+    rulePreset: config.rulePreset,
+  });
+}
+
+async function generateTarget(
+  env: SubscriptionEnv,
+  config: SubscriptionConfig,
+  target: OutputTarget,
+): Promise<{ content: string; sourceMode: SourceMode }> {
+  let output: string;
+  let sourceMode = config.sourceMode;
+  if (sourceMode === "mihomo-provider") {
+    output = await generateMihomoProviderTarget(env, config, target);
+  } else {
+    try {
+      const normalized = await normalizeSources(env, {
+        profileName: config.name,
+        subscriptionUrls: config.sources
+          .filter((source) => source.type === "subscription")
+          .map((source) => source.value),
+        nodes: config.sources
+          .filter((source) => source.type === "node")
+          .map((source) => source.value),
+      });
+      const nodes = applyNodeTransforms(normalized, config.nodeSettings);
+      if (nodes.length === 0) {
+        throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
+      }
+      output = await produceTarget(env, nodes, target, config.rulePreset);
+    } catch (error) {
+      const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
+      if (!hasRemoteSource || !isMihomoConfigTarget(target) || !canUseMihomoProvider(error)) {
+        throw error;
+      }
+      sourceMode = "mihomo-provider";
+      output = await generateMihomoProviderTarget(env, config, target);
+    }
+  }
   if (encoder.encode(output).byteLength > maximumOutputBytes) {
     throw new ApiError(413, "output_too_large", `${target} output exceeds the 1.8 MB limit`);
   }
-  return output;
+  return { content: output, sourceMode };
 }
 
 async function createSubscription(
@@ -208,7 +314,8 @@ async function createSubscription(
   }
   const config = readConfig(body);
 
-  await generateTarget(env, config, body.target);
+  const generated = await generateTarget(env, config, body.target);
+  config.sourceMode = generated.sourceMode;
   const token = encodeSubscriptionConfig(JSON.stringify(config));
   if (token.length > maximumTokenLength) {
     throw new ApiError(413, "subscription_link_too_long", "Subscription configuration is too large for one link");
@@ -216,6 +323,7 @@ async function createSubscription(
 
   return json({
     profileName: config.name,
+    sourceMode: config.sourceMode,
     target: body.target,
     url: urlsForToken(url.origin, token)[body.target],
     universalUrl: universalUrlForToken(url.origin, token),
@@ -269,13 +377,14 @@ async function renderSubscription(
   const config = await readSubscriptionConfig(parts[1], env);
   const generated = await generateTarget(env, config, target);
   const content = target === "surge-config" || target === "surfboard-config"
-    ? generated.replace(managedProfileUrlPlaceholder, url.toString())
-    : generated;
+    ? generated.content.replace(managedProfileUrlPlaceholder, url.toString())
+    : generated.content;
   const etag = `"${await hashText(content)}"`;
   const headers = new Headers({
     "Content-Type": contentTypeFor(target),
     ETag: etag,
     "X-Subscription-Profile": encodeURIComponent(config.name),
+    "X-Subscription-Source-Mode": generated.sourceMode,
     "X-Subscription-Target": target,
   });
   if (universal && !targetParameter) {

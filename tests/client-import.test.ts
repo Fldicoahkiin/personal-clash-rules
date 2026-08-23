@@ -48,6 +48,14 @@ describe("buildClientAction", () => {
     );
   });
 
+  it("builds a Clash Party config install link", () => {
+    expect(buildClientAction("clash-party", subscription, "Flacier")).toEqual({
+      kind: "link",
+      value:
+        "clash://install-config?url=https%3A%2F%2Fexample.com%2Fsub%3Fid%3D1%26token%3Da+b&name=Flacier",
+    });
+  });
+
   it("builds a Quantumult X universal link", () => {
     const action = buildClientAction("quantumult-x", subscription, "Flacier");
 

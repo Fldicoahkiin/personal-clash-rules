@@ -1,4 +1,5 @@
 export type OutputTarget =
+  | "clash-party-config"
   | "mihomo-config"
   | "stash-config"
   | "surge-config"
@@ -22,6 +23,8 @@ export type OutputTarget =
 
 export type SourceType = "subscription" | "node";
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
+export type RulePreset = "flacier" | "global";
+export type SourceMode = "convert" | "mihomo-provider";
 
 export interface NodeRenameRule {
   pattern: string;
@@ -29,14 +32,20 @@ export interface NodeRenameRule {
 }
 
 export interface NodeSettings {
+  addCountryFlag: boolean;
   includePattern: string;
   excludePattern: string;
   renameRules: NodeRenameRule[];
+  showNodeType: boolean;
+  skipCertVerify: boolean;
   sortMode: NodeSortMode;
+  tfo: boolean;
+  udp: boolean;
 }
 
 export interface ConvertedSubscription {
   profileName: string;
+  sourceMode: SourceMode;
   target: OutputTarget;
   url: string;
   universalUrl: string;
@@ -77,6 +86,7 @@ async function apiError(response: Response): Promise<SubscriptionApiError> {
 export async function createConvertedSubscription(input: {
   name: string;
   nodeSettings: NodeSettings;
+  rulePreset: RulePreset;
   sources: Array<{ name: string; type: SourceType; value: string }>;
   target: OutputTarget;
 }): Promise<ConvertedSubscription> {
@@ -95,6 +105,9 @@ export function subscriptionErrorText(error: unknown): string {
   if (!(error instanceof SubscriptionApiError)) {
     return "生成失败，请重试";
   }
+  if (error.code === "source_failed" && /HTTP (?:403|429)$/u.test(error.message)) {
+    return "机场拒绝 Cloudflare 读取，请选择 Clash Party 或 Mihomo";
+  }
   const messages: Record<string, string> = {
     no_sources: "请添加一个订阅或节点",
     invalid_subscription_url: "订阅地址必须是公网 HTTPS 地址",
@@ -109,7 +122,10 @@ export function subscriptionErrorText(error: unknown): string {
     no_nodes_found: "订阅源中没有可识别的节点",
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
+    invalid_rule_preset: "规则方案无效",
     no_nodes_after_processing: "没有节点符合当前筛选条件",
+    source_client_fetch_only: "这个机场只能由 Clash Party 或 Mihomo 直接更新",
+    source_transform_unavailable: "客户端直连模式不支持节点排序",
     target_unsupported: "当前节点无法生成所选格式",
     output_too_large: "生成内容过大",
   };

@@ -26,6 +26,9 @@ export function SubscriptionResult({
       <div>
         <span>{format.name}</span>
         <code>{result.url}</code>
+        {result.sourceMode === "mihomo-provider" ? (
+          <small>机场节点由 Clash Party / Mihomo 直接更新</small>
+        ) : null}
       </div>
       <div>
         <button className="button button-secondary" type="button" onClick={onCopy}>

@@ -37,6 +37,17 @@ describe("home page flow", () => {
     expect(root).not.toContain("SubscriptionConsole");
   });
 
+  it("uses the Flacier product name and leaves the custom subscription name empty", () => {
+    const header = projectFile("src/app/components/AppHeader.tsx");
+    const form = projectFile("src/app/components/SubscriptionImport.tsx");
+    const html = projectFile("index.html");
+
+    expect(header).toContain("Flacierの订阅转换");
+    expect(form).toContain('<h1 id="subscription-title">Flacierの订阅转换</h1>');
+    expect(form).toContain('name: ""');
+    expect(html).toContain("<title>Flacierの订阅转换</title>");
+  });
+
   it("uses a plain connecting line in the route tester", () => {
     const tester = projectFile("src/app/components/RouteTester.tsx");
     const styles = projectFile("src/app/styles.css");

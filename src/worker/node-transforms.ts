@@ -1,4 +1,7 @@
-import { mihomoProxyGroups } from "../config/mihomo-policy";
+import {
+  countryFlagRules,
+  mihomoProxyGroups,
+} from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
@@ -9,10 +12,15 @@ export interface NodeRenameRule {
 }
 
 export interface NodeSettings {
+  addCountryFlag: boolean;
   includePattern: string;
   excludePattern: string;
   renameRules: NodeRenameRule[];
+  showNodeType: boolean;
+  skipCertVerify: boolean;
   sortMode: NodeSortMode;
+  tfo: boolean;
+  udp: boolean;
 }
 
 export interface SubscriptionNode {
@@ -21,10 +29,15 @@ export interface SubscriptionNode {
 }
 
 export const defaultNodeSettings: NodeSettings = {
+  addCountryFlag: true,
   includePattern: "",
   excludePattern: "",
   renameRules: [],
+  showNodeType: false,
+  skipCertVerify: false,
   sortMode: "source",
+  tfo: false,
+  udp: true,
 };
 
 const maximumFilterLength = 256;
@@ -57,6 +70,13 @@ function compilePattern(pattern: string, flags: string): RegExp {
   } catch {
     throw new ApiError(400, "invalid_node_pattern", "Node pattern is not valid regular expression");
   }
+}
+
+function readBoolean(value: unknown): boolean {
+  if (typeof value !== "boolean") {
+    throw new ApiError(400, "invalid_node_settings", "Node option must be a boolean");
+  }
+  return value;
 }
 
 export function parseNodeSettings(input: Record<string, unknown>): NodeSettings {
@@ -98,11 +118,34 @@ export function parseNodeSettings(input: Record<string, unknown>): NodeSettings 
   }
 
   return {
+    addCountryFlag: readBoolean(input.addCountryFlag),
     includePattern,
     excludePattern,
     renameRules,
+    showNodeType: readBoolean(input.showNodeType),
+    skipCertVerify: readBoolean(input.skipCertVerify),
     sortMode: input.sortMode as NodeSortMode,
+    tfo: readBoolean(input.tfo),
+    udp: readBoolean(input.udp),
   };
+}
+
+function withCountryFlag(name: string): string {
+  if (/^\p{Regional_Indicator}{2}\s*/u.test(name)) {
+    return name;
+  }
+  const match = countryFlagRules.find((rule) => new RegExp(rule.filter, "iu").test(name));
+  return match ? `${match.flag} ${name}` : name;
+}
+
+function withNodeType(name: string, type: unknown): string {
+  if (typeof type !== "string" || !type.trim()) {
+    return name;
+  }
+  const flag = name.match(/^(\p{Regional_Indicator}{2})\s*/u);
+  const withoutFlag = flag ? name.slice(flag[0].length) : name;
+  const typed = `[${type.toUpperCase()}] ${withoutFlag}`;
+  return flag ? `${flag[1]} ${typed}` : typed;
 }
 
 export function applyNodeTransforms(
@@ -137,7 +180,9 @@ export function applyNodeTransforms(
       (name, rule) => name.replace(rule.expression, rule.replacement),
       node.name,
     ).trim();
-    const baseName = renamed || node.name;
+    const baseName = settings.showNodeType
+      ? withNodeType(settings.addCountryFlag ? withCountryFlag(renamed || node.name) : renamed || node.name, node.type)
+      : settings.addCountryFlag ? withCountryFlag(renamed || node.name) : renamed || node.name;
     let name = baseName;
     let suffix = 2;
     while (names.has(name)) {
@@ -145,7 +190,13 @@ export function applyNodeTransforms(
       suffix += 1;
     }
     names.add(name);
-    return [{ ...node, name }];
+    return [{
+      ...node,
+      ...(settings.udp ? { udp: true } : {}),
+      ...(settings.skipCertVerify ? { "skip-cert-verify": true } : {}),
+      ...(settings.tfo ? { tfo: true } : {}),
+      name,
+    }];
   });
 
   if (settings.sortMode === "source") {

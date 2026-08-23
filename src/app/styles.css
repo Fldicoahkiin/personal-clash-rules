@@ -611,7 +611,7 @@ summary:focus-visible {
 
 .client-picker {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -707,8 +707,36 @@ summary:focus-visible {
   padding-bottom: 16px;
 }
 
-.subscription-settings-grid .field:last-child {
+.subscription-sort,
+.subscription-option-list {
   grid-column: 1 / -1;
+}
+
+.subscription-rule-preset {
+  max-width: 360px;
+}
+
+.subscription-option-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 20px;
+  padding-block: 2px 4px;
+}
+
+.subscription-option-list label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.subscription-option-list input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 .subscription-action-row {
@@ -748,6 +776,11 @@ summary:focus-visible {
 .subscription-result span {
   color: var(--muted);
   font-size: 0.72rem;
+}
+
+.subscription-result small {
+  color: var(--muted);
+  font-size: 0.69rem;
 }
 
 .subscription-result code {
@@ -1472,8 +1505,13 @@ summary:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .subscription-settings-grid .field:last-child {
+  .subscription-sort,
+  .subscription-option-list {
     grid-column: 1;
+  }
+
+  .subscription-rule-preset {
+    max-width: none;
   }
 
   .subscription-action-row {

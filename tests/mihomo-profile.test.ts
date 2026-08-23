@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
-import { createMihomoProfile } from "../src/worker/mihomo-profile";
+import {
+  createMihomoProfile,
+  createMihomoProviderProfile,
+} from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
   it("turns a Mihomo node resource into an installable rule profile", () => {
@@ -53,5 +56,69 @@ proxies:
     expect(() => createMihomoProfile("Surge generated output")).toThrow(
       "Mihomo node resource is invalid",
     );
+  });
+
+  it("builds a client-fetched provider profile when a Worker fetch is blocked", () => {
+    const output = createMihomoProviderProfile({
+      nodeResource: "proxies: []",
+      providers: [{ name: "订阅 1", url: "https://provider.example/sub" }],
+      nodeSettings: {
+        addCountryFlag: true,
+        excludePattern: "过期|官网",
+        includePattern: "US|JP",
+        renameRules: [{ pattern: "USA", replacement: "US" }],
+        showNodeType: false,
+        skipCertVerify: true,
+        sortMode: "source",
+        tfo: true,
+        udp: true,
+      },
+      rulePreset: "flacier",
+    });
+    const config = parse(output) as {
+      proxies: unknown[];
+      "proxy-groups": Array<Record<string, unknown>>;
+      "proxy-providers": Record<string, Record<string, unknown>>;
+    };
+
+    expect(config.proxies).toEqual([]);
+    const provider = config["proxy-providers"]["订阅 1"];
+    expect(provider).toMatchObject({
+      type: "http",
+      url: "https://provider.example/sub",
+      filter: "US|JP",
+      "exclude-filter": "过期|官网",
+      override: {
+        udp: true,
+        tfo: true,
+        "skip-cert-verify": true,
+      },
+    });
+    expect((provider.override as { "proxy-name": unknown[] })["proxy-name"]).toEqual(
+      expect.arrayContaining([{ pattern: "USA", target: "US" }]),
+    );
+    expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "AI", proxies: expect.arrayContaining(["GLOBAL"]) }),
+    ]));
+  });
+
+  it("can generate a global proxy preset without Flacier rule providers", () => {
+    const output = createMihomoProfile(`
+proxies:
+  - name: US-01
+    type: ss
+    server: us.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: test
+`, "global");
+    const config = parse(output) as Record<string, unknown>;
+
+    expect(config).not.toHaveProperty("rule-providers");
+    expect(config.rules).toEqual([
+      "GEOSITE,private,DIRECT",
+      "GEOIP,private,DIRECT,no-resolve",
+      "MATCH,GLOBAL",
+    ]);
   });
 });

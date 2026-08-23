@@ -12,7 +12,11 @@ describe("applyNodeTransforms", () => {
       { name: "Tokyo 10", type: "ss", server: "ten.example" },
     ];
 
-    expect(applyNodeTransforms(nodes, defaultNodeSettings)).toEqual(nodes);
+    expect(applyNodeTransforms(nodes, {
+      ...defaultNodeSettings,
+      addCountryFlag: false,
+      udp: false,
+    })).toEqual(nodes);
   });
 
   it("filters before sequential renaming and natural name sorting", () => {
@@ -25,6 +29,8 @@ describe("applyNodeTransforms", () => {
     ];
 
     expect(applyNodeTransforms(nodes, {
+      ...defaultNodeSettings,
+      addCountryFlag: false,
       includePattern: "us|jp",
       excludePattern: "backup",
       renameRules: [
@@ -32,6 +38,7 @@ describe("applyNodeTransforms", () => {
         { pattern: "^🇯🇵\\s*", replacement: "" },
       ],
       sortMode: "name-asc",
+      udp: false,
     }).map((node) => node.name)).toEqual([
       "JP 1",
       "US 2",
@@ -48,7 +55,9 @@ describe("applyNodeTransforms", () => {
 
     expect(applyNodeTransforms(nodes, {
       ...defaultNodeSettings,
+      addCountryFlag: false,
       renameRules: [{ pattern: "US \\d+", replacement: "US" }],
+      udp: false,
     }).map((node) => node.name)).toEqual([
       "US · 2",
       "US · 3",
@@ -65,7 +74,9 @@ describe("applyNodeTransforms", () => {
 
     expect(applyNodeTransforms(nodes, {
       ...defaultNodeSettings,
+      addCountryFlag: false,
       sortMode: "name-desc",
+      udp: false,
     }).map((node) => node.name)).toEqual([
       "Tokyo 10",
       "Tokyo 2",
@@ -78,7 +89,33 @@ describe("applyNodeTransforms", () => {
 
     expect(applyNodeTransforms(nodes, {
       ...defaultNodeSettings,
+      addCountryFlag: false,
       renameRules: [{ pattern: ".+", replacement: "" }],
+      udp: false,
     })).toEqual(nodes);
+  });
+
+  it("adds country flags, node types, and requested transport options", () => {
+    const nodes = [{
+      name: "US-LAX-01",
+      type: "ss",
+      server: "one.example",
+    }];
+
+    expect(applyNodeTransforms(nodes, {
+      ...defaultNodeSettings,
+      addCountryFlag: true,
+      showNodeType: true,
+      udp: true,
+      skipCertVerify: true,
+      tfo: true,
+    })).toEqual([{
+      name: "🇺🇸 [SS] US-LAX-01",
+      type: "ss",
+      server: "one.example",
+      udp: true,
+      "skip-cert-verify": true,
+      tfo: true,
+    }]);
   });
 });

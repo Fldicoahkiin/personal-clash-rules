@@ -17,8 +17,9 @@ The parser and target serializers in `src/worker/sub-store.ts` are adapted from 
 The icons in `public/client-icons/` identify their respective products and remain the property of their owners.
 
 - Apple App Store artwork: [Stash](https://apps.apple.com/us/app/stash-rule-based-proxy/id1596063349), [Surge 5](https://apps.apple.com/us/app/surge-5/id1442620678), [Loon](https://apps.apple.com/us/app/loon/id1373567447), [Quantumult X](https://apps.apple.com/us/app/quantumult-x/id1443988620), [Shadowrocket](https://apps.apple.com/us/app/shadowrocket/id932747118), and [Egern](https://apps.apple.com/us/app/egern/id1616105820)
+- Clash Party: `build/icon.png` from [`mihomo-party-org/clash-party`](https://github.com/mihomo-party-org/clash-party)
 - Mihomo: `docs/logo.png` from [`MetaCubeX/mihomo`](https://github.com/MetaCubeX/mihomo)
 - sing-box: `resources/icons/512x512.png` from [`SagerNet/sing-box-for-desktop`](https://github.com/SagerNet/sing-box-for-desktop)
 - Surfboard: product logo from the [official website](https://getsurfboard.com/)
 
-The source URL and usage note are embedded in each PNG's XMP metadata.
+Source attribution is listed above.

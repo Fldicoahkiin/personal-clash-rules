@@ -5,7 +5,10 @@ import { mihomoProxyGroups } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
-import { createMihomoProfile } from "./mihomo-profile";
+import {
+  createMihomoProfile,
+  type MihomoRulePreset,
+} from "./mihomo-profile";
 import type { SubscriptionNode } from "./node-transforms";
 import { createSingBoxProfile } from "./sing-box-profile";
 import { createStashProfile } from "./stash-profile";
@@ -1524,7 +1527,7 @@ function encodeBase64UrlText(input: string) {
 }
 
 function isTargetCompatible(proxy: ProxyNode, target: OutputTarget): boolean {
-  if (["mihomo-config", "stash-config", "mihomo", "clash", "stash", "json"].includes(target)) return true;
+  if (["clash-party-config", "mihomo-config", "stash-config", "mihomo", "clash", "stash", "json"].includes(target)) return true;
   if (["uri", "v2ray", "shadowrocket"].includes(target)) return ["ss", "ssr", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
   if (["sing-box", "sing-box-config"].includes(target)) return ["ss", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
   if (["surge", "surge-config"].includes(target)) return ["ss", "vmess", "trojan", "http", "socks5", "hysteria2", "tuic", "anytls", "snell"].includes(proxy.type);
@@ -1678,13 +1681,16 @@ export async function produceTarget(
   _env: SubscriptionEnv,
   nodes: SubscriptionNode[],
   target: OutputTarget,
+  rulePreset: MihomoRulePreset = "flacier",
 ): Promise<string> {
   const supported = (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
     throw new ApiError(422, "target_unsupported", `${target} could not represent the normalized nodes`);
   }
   const mihomoNodes = stringifyYaml({ proxies: supported });
-  if (target === "mihomo-config") return createMihomoProfile(mihomoNodes);
+  if (target === "clash-party-config" || target === "mihomo-config") {
+    return createMihomoProfile(mihomoNodes, rulePreset);
+  }
   if (target === "stash-config") return createStashProfile(mihomoNodes);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported));
   if (target === "surfboard-config") return createSurfboardProfile(renderSurfboardProxies(supported));

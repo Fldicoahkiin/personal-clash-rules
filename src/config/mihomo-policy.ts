@@ -36,6 +36,58 @@ export const mihomoRuleProviders = Object.fromEntries(
 
 const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 
+export const countryNodeFilters = {
+  US: "🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$)",
+  JP: "🇯🇵|日本|Japan|Tokyo|Osaka|(^|[ _-])JP([ _-]|$)",
+  SG: "🇸🇬|新加坡|Singapore|(^|[ _-])SG([ _-]|$)",
+  HK: "🇭🇰|香港|Hong Kong|(^|[ _-])HK([ _-]|$)",
+  TW: "🇹🇼|台湾|台灣|Taiwan|Taipei|(^|[ _-])TW([ _-]|$)",
+  KR: "🇰🇷|韩国|韓國|South Korea|Seoul|(^|[ _-])KR([ _-]|$)",
+  GB: "🇬🇧|英国|英國|United Kingdom|London|(?:^|[ _-])(?:UK|GB)(?:[ _-]|$)",
+  DE: "🇩🇪|德国|德國|Germany|Frankfurt|(?:^|[ _-])DE(?:[ _-]|$)",
+  FR: "🇫🇷|法国|法國|France|Paris|(?:^|[ _-])FR(?:[ _-]|$)",
+  NL: "🇳🇱|荷兰|荷蘭|Netherlands|Amsterdam|(?:^|[ _-])NL(?:[ _-]|$)",
+  IT: "🇮🇹|意大利|Italy|(?:^|[ _-])IT(?:[ _-]|$)",
+  ES: "🇪🇸|西班牙|Spain|(?:^|[ _-])ES(?:[ _-]|$)",
+  CH: "🇨🇭|瑞士|Switzerland|(?:^|[ _-])CH(?:[ _-]|$)",
+  CA: "🇨🇦|加拿大|Canada|Toronto|Vancouver|(?:^|[ _-])CA(?:[ _-]|$)",
+  AU: "🇦🇺|澳大利亚|澳大利亞|Australia|Sydney|Melbourne|(?:^|[ _-])AU(?:[ _-]|$)",
+  RU: "🇷🇺|俄罗斯|俄羅斯|Russia|Moscow|(?:^|[ _-])RU(?:[ _-]|$)",
+  IN: "🇮🇳|印度|India|Mumbai|(?:^|[ _-])IN(?:[ _-]|$)",
+  BR: "🇧🇷|巴西|Brazil|São Paulo|Sao Paulo|(?:^|[ _-])BR(?:[ _-]|$)",
+  VN: "🇻🇳|越南|Vietnam|(?:^|[ _-])VN(?:[ _-]|$)",
+  TH: "🇹🇭|泰国|泰國|Thailand|Bangkok|(?:^|[ _-])TH(?:[ _-]|$)",
+  MY: "🇲🇾|马来西亚|馬來西亞|Malaysia|Kuala Lumpur|(?:^|[ _-])MY(?:[ _-]|$)",
+  ID: "🇮🇩|印度尼西亚|印度尼西亞|Indonesia|Jakarta|(?:^|[ _-])ID(?:[ _-]|$)",
+  PH: "🇵🇭|菲律宾|菲律賓|Philippines|Manila|(?:^|[ _-])PH(?:[ _-]|$)",
+} as const;
+
+export const countryFlagRules = [
+  { flag: "🇺🇸", filter: countryNodeFilters.US },
+  { flag: "🇯🇵", filter: countryNodeFilters.JP },
+  { flag: "🇸🇬", filter: countryNodeFilters.SG },
+  { flag: "🇭🇰", filter: countryNodeFilters.HK },
+  { flag: "🇹🇼", filter: countryNodeFilters.TW },
+  { flag: "🇰🇷", filter: countryNodeFilters.KR },
+  { flag: "🇬🇧", filter: countryNodeFilters.GB },
+  { flag: "🇩🇪", filter: countryNodeFilters.DE },
+  { flag: "🇫🇷", filter: countryNodeFilters.FR },
+  { flag: "🇳🇱", filter: countryNodeFilters.NL },
+  { flag: "🇮🇹", filter: countryNodeFilters.IT },
+  { flag: "🇪🇸", filter: countryNodeFilters.ES },
+  { flag: "🇨🇭", filter: countryNodeFilters.CH },
+  { flag: "🇨🇦", filter: countryNodeFilters.CA },
+  { flag: "🇦🇺", filter: countryNodeFilters.AU },
+  { flag: "🇷🇺", filter: countryNodeFilters.RU },
+  { flag: "🇮🇳", filter: countryNodeFilters.IN },
+  { flag: "🇧🇷", filter: countryNodeFilters.BR },
+  { flag: "🇻🇳", filter: countryNodeFilters.VN },
+  { flag: "🇹🇭", filter: countryNodeFilters.TH },
+  { flag: "🇲🇾", filter: countryNodeFilters.MY },
+  { flag: "🇮🇩", filter: countryNodeFilters.ID },
+  { flag: "🇵🇭", filter: countryNodeFilters.PH },
+] as const;
+
 function countryGroup(name: string, filter: string) {
   return {
     name,
@@ -61,27 +113,27 @@ export const mihomoProxyGroups = [
   },
   countryGroup(
     "US",
-    "(?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))",
+    `(?i)(${countryNodeFilters.US})`,
   ),
   countryGroup(
     "JP",
-    "(?i)(🇯🇵|日本|Japan|Tokyo|Osaka|(^|[ _-])JP([ _-]|$))",
+    `(?i)(${countryNodeFilters.JP})`,
   ),
   countryGroup(
     "SG",
-    "(?i)(🇸🇬|新加坡|Singapore|(^|[ _-])SG([ _-]|$))",
+    `(?i)(${countryNodeFilters.SG})`,
   ),
   countryGroup(
     "HK",
-    "(?i)(🇭🇰|香港|Hong Kong|(^|[ _-])HK([ _-]|$))",
+    `(?i)(${countryNodeFilters.HK})`,
   ),
   countryGroup(
     "TW",
-    "(?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|(^|[ _-])TW([ _-]|$))",
+    `(?i)(${countryNodeFilters.TW})`,
   ),
   countryGroup(
     "KR",
-    "(?i)(🇰🇷|韩国|韓國|South Korea|Seoul|(^|[ _-])KR([ _-]|$))",
+    `(?i)(${countryNodeFilters.KR})`,
   ),
   countryGroup(
     "EU",
