@@ -30,7 +30,10 @@ function withResponseHeaders(response: Response, pathname: string): Response {
   for (const [name, value] of Object.entries(securityHeaders)) {
     headers.set(name, value);
   }
-  headers.set("Cache-Control", cacheControl(pathname));
+  headers.set(
+    "Cache-Control",
+    response.status >= 400 ? "no-store" : cacheControl(pathname),
+  );
 
   return new Response(response.body, {
     status: response.status,

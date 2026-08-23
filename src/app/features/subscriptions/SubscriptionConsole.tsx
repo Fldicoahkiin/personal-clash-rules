@@ -201,7 +201,7 @@ export function SubscriptionConsole() {
                 <ol className="conversion-line" aria-label="订阅生成状态">
                   <li className={profile.sources.some((source) => source.enabled) ? "is-ready" : ""}>
                     <span className="conversion-node" />
-                    <strong>订阅来源</strong>
+                    <strong>启用来源</strong>
                     <small>{profile.sources.filter((source) => source.enabled).length || "—"}</small>
                   </li>
                   <li className={(profile.latestRefresh?.nodeCount ?? 0) > 0 ? "is-ready" : ""}>

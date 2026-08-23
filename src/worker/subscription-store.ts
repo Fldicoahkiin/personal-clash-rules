@@ -8,7 +8,7 @@ interface ProfileRow {
 }
 
 interface ProfileSummaryRow extends ProfileRow {
-  source_count: number;
+  enabled_source_count: number;
   output_count: number;
   link_count: number;
 }
@@ -76,7 +76,11 @@ export async function listProfiles(db: D1Database) {
   const result = await db.prepare(`
     SELECT
       profiles.*,
-      (SELECT COUNT(*) FROM sources WHERE sources.profile_id = profiles.id) AS source_count,
+      (
+        SELECT COUNT(*)
+        FROM sources
+        WHERE sources.profile_id = profiles.id AND sources.enabled = 1
+      ) AS enabled_source_count,
       (SELECT COUNT(*) FROM generated_outputs WHERE generated_outputs.profile_id = profiles.id) AS output_count,
       (SELECT COUNT(*) FROM share_links WHERE share_links.profile_id = profiles.id AND enabled = 1) AS link_count
     FROM profiles
@@ -85,7 +89,7 @@ export async function listProfiles(db: D1Database) {
 
   return result.results.map((row) => ({
     ...profileJson(row),
-    sourceCount: row.source_count,
+    enabledSourceCount: row.enabled_source_count,
     outputCount: row.output_count,
     linkCount: row.link_count,
   }));

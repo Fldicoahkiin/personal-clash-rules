@@ -20,7 +20,7 @@ export type SourceType = "subscription" | "node";
 export interface ProfileSummary {
   id: string;
   name: string;
-  sourceCount: number;
+  enabledSourceCount: number;
   outputCount: number;
   linkCount: number;
   createdAt: string;

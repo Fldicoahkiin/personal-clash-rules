@@ -191,6 +191,17 @@ describe("Worker entrypoint", () => {
       source: { id: source?.id, enabled: false },
     });
 
+    const profiles = await exports.default.fetch(
+      "https://example.com/api/manage/profiles",
+      { headers: authorization },
+    );
+    const profilesData = await profiles.json<{
+      profiles: Array<{ id: string; enabledSourceCount: number }>;
+    }>();
+    expect(profilesData.profiles.find((item) => item.id === profile.id)).toMatchObject({
+      enabledSourceCount: 0,
+    });
+
     const enable = await exports.default.fetch(
       `https://example.com/api/manage/sources/${source?.id}`,
       {
@@ -299,6 +310,7 @@ describe("Worker entrypoint", () => {
 
     const revoked = await exports.default.fetch(linkData.urls.mihomo);
     expect(revoked.status).toBe(404);
+    expect(revoked.headers.get("cache-control")).toBe("no-store");
   });
 
   it("refreshes every client output through Sub-Store", async () => {
