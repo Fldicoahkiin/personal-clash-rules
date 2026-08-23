@@ -1,4 +1,8 @@
 :8080 {
+	handle /healthz {
+		respond "ok" 200
+	}
+
 	@authorized header Authorization "Bearer {$SUB_STORE_TOKEN}"
 
 	handle @authorized {

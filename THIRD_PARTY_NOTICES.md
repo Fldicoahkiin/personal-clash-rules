@@ -43,3 +43,14 @@ apply to that runtime.
 - Source: [sub-store-org/Sub-Store](https://github.com/sub-store-org/Sub-Store)
 - Release: [2.36.39](https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.39)
 - License: [AGPL-3.0](https://github.com/sub-store-org/Sub-Store/blob/master/LICENSE)
+
+## Tunnel runtime
+
+[`deploy/sub-store/compose.yaml`](deploy/sub-store/compose.yaml) runs the
+unmodified Cloudflare `cloudflared` `2026.8.2` container to connect the private
+Sub-Store gateway to a remotely managed Cloudflare Tunnel. `cloudflared` is
+licensed under Apache-2.0 and is not covered by this repository's MIT License.
+
+- Source: [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared)
+- Release: [2026.8.2](https://github.com/cloudflare/cloudflared/releases/tag/2026.8.2)
+- License: [Apache-2.0](https://github.com/cloudflare/cloudflared/blob/master/LICENSE)

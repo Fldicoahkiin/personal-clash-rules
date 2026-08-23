@@ -31,5 +31,7 @@
 ## Domains
 
 - `rules.flacier.com` → Worker public site and subscription links
-- `substore.flacier.com` → Tunnel to the private Sub-Store backend
+- `substore.flacier.com` → remotely managed Tunnel → `gateway:8080` → Sub-Store
 - `sub.flacier.com` → optional alias for `/manage`
+
+Tunnel 在 Cloudflare 控制台创建。VPS 使用 [`deploy/sub-store/compose.yaml`](../deploy/sub-store/compose.yaml) 中的固定版本 cloudflared，并从 Docker Secret 读取 Tunnel Token；Token 不写入仓库或容器命令行。
