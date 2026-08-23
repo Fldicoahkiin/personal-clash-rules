@@ -103,6 +103,93 @@ describe("Worker entrypoint", () => {
     expect(detailText).not.toContain("private-value");
   });
 
+  it("renames a subscription profile", async () => {
+    const profile = await createProfile("旧名称");
+    const response = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      {
+        method: "PATCH",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "旅行设备" }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      profile: { id: profile.id, name: "旅行设备" },
+    });
+
+    const stored = await testEnv.DB.prepare("SELECT name FROM profiles WHERE id = ?")
+      .bind(profile.id)
+      .first<{ name: string }>();
+    expect(stored?.name).toBe("旅行设备");
+  });
+
+  it("disables and enables a subscription source", async () => {
+    const profile = await createProfile();
+    await addSource(profile.id, {
+      name: "机场",
+      type: "subscription",
+      value: "https://provider.example/subscription",
+    });
+    const source = await testEnv.DB.prepare(`
+      SELECT id
+      FROM sources
+      WHERE profile_id = ?
+    `).bind(profile.id).first<{ id: string }>();
+    expect(source).toBeTruthy();
+
+    const disable = await exports.default.fetch(
+      `https://example.com/api/manage/sources/${source?.id}`,
+      {
+        method: "PATCH",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: false }),
+      },
+    );
+    expect(disable.status).toBe(200);
+    await expect(disable.json()).resolves.toMatchObject({
+      source: { id: source?.id, enabled: false },
+    });
+
+    const enable = await exports.default.fetch(
+      `https://example.com/api/manage/sources/${source?.id}`,
+      {
+        method: "PATCH",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: true }),
+      },
+    );
+    expect(enable.status).toBe(200);
+    await expect(enable.json()).resolves.toMatchObject({
+      source: { id: source?.id, enabled: true },
+    });
+  });
+
+  it("deletes a profile and its subscription data", async () => {
+    const profile = await createProfile();
+    await addSource(profile.id, {
+      name: "机场",
+      type: "subscription",
+      value: "https://provider.example/subscription",
+    });
+
+    const response = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      { method: "DELETE", headers: authorization },
+    );
+    expect(response.status).toBe(204);
+
+    const storedProfile = await testEnv.DB.prepare("SELECT id FROM profiles WHERE id = ?")
+      .bind(profile.id)
+      .first<{ id: string }>();
+    const storedSource = await testEnv.DB.prepare("SELECT id FROM sources WHERE profile_id = ?")
+      .bind(profile.id)
+      .first<{ id: string }>();
+    expect(storedProfile).toBeNull();
+    expect(storedSource).toBeNull();
+  });
+
   it("publishes generated output behind a stable revocable link", async () => {
     const profile = await createProfile();
     const output = "proxies:\n  - name: test-node\n    type: ss\n";

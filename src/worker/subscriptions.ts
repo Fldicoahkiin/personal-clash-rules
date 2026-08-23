@@ -4,6 +4,7 @@ import { createShareToken, decryptSource, encryptSource, hashToken } from "./sec
 import { normalizeSources, produceTarget } from "./sub-store";
 import {
   createProfile,
+  deleteProfile,
   deleteSource,
   insertShareLink,
   insertSource,
@@ -14,7 +15,9 @@ import {
   readProfile,
   readProfileLinks,
   readPublishedOutput,
+  renameProfile,
   revokeShareLink,
+  setSourceEnabled,
   startRefresh,
   writeOutput,
   writeOutputs,
@@ -188,32 +191,49 @@ async function routeControlApi(
     }
   }
 
-  if (parts.length === 4 && parts[2] === "profiles" && request.method === "GET") {
-    const profile = await readProfile(db, parts[3]);
-    if (!profile) {
-      throw new ApiError(404, "profile_not_found", "Profile not found");
-    }
-    const storedLinks = await readProfileLinks(db, parts[3]);
-    const links = await Promise.all(storedLinks.map(async (link) => {
-      let urls: Record<string, string> | null = null;
-      if (link.enabled === 1 && link.token_ciphertext && link.token_iv) {
-        const token = await decryptSource(
-          link.token_ciphertext,
-          link.token_iv,
-          env.DATA_ENCRYPTION_KEY,
-        );
-        urls = urlsForToken(url.origin, token);
+  if (parts.length === 4 && parts[2] === "profiles") {
+    if (request.method === "GET") {
+      const profile = await readProfile(db, parts[3]);
+      if (!profile) {
+        throw new ApiError(404, "profile_not_found", "Profile not found");
       }
-      return {
-        id: link.id,
-        name: link.name,
-        enabled: link.enabled === 1,
-        createdAt: link.created_at,
-        revokedAt: link.revoked_at,
-        urls,
-      };
-    }));
-    return json({ profile: { ...profile, links } });
+      const storedLinks = await readProfileLinks(db, parts[3]);
+      const links = await Promise.all(storedLinks.map(async (link) => {
+        let urls: Record<string, string> | null = null;
+        if (link.enabled === 1 && link.token_ciphertext && link.token_iv) {
+          const token = await decryptSource(
+            link.token_ciphertext,
+            link.token_iv,
+            env.DATA_ENCRYPTION_KEY,
+          );
+          urls = urlsForToken(url.origin, token);
+        }
+        return {
+          id: link.id,
+          name: link.name,
+          enabled: link.enabled === 1,
+          createdAt: link.created_at,
+          revokedAt: link.revoked_at,
+          urls,
+        };
+      }));
+      return json({ profile: { ...profile, links } });
+    }
+    if (request.method === "PATCH") {
+      const body = await readObject(request);
+      const name = readTextField(body, "name", { maximum: 64 });
+      const profile = await renameProfile(db, parts[3], name);
+      if (!profile) {
+        throw new ApiError(404, "profile_not_found", "Profile not found");
+      }
+      return json({ profile });
+    }
+    if (request.method === "DELETE") {
+      if (!await deleteProfile(db, parts[3])) {
+        throw new ApiError(404, "profile_not_found", "Profile not found");
+      }
+      return new Response(null, { status: 204 });
+    }
   }
 
   if (parts.length === 5 && parts[2] === "profiles" && parts[4] === "sources" && request.method === "POST") {
@@ -257,6 +277,18 @@ async function routeControlApi(
       throw new ApiError(404, "source_not_found", "Source not found");
     }
     return new Response(null, { status: 204 });
+  }
+
+  if (parts.length === 4 && parts[2] === "sources" && request.method === "PATCH") {
+    const body = await readObject(request);
+    if (typeof body.enabled !== "boolean") {
+      throw new ApiError(400, "invalid_field", "enabled must be a boolean");
+    }
+    const source = await setSourceEnabled(db, parts[3], body.enabled);
+    if (!source) {
+      throw new ApiError(404, "source_not_found", "Source not found");
+    }
+    return json({ source });
   }
 
   if (

@@ -1346,7 +1346,8 @@ summary:focus-visible {
 
 .control-brand,
 .control-header nav,
-.control-header nav a {
+.control-header nav a,
+.control-header nav button {
   display: flex;
   align-items: center;
 }
@@ -1368,7 +1369,8 @@ summary:focus-visible {
   align-self: stretch;
 }
 
-.control-header nav a {
+.control-header nav a,
+.control-header nav button {
   gap: 7px;
   padding-inline: 18px;
   border-left: 1px solid var(--line);
@@ -1378,11 +1380,19 @@ summary:focus-visible {
   text-decoration: none;
 }
 
-.control-header nav a:last-child {
+.control-header nav button {
+  border-top: 0;
+  border-bottom: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.control-header nav > :last-child {
   border-right: 1px solid var(--line);
 }
 
-.control-header nav a:hover {
+.control-header nav a:hover,
+.control-header nav button:hover {
   background: var(--surface-muted);
   color: var(--ink);
 }
@@ -1554,6 +1564,87 @@ summary:focus-visible {
   font-size: 0.74rem;
 }
 
+.profile-heading-copy {
+  min-width: 0;
+}
+
+.profile-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-text-action,
+.source-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.profile-text-action:hover,
+.source-toggle:hover {
+  color: var(--ink);
+}
+
+.profile-text-action.is-danger {
+  color: var(--danger);
+}
+
+.profile-text-action:disabled,
+.source-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.profile-text-action svg,
+.source-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+
+.profile-rename {
+  display: grid;
+  width: min(520px, 100%);
+  grid-template-columns: minmax(160px, 1fr) 42px 42px;
+}
+
+.profile-rename input,
+.profile-rename button {
+  height: 46px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.profile-rename input {
+  min-width: 0;
+  padding-inline: 12px;
+  font-family: "Flacier Display", "Noto Sans SC", sans-serif;
+  font-size: 1.7rem;
+}
+
+.profile-rename button {
+  display: grid;
+  place-items: center;
+  border-left: 0;
+  cursor: pointer;
+}
+
+.profile-rename button:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.profile-rename svg {
+  width: 17px;
+  height: 17px;
+}
+
 .conversion-line {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1623,6 +1714,14 @@ summary:focus-visible {
 .refresh-result svg {
   width: 16px;
   height: 16px;
+}
+
+.refresh-result.is-error {
+  color: var(--danger);
+}
+
+.refresh-result.is-pending {
+  color: var(--muted);
 }
 
 .control-section {
@@ -1698,6 +1797,16 @@ summary:focus-visible {
 .source-row span {
   color: var(--muted);
   font-size: 0.67rem;
+}
+
+.source-row.is-disabled {
+  opacity: 0.6;
+}
+
+.source-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .text-danger,
@@ -2092,16 +2201,22 @@ summary:focus-visible {
 }
 
 @media (max-width: 760px) {
-  .control-brand span {
-    font-size: 0.86rem;
-  }
-
-  .control-header nav a {
+  .control-header {
     padding-inline: 12px;
   }
 
-  .control-header nav a span,
-  .control-header nav a:last-child {
+  .control-brand {
+    gap: 7px;
+  }
+
+  .control-brand span {
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .control-header nav a,
+  .control-header nav button {
+    padding-inline: 10px;
     font-size: 0;
   }
 
@@ -2140,6 +2255,15 @@ summary:focus-visible {
 
   .profile-heading .button {
     width: 100%;
+  }
+
+  .profile-heading-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .profile-heading-actions .button {
+    flex-basis: 100%;
   }
 
   .conversion-line {

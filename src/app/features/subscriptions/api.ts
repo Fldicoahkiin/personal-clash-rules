@@ -92,6 +92,10 @@ export function setControlToken(token: string): void {
   sessionStorage.setItem(controlTokenKey, token.trim());
 }
 
+export function clearControlToken(): void {
+  sessionStorage.removeItem(controlTokenKey);
+}
+
 export class SubscriptionApiError extends Error {
   constructor(
     readonly status: number,
@@ -102,28 +106,42 @@ export class SubscriptionApiError extends Error {
   }
 }
 
+async function apiError(response: Response): Promise<SubscriptionApiError> {
+  let body: ApiErrorBody = {};
+  try {
+    const parsed: unknown = await response.json();
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      body = parsed as ApiErrorBody;
+    }
+  } catch {
+    body = {};
+  }
+  return new SubscriptionApiError(
+    response.status,
+    body.error ?? "request_failed",
+    body.message ?? `Request failed with HTTP ${response.status}`,
+  );
+}
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     headers: authenticatedHeaders(init?.headers),
   });
   if (!response.ok) {
-    let body: ApiErrorBody = {};
-    try {
-      const parsed: unknown = await response.json();
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        body = parsed as ApiErrorBody;
-      }
-    } catch {
-      body = {};
-    }
-    throw new SubscriptionApiError(
-      response.status,
-      body.error ?? "request_failed",
-      body.message ?? `Request failed with HTTP ${response.status}`,
-    );
+    throw await apiError(response);
   }
   return await response.json() as T;
+}
+
+async function requestEmpty(path: string, init: RequestInit): Promise<void> {
+  const response = await fetch(path, {
+    ...init,
+    headers: authenticatedHeaders(init.headers),
+  });
+  if (!response.ok) {
+    throw await apiError(response);
+  }
 }
 
 function jsonInit(method: string, body?: unknown): RequestInit {
@@ -162,6 +180,20 @@ export async function createSubscriptionProfile(name: string): Promise<ProfileDe
   return data.profile;
 }
 
+export async function renameSubscriptionProfile(
+  profileId: string,
+  name: string,
+): Promise<void> {
+  await requestJson(
+    `/api/manage/profiles/${profileId}`,
+    jsonInit("PATCH", { name }),
+  );
+}
+
+export async function removeSubscriptionProfile(profileId: string): Promise<void> {
+  await requestEmpty(`/api/manage/profiles/${profileId}`, jsonInit("DELETE"));
+}
+
 export async function addSubscriptionSource(
   profileId: string,
   source: { name: string; type: SourceType; value: string },
@@ -173,13 +205,17 @@ export async function addSubscriptionSource(
 }
 
 export async function removeSubscriptionSource(sourceId: string): Promise<void> {
-  const response = await fetch(`/api/manage/sources/${sourceId}`, {
-    method: "DELETE",
-    headers: authenticatedHeaders(),
-  });
-  if (!response.ok) {
-    throw new SubscriptionApiError(response.status, "delete_failed", "Source could not be removed");
-  }
+  await requestEmpty(`/api/manage/sources/${sourceId}`, jsonInit("DELETE"));
+}
+
+export async function setSubscriptionSourceEnabled(
+  sourceId: string,
+  enabled: boolean,
+): Promise<void> {
+  await requestJson(
+    `/api/manage/sources/${sourceId}`,
+    jsonInit("PATCH", { enabled }),
+  );
 }
 
 export async function refreshSubscriptionProfile(profileId: string): Promise<void> {
@@ -197,13 +233,7 @@ export async function createSubscriptionLink(
 }
 
 export async function revokeSubscriptionLink(linkId: string): Promise<void> {
-  const response = await fetch(`/api/manage/links/${linkId}`, {
-    method: "DELETE",
-    headers: authenticatedHeaders(),
-  });
-  if (!response.ok) {
-    throw new SubscriptionApiError(response.status, "revoke_failed", "Link could not be revoked");
-  }
+  await requestEmpty(`/api/manage/links/${linkId}`, jsonInit("DELETE"));
 }
 
 export function subscriptionErrorText(error: unknown): string {

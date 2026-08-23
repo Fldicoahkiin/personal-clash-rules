@@ -125,6 +125,30 @@ export async function createProfile(db: D1Database, name: string) {
   return { id, name, createdAt: now, updatedAt: now };
 }
 
+export async function renameProfile(
+  db: D1Database,
+  profileId: string,
+  name: string,
+) {
+  const updatedAt = new Date().toISOString();
+  const result = await db.prepare(`
+    UPDATE profiles
+    SET name = ?, updated_at = ?
+    WHERE id = ?
+  `).bind(name, updatedAt, profileId).run();
+  if (result.meta.changes === 0) {
+    return null;
+  }
+  return { id: profileId, name, updatedAt };
+}
+
+export async function deleteProfile(db: D1Database, profileId: string): Promise<boolean> {
+  const result = await db.prepare("DELETE FROM profiles WHERE id = ?")
+    .bind(profileId)
+    .run();
+  return result.meta.changes > 0;
+}
+
 export async function readProfile(db: D1Database, profileId: string) {
   const profile = await db.prepare(`
     SELECT id, name, created_at, updated_at
@@ -263,6 +287,30 @@ export async function deleteSource(db: D1Database, sourceId: string): Promise<bo
   await db.prepare("DELETE FROM sources WHERE id = ?").bind(sourceId).run();
   await touchProfile(db, source.profile_id, new Date().toISOString());
   return true;
+}
+
+export async function setSourceEnabled(
+  db: D1Database,
+  sourceId: string,
+  enabled: boolean,
+) {
+  const source = await db.prepare(`
+    SELECT profile_id
+    FROM sources
+    WHERE id = ?
+  `).bind(sourceId).first<{ profile_id: string }>();
+  if (!source) {
+    return null;
+  }
+
+  const updatedAt = new Date().toISOString();
+  await db.prepare(`
+    UPDATE sources
+    SET enabled = ?, updated_at = ?
+    WHERE id = ?
+  `).bind(enabled ? 1 : 0, updatedAt, sourceId).run();
+  await touchProfile(db, source.profile_id, updatedAt);
+  return { id: sourceId, enabled, updatedAt };
 }
 
 export async function writeOutput(

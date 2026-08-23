@@ -1,9 +1,12 @@
-import { ArrowClockwise, CheckCircle, X } from "@phosphor-icons/react";
+import { CheckCircle, WarningCircle, X } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import {
   createSubscriptionProfile,
+  clearControlToken,
+  removeSubscriptionProfile,
+  renameSubscriptionProfile,
   refreshSubscriptionProfile,
   setControlToken,
   SubscriptionApiError,
@@ -12,6 +15,7 @@ import {
 } from "./api";
 import { ControlHeader } from "./ControlHeader";
 import { LinkPanel } from "./LinkPanel";
+import { ProfileHeader } from "./ProfileHeader";
 import { ProfileRail } from "./ProfileRail";
 import { SourcePanel } from "./SourcePanel";
 
@@ -67,6 +71,27 @@ export function SubscriptionConsole() {
     onError: (error) => showNotice(subscriptionErrorText(error), "error"),
   });
 
+  const renameMutation = useMutation({
+    mutationFn: ({ profileId, name }: { profileId: string; name: string }) => (
+      renameSubscriptionProfile(profileId, name)
+    ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueries.all });
+      showNotice("方案已改名");
+    },
+    onError: (error) => showNotice(subscriptionErrorText(error), "error"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: removeSubscriptionProfile,
+    onSuccess: async () => {
+      setSelectedId(null);
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueries.all });
+      showNotice("方案已删除");
+    },
+    onError: (error) => showNotice(subscriptionErrorText(error), "error"),
+  });
+
   const authError = profilesQuery.error instanceof SubscriptionApiError
     && profilesQuery.error.status === 401;
   const profile = detailQuery.data;
@@ -82,7 +107,12 @@ export function SubscriptionConsole() {
 
   return (
     <div className="control-shell">
-      <ControlHeader />
+      <ControlHeader
+        onExit={profilesQuery.isSuccess ? () => {
+          clearControlToken();
+          window.location.reload();
+        } : undefined}
+      />
       {notice ? (
         <div className={`control-notice is-${notice.tone}`} role="status">
           <span>{notice.message}</span>
@@ -129,27 +159,23 @@ export function SubscriptionConsole() {
           <div className="control-main">
             {profile ? (
               <>
-                <header className="profile-heading">
-                  <div>
-                    <h1>{profile.name}</h1>
-                    <p>{formatRefreshTime(profile.latestRefresh?.finishedAt ?? null)}</p>
-                  </div>
-                  <button
-                    className="button button-primary"
-                    type="button"
-                    disabled={refreshMutation.isPending || profile.sources.length === 0}
-                    onClick={() => refreshMutation.mutate(profile.id)}
-                  >
-                    <ArrowClockwise aria-hidden="true" />
-                    {refreshMutation.isPending ? "正在刷新" : "刷新全部格式"}
-                  </button>
-                </header>
+                <ProfileHeader
+                  name={profile.name}
+                  refreshTime={formatRefreshTime(profile.latestRefresh?.finishedAt ?? null)}
+                  sourceCount={profile.sources.filter((source) => source.enabled).length}
+                  refreshing={refreshMutation.isPending}
+                  renaming={renameMutation.isPending}
+                  deleting={deleteMutation.isPending}
+                  onRefresh={() => refreshMutation.mutate(profile.id)}
+                  onRename={(name) => renameMutation.mutate({ profileId: profile.id, name })}
+                  onDelete={() => deleteMutation.mutate(profile.id)}
+                />
 
                 <ol className="conversion-line" aria-label="订阅生成状态">
-                  <li className={profile.sources.length > 0 ? "is-ready" : ""}>
+                  <li className={profile.sources.some((source) => source.enabled) ? "is-ready" : ""}>
                     <span className="conversion-node" />
                     <strong>订阅来源</strong>
-                    <small>{profile.sources.length || "—"}</small>
+                    <small>{profile.sources.filter((source) => source.enabled).length || "—"}</small>
                   </li>
                   <li className={(profile.latestRefresh?.nodeCount ?? 0) > 0 ? "is-ready" : ""}>
                     <span className="conversion-node" />
@@ -172,6 +198,18 @@ export function SubscriptionConsole() {
                   <p className="refresh-result">
                     <CheckCircle aria-hidden="true" />
                     {profile.latestRefresh.nodeCount} 个节点，{profile.latestRefresh.targetCount} 种格式
+                  </p>
+                ) : null}
+                {profile.latestRefresh?.status === "failed" ? (
+                  <p className="refresh-result is-error">
+                    <WarningCircle aria-hidden="true" />
+                    上次刷新失败，请检查订阅来源或转换服务
+                  </p>
+                ) : null}
+                {profile.latestRefresh?.status === "running" ? (
+                  <p className="refresh-result is-pending">
+                    <WarningCircle aria-hidden="true" />
+                    上次刷新未完成，可以重试
                   </p>
                 ) : null}
 
