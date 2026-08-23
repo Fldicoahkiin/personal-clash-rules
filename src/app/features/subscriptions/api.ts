@@ -49,6 +49,7 @@ export interface SubscriptionLink {
   enabled: boolean;
   createdAt: string;
   revokedAt: string | null;
+  universalUrl: string | null;
   urls: Partial<Record<OutputTarget, string>> | null;
 }
 

@@ -18,6 +18,7 @@
     "src/app/lib",
     "src/config/**/*.ts",
     "src/worker/api-error.ts",
+    "src/worker/subscription-target.ts",
     "src/worker/*-profile.ts",
     "src/worker/yaml-proxy-resource.ts"
   ]

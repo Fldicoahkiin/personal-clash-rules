@@ -35,6 +35,7 @@ The same public site serves the rule files and tests those published files, so t
 - Saved sources can be renamed, replaced, enabled, disabled, or removed without changing published links.
 - Source values and active share tokens are encrypted before D1 storage.
 - Fixed subscription links can be refreshed without changing their addresses and can be revoked.
+- Each fixed link includes a universal endpoint that selects a node format from the client User-Agent, while explicit target URLs remain available.
 - The management page shows the latest eight refresh runs and their conversion results.
 - The management API accepts Cloudflare Access identity or the control token used by automation.
 - Rule text conversion runs in the browser and remains separate from subscription conversion.

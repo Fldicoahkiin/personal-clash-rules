@@ -26,6 +26,7 @@ import {
   writeOutput,
 } from "./subscription-store";
 import { isOutputTarget, outputTargets, type SubscriptionEnv } from "./types";
+import { targetForUserAgent } from "./subscription-target";
 
 const encoder = new TextEncoder();
 const maximumSourceBytes = 64 * 1024;
@@ -97,6 +98,10 @@ function urlsForToken(origin: string, token: string) {
   return Object.fromEntries(
     outputTargets.map((target) => [target, `${origin}/s/${token}/${target}`]),
   );
+}
+
+function universalUrlForToken(origin: string, token: string): string {
+  return `${origin}/s/${token}`;
 }
 
 function validateSource(type: "subscription" | "node", value: string): void {
@@ -264,6 +269,7 @@ async function routeControlApi(
       const storedLinks = await readProfileLinks(db, parts[3]);
       const links = await Promise.all(storedLinks.map(async (link) => {
         let urls: Record<string, string> | null = null;
+        let universalUrl: string | null = null;
         if (link.enabled === 1 && link.token_ciphertext && link.token_iv) {
           const token = await decryptSource(
             link.token_ciphertext,
@@ -271,6 +277,7 @@ async function routeControlApi(
             env.DATA_ENCRYPTION_KEY,
           );
           urls = urlsForToken(url.origin, token);
+          universalUrl = universalUrlForToken(url.origin, token);
         }
         return {
           id: link.id,
@@ -278,6 +285,7 @@ async function routeControlApi(
           enabled: link.enabled === 1,
           createdAt: link.created_at,
           revokedAt: link.revoked_at,
+          universalUrl,
           urls,
         };
       }));
@@ -426,7 +434,11 @@ async function routeControlApi(
       throw new ApiError(404, "profile_not_found", "Profile not found");
     }
 
-    return json({ link, urls: urlsForToken(url.origin, token) }, { status: 201 });
+    return json({
+      link,
+      universalUrl: universalUrlForToken(url.origin, token),
+      urls: urlsForToken(url.origin, token),
+    }, { status: 201 });
   }
 
   if (parts.length === 4 && parts[2] === "links" && request.method === "DELETE") {
@@ -449,20 +461,32 @@ async function routePublishedOutput(
   }
 
   const parts = url.pathname.split("/").filter(Boolean);
-  if (parts.length !== 3 || !isOutputTarget(parts[2])) {
+  if (parts.length !== 2 && parts.length !== 3) {
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
+  const universal = parts.length === 2;
+  const targetParameter = universal ? url.searchParams.get("target") : parts[2];
+  let requestedTarget: (typeof outputTargets)[number] | null = null;
+  if (targetParameter) {
+    if (!isOutputTarget(targetParameter)) {
+      throw new ApiError(400, "unsupported_target", "Output target is not supported");
+    }
+    requestedTarget = targetParameter;
+  }
+  const target = requestedTarget ?? targetForUserAgent(
+    request.headers.get("user-agent") ?? "",
+  );
 
   const output = await readPublishedOutput(
     requireDatabase(env),
     await hashToken(parts[1]),
-    parts[2],
+    target,
   );
   if (!output) {
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
 
-  const content = parts[2] === "surge-config" || parts[2] === "surfboard-config"
+  const content = target === "surge-config" || target === "surfboard-config"
     ? output.content.replace(managedProfileUrlPlaceholder, url.toString())
     : output.content;
   const etag = content === output.content ? output.etag : `"${await hashToken(content)}"`;
@@ -471,9 +495,27 @@ async function routePublishedOutput(
     "Content-Type": output.content_type,
     ETag: etag,
     "X-Subscription-Profile": encodeURIComponent(output.profile_name),
+    "X-Subscription-Target": target,
     "X-Subscription-Updated-At": output.generated_at,
   });
-  if (request.headers.get("if-none-match") === etag) {
+  if (universal && !requestedTarget) {
+    headers.set("Vary", "User-Agent");
+  }
+  const generatedAt = new Date(output.generated_at);
+  const lastModified = Number.isNaN(generatedAt.valueOf())
+    ? null
+    : generatedAt.toUTCString();
+  if (lastModified) {
+    headers.set("Last-Modified", lastModified);
+  }
+
+  const ifNoneMatch = request.headers.get("if-none-match");
+  const ifModifiedSince = request.headers.get("if-modified-since");
+  const unchangedSince = !ifNoneMatch
+    && lastModified
+    && ifModifiedSince
+    && Date.parse(ifModifiedSince) >= Date.parse(lastModified);
+  if (ifNoneMatch === etag || unchangedSince) {
     return new Response(null, { status: 304, headers });
   }
   return new Response(request.method === "HEAD" ? null : content, { headers });

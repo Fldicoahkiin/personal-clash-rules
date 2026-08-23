@@ -439,6 +439,16 @@ describe("Worker entrypoint", () => {
       },
     );
     expect(managedOutputResponse.status).toBe(200);
+    const surgeNodes = "test-node = ss, example.com, 443\n";
+    const surgeOutputResponse = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/outputs/surge`,
+      {
+        method: "PUT",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ content: surgeNodes }),
+      },
+    );
+    expect(surgeOutputResponse.status).toBe(200);
 
     const linkResponse = await exports.default.fetch(
       `https://example.com/api/manage/profiles/${profile.id}/links`,
@@ -451,8 +461,12 @@ describe("Worker entrypoint", () => {
     expect(linkResponse.status).toBe(201);
     const linkData = await linkResponse.json<{
       link: { id: string };
+      universalUrl: string;
       urls: Record<string, string>;
     }>();
+    expect(linkData.universalUrl).toMatch(
+      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}$/,
+    );
     expect(linkData.urls.mihomo).toMatch(/^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo$/);
     expect(linkData.urls["mihomo-config"]).toMatch(
       /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo-config$/,
@@ -482,15 +496,59 @@ describe("Worker entrypoint", () => {
       { headers: authorization },
     );
     const profileData = await profileDetail.json<{
-      profile: { links: Array<{ id: string; urls: Record<string, string> }> };
+      profile: {
+        links: Array<{
+          id: string;
+          universalUrl: string;
+          urls: Record<string, string>;
+        }>;
+      };
     }>();
     expect(profileData.profile.links[0].urls.mihomo).toBe(linkData.urls.mihomo);
+    expect(profileData.profile.links[0].universalUrl).toBe(linkData.universalUrl);
+
+    const universalDefault = await exports.default.fetch(linkData.universalUrl, {
+      headers: { "User-Agent": "unknown-client/1.0" },
+    });
+    expect(universalDefault.status).toBe(200);
+    expect(universalDefault.headers.get("x-subscription-target")).toBe("mihomo");
+    expect(universalDefault.headers.get("vary")).toBe("User-Agent");
+    await expect(universalDefault.text()).resolves.toBe(output);
+
+    const universalSurge = await exports.default.fetch(linkData.universalUrl, {
+      headers: { "User-Agent": "Surge iOS/3004" },
+    });
+    expect(universalSurge.status).toBe(200);
+    expect(universalSurge.headers.get("x-subscription-target")).toBe("surge");
+    await expect(universalSurge.text()).resolves.toBe(surgeNodes);
+
+    const universalManagedUrl = `${linkData.universalUrl}?target=surge-config`;
+    const universalManaged = await exports.default.fetch(universalManagedUrl, {
+      headers: { "User-Agent": "curl/8" },
+    });
+    expect(universalManaged.status).toBe(200);
+    expect(universalManaged.headers.get("x-subscription-target")).toBe("surge-config");
+    await expect(universalManaged.text()).resolves.toBe(
+      managedOutput.replace(managedProfileUrlPlaceholder, universalManagedUrl),
+    );
+
+    const invalidUniversalTarget = await exports.default.fetch(
+      `${linkData.universalUrl}?target=unknown`,
+    );
+    expect(invalidUniversalTarget.status).toBe(400);
 
     const published = await exports.default.fetch(linkData.urls.mihomo);
     expect(published.status).toBe(200);
     expect(published.headers.get("etag")).toBe(outputData.etag);
+    const lastModified = published.headers.get("last-modified");
+    expect(lastModified).toBeTruthy();
     expect(published.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=3600");
     await expect(published.text()).resolves.toBe(output);
+
+    const unchangedSince = await exports.default.fetch(linkData.urls.mihomo, {
+      headers: { "If-Modified-Since": lastModified ?? "" },
+    });
+    expect(unchangedSince.status).toBe(304);
 
     const managedPublished = await exports.default.fetch(linkData.urls["surge-config"]);
     expect(managedPublished.status).toBe(200);
@@ -519,6 +577,9 @@ describe("Worker entrypoint", () => {
     const revoked = await exports.default.fetch(linkData.urls.mihomo);
     expect(revoked.status).toBe(404);
     expect(revoked.headers.get("cache-control")).toBe("no-store");
+
+    const revokedUniversal = await exports.default.fetch(linkData.universalUrl);
+    expect(revokedUniversal.status).toBe(404);
   });
 
   it("refreshes every client output through Sub-Store", async () => {
