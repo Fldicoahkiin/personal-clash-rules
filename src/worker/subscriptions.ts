@@ -1,4 +1,4 @@
-import { authorizeControlRequest } from "./access";
+import { authorizeControlRequest, isControlRequestAuthorized } from "./access";
 import { ApiError } from "./api-error";
 import { createShareToken, decryptSource, encryptSource, hashToken } from "./secrets";
 import { normalizeSources, produceTarget } from "./sub-store";
@@ -195,9 +195,18 @@ async function routeControlApi(
   url: URL,
   env: SubscriptionEnv,
 ): Promise<Response> {
+  const parts = url.pathname.split("/").filter(Boolean);
+
+  if (
+    parts.length === 3
+    && parts[2] === "session"
+    && request.method === "GET"
+  ) {
+    return json({ authenticated: await isControlRequestAuthorized(request, env) });
+  }
+
   await authorizeControlRequest(request, env);
   const db = requireDatabase(env);
-  const parts = url.pathname.split("/").filter(Boolean);
 
   if (parts.length === 3 && parts[2] === "profiles") {
     if (request.method === "GET") {

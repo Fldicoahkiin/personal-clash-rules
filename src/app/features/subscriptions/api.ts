@@ -77,6 +77,10 @@ export interface SubscriptionRefreshResult {
   unavailableTargets: OutputTarget[];
 }
 
+export interface ControlSession {
+  authenticated: boolean;
+}
+
 interface ApiErrorBody {
   error?: string;
   message?: string;
@@ -162,6 +166,10 @@ function jsonInit(method: string, body?: unknown): RequestInit {
 
 export const subscriptionQueries = {
   all: ["subscription-profiles"] as const,
+  session: () => queryOptions({
+    queryKey: ["subscription-session"] as const,
+    queryFn: () => requestJson<ControlSession>("/api/manage/session"),
+  }),
   list: () => queryOptions({
     queryKey: ["subscription-profiles", "list"] as const,
     queryFn: async () => {

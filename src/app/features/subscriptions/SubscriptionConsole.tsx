@@ -36,7 +36,12 @@ export function SubscriptionConsole() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [controlToken, setControlTokenInput] = useState("");
-  const profilesQuery = useQuery(subscriptionQueries.list());
+  const sessionQuery = useQuery(subscriptionQueries.session());
+  const authenticated = sessionQuery.data?.authenticated === true;
+  const profilesQuery = useQuery({
+    ...subscriptionQueries.list(),
+    enabled: authenticated,
+  });
   const profileId = selectedId ?? profilesQuery.data?.[0]?.id;
   const detailQuery = useQuery({
     ...subscriptionQueries.detail(profileId ?? ""),
@@ -98,19 +103,31 @@ export function SubscriptionConsole() {
     && profilesQuery.error.status === 401;
   const profile = detailQuery.data;
 
-  function unlockControl(event: FormEvent<HTMLFormElement>) {
+  async function unlockControl(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!controlToken.trim()) {
       return;
     }
     setControlToken(controlToken);
-    void profilesQuery.refetch();
+    const result = await sessionQuery.refetch();
+    if (result.error) {
+      showNotice(subscriptionErrorText(result.error), "error");
+      return;
+    }
+    if (!result.data?.authenticated) {
+      clearControlToken();
+      showNotice("管理令牌不正确", "error");
+      return;
+    }
+    setNotice(null);
+    setControlTokenInput("");
+    await profilesQuery.refetch();
   }
 
   return (
     <div className="control-shell">
       <ControlHeader
-        onExit={profilesQuery.isSuccess ? () => {
+        onExit={authenticated ? () => {
           clearControlToken();
           window.location.reload();
         } : undefined}
@@ -124,7 +141,14 @@ export function SubscriptionConsole() {
         </div>
       ) : null}
 
-      {authError ? (
+      {sessionQuery.isLoading ? (
+        <main className="control-loading">正在检查管理权限</main>
+      ) : sessionQuery.isError ? (
+        <main className="control-gate">
+          <h1>管理页暂时不可用</h1>
+          <p>{subscriptionErrorText(sessionQuery.error)}</p>
+        </main>
+      ) : !authenticated || authError ? (
         <main className="control-gate">
           <h1>进入订阅管理</h1>
           <form className="control-token-form" onSubmit={unlockControl}>
@@ -134,7 +158,8 @@ export function SubscriptionConsole() {
               type="password"
               value={controlToken}
               onChange={(event) => setControlTokenInput(event.target.value)}
-              autoComplete="current-password"
+              name="control-token"
+              autoComplete="off"
             />
             <button className="button button-primary" type="submit" disabled={!controlToken.trim()}>
               进入

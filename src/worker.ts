@@ -10,6 +10,9 @@ const securityHeaders = {
 } as const;
 
 function cacheControl(pathname: string): string {
+  if (pathname.startsWith("/api/manage/")) {
+    return "no-store";
+  }
   if (pathname.startsWith("/assets/")) {
     return "public, max-age=31536000, immutable";
   }

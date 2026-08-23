@@ -69,6 +69,22 @@ describe("Worker entrypoint", () => {
     });
   });
 
+  it("reports the management session without an expected 401 response", async () => {
+    const signedOut = await exports.default.fetch(
+      "https://example.com/api/manage/session",
+    );
+    expect(signedOut.status).toBe(200);
+    expect(signedOut.headers.get("cache-control")).toBe("no-store");
+    await expect(signedOut.json()).resolves.toEqual({ authenticated: false });
+
+    const signedIn = await exports.default.fetch(
+      "https://example.com/api/manage/session",
+      { headers: authorization },
+    );
+    expect(signedIn.status).toBe(200);
+    await expect(signedIn.json()).resolves.toEqual({ authenticated: true });
+  });
+
   it("uses the personal subscription name when no profile name is provided", async () => {
     const response = await exports.default.fetch(
       "https://example.com/api/manage/profiles",

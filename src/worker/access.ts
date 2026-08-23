@@ -66,9 +66,16 @@ export async function authorizeControlRequest(
   request: Request,
   env: SubscriptionEnv,
 ): Promise<void> {
-  if (await acceptsServiceToken(request, env) || await acceptsAccessToken(request, env)) {
+  if (await isControlRequestAuthorized(request, env)) {
     return;
   }
 
   throw new ApiError(401, "authentication_required", "Authentication required");
+}
+
+export async function isControlRequestAuthorized(
+  request: Request,
+  env: SubscriptionEnv,
+): Promise<boolean> {
+  return await acceptsServiceToken(request, env) || await acceptsAccessToken(request, env);
 }
