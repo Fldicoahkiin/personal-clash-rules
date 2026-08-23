@@ -25,7 +25,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm sync:rules
-      - run: pnpm test
+      - run: pnpm check
 
       - name: Commit updated rules
         run: |
