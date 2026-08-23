@@ -32,7 +32,7 @@ const clients: Array<{ id: ClientId; label: string; icon: string }> = [
 
 export function SubscriptionImport() {
   const [url, setUrl] = useState("");
-  const [name, setName] = useState("Flacier");
+  const [name, setName] = useState("个人订阅");
   const [client, setClient] = useState<ClientId>("mihomo");
   const [copied, setCopied] = useState(false);
 
