@@ -14,6 +14,12 @@ describe("LinkPanel", () => {
       name: "个人订阅",
       createdAt: "2026-08-23T00:00:00.000Z",
       updatedAt: "2026-08-23T00:00:00.000Z",
+      nodeSettings: {
+        includePattern: "",
+        excludePattern: "",
+        renameRules: [],
+        sortMode: "source",
+      },
       sources: [],
       outputs: [],
       links: [

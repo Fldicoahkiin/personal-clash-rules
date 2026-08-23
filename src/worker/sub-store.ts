@@ -5,6 +5,7 @@ import { ApiError } from "./api-error";
 import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
 import { createMihomoProfile } from "./mihomo-profile";
+import type { SubscriptionNode } from "./node-transforms";
 import { createSingBoxProfile } from "./sing-box-profile";
 import { createStashProfile } from "./stash-profile";
 import { createSurgeProfile, createSurfboardProfile } from "./surge-profile";
@@ -38,7 +39,7 @@ interface SubStoreSuccess<T> {
   data: T;
 }
 
-function prepareNodes(value: unknown): unknown[] {
+function prepareNodes(value: unknown): SubscriptionNode[] {
   if (!Array.isArray(value)) {
     throw new ApiError(502, "converter_invalid_response", "Sub-Store returned no node list");
   }
@@ -163,7 +164,7 @@ export async function normalizeSources(
     subscriptionUrls: string[];
     nodes: string[];
   },
-): Promise<unknown[]> {
+): Promise<SubscriptionNode[]> {
   const hasRemote = input.subscriptionUrls.length > 0;
   const hasLocal = input.nodes.length > 0;
   const data = await postToSubStore<{ processed?: unknown }>(
@@ -185,7 +186,7 @@ export async function normalizeSources(
 
 export async function produceTarget(
   env: SubscriptionEnv,
-  nodes: unknown[],
+  nodes: SubscriptionNode[],
   target: OutputTarget,
 ): Promise<string> {
   const data = await postToSubStore<{ par_res?: unknown }>(env, "/api/proxy/parse", {

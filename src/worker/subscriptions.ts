@@ -1,5 +1,6 @@
 import { authorizeControlRequest, isControlRequestAuthorized } from "./access";
 import { ApiError } from "./api-error";
+import { applyNodeTransforms, parseNodeSettings } from "./node-transforms";
 import { createShareToken, decryptSource, encryptSource, hashToken } from "./secrets";
 import { normalizeSources, probeSubStore, produceTarget } from "./sub-store";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
@@ -23,6 +24,7 @@ import {
   setSourceEnabled,
   startRefresh,
   updateSource,
+  updateProfileNodeSettings,
   writeOutput,
 } from "./subscription-store";
 import { isOutputTarget, outputTargets, type SubscriptionEnv } from "./types";
@@ -139,7 +141,7 @@ export async function refreshProfile(
         env.DATA_ENCRYPTION_KEY,
       ),
     })));
-    const nodes = await normalizeSources(env, {
+    const normalizedNodes = await normalizeSources(env, {
       profileName: stored.profile.name,
       subscriptionUrls: decrypted
         .filter((source) => source.type === "subscription")
@@ -148,6 +150,14 @@ export async function refreshProfile(
         .filter((source) => source.type === "node")
         .map((source) => source.value),
     });
+    const nodes = applyNodeTransforms(normalizedNodes, stored.nodeSettings);
+    if (nodes.length === 0) {
+      throw new ApiError(
+        422,
+        "no_nodes_after_processing",
+        "Node processing removed every enabled node",
+      );
+    }
     const attempts = await Promise.allSettled(outputTargets.map(async (target) => {
       const content = await produceTarget(env, nodes, target);
       if (encoder.encode(content).byteLength > maximumOutputBytes) {
@@ -306,6 +316,20 @@ async function routeControlApi(
       }
       return new Response(null, { status: 204 });
     }
+  }
+
+  if (
+    parts.length === 5
+    && parts[2] === "profiles"
+    && parts[4] === "node-settings"
+    && request.method === "PUT"
+  ) {
+    const settings = parseNodeSettings(await readObject(request));
+    const nodeSettings = await updateProfileNodeSettings(db, parts[3], settings);
+    if (!nodeSettings) {
+      throw new ApiError(404, "profile_not_found", "Profile not found");
+    }
+    return json({ nodeSettings });
   }
 
   if (parts.length === 5 && parts[2] === "profiles" && parts[4] === "sources" && request.method === "POST") {

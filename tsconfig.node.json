@@ -21,6 +21,7 @@
     "src/app/features/subscriptions",
     "src/config/**/*.ts",
     "src/worker/api-error.ts",
+    "src/worker/node-transforms.ts",
     "src/worker/subscription-target.ts",
     "src/worker/*-profile.ts",
     "src/worker/yaml-proxy-resource.ts"

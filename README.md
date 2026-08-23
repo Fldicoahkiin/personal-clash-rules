@@ -9,7 +9,7 @@
 
 ![订阅转换结构](docs/architecture.svg)
 
-管理页可合并多个远程订阅和单节点，生成 Mihomo、Stash、Surge、Surfboard、Loon、Egern、sing-box 完整配置与 13 种节点资源。固定链接不随刷新变化；通用入口按客户端自动选择节点格式。保留最近 8 次刷新记录。
+管理页可合并多个远程订阅和单节点，按名称筛选、改名和排序，生成 Mihomo、Stash、Surge、Surfboard、Loon、Egern、sing-box 完整配置与 13 种节点资源。固定链接不随刷新变化；通用入口按客户端自动选择节点格式。保留最近 8 次刷新记录。
 
 ## 策略
 

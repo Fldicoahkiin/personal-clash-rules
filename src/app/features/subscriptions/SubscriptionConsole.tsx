@@ -15,6 +15,7 @@ import {
 } from "./api";
 import { ControlHeader } from "./ControlHeader";
 import { LinkPanel } from "./LinkPanel";
+import { NodeSettingsPanel } from "./NodeSettingsPanel";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileRail } from "./ProfileRail";
 import { RefreshHistory } from "./RefreshHistory";
@@ -255,6 +256,12 @@ export function SubscriptionConsole() {
                 <RefreshHistory runs={profile.refreshHistory} />
 
                 <SourcePanel profileId={profile.id} sources={profile.sources} onNotice={showNotice} />
+                <NodeSettingsPanel
+                  key={profile.id}
+                  profileId={profile.id}
+                  settings={profile.nodeSettings}
+                  onNotice={showNotice}
+                />
                 <LinkPanel profile={profile} onNotice={showNotice} />
               </>
             ) : detailQuery.isLoading ? (

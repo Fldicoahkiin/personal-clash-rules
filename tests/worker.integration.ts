@@ -282,6 +282,70 @@ describe("Worker entrypoint", () => {
     expect(stored?.name).toBe("旅行设备");
   });
 
+  it("stores node processing settings and rejects invalid patterns", async () => {
+    const profile = await createProfile("节点处理");
+    const initial = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      { headers: authorization },
+    );
+    await expect(initial.json()).resolves.toMatchObject({
+      profile: {
+        nodeSettings: {
+          includePattern: "",
+          excludePattern: "",
+          renameRules: [],
+          sortMode: "source",
+        },
+      },
+    });
+
+    const invalid = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/node-settings`,
+      {
+        method: "PUT",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          includePattern: "(",
+          excludePattern: "",
+          renameRules: [],
+          sortMode: "source",
+        }),
+      },
+    );
+    expect(invalid.status).toBe(400);
+    await expect(invalid.json()).resolves.toMatchObject({
+      error: "invalid_node_pattern",
+    });
+
+    const settings = {
+      includePattern: "US|JP",
+      excludePattern: "backup",
+      renameRules: [
+        { pattern: "^🇺🇸\\s*", replacement: "" },
+        { pattern: "^🇯🇵\\s*", replacement: "" },
+      ],
+      sortMode: "name-asc",
+    };
+    const update = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/node-settings`,
+      {
+        method: "PUT",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      },
+    );
+    expect(update.status).toBe(200);
+    await expect(update.json()).resolves.toEqual({ nodeSettings: settings });
+
+    const detail = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}`,
+      { headers: authorization },
+    );
+    await expect(detail.json()).resolves.toMatchObject({
+      profile: { nodeSettings: settings },
+    });
+  });
+
   it("disables and enables a subscription source", async () => {
     const profile = await createProfile();
     await addSource(profile.id, {
@@ -596,6 +660,23 @@ describe("Worker entrypoint", () => {
       type: "node",
       value: nodeUri,
     });
+    const settings = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/node-settings`,
+      {
+        method: "PUT",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          includePattern: "remote|manual",
+          excludePattern: "",
+          renameRules: [
+            { pattern: "remote", replacement: "Tokyo 10" },
+            { pattern: "manual", replacement: "Tokyo 2" },
+          ],
+          sortMode: "name-asc",
+        }),
+      },
+    );
+    expect(settings.status).toBe(200);
 
     const converterBodies: Array<Record<string, unknown>> = [];
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
@@ -683,6 +764,10 @@ describe("Worker entrypoint", () => {
       expect(parseBodies.every((body) => (
         typeof body.data === "string" && body.data.startsWith("proxies:\n")
       ))).toBe(true);
+      const transformedData = String(parseBodies[0]?.data);
+      expect(transformedData.indexOf("name: Tokyo 2")).toBeLessThan(
+        transformedData.indexOf("name: Tokyo 10"),
+      );
       expect(fetchSpy).toHaveBeenCalledTimes(21);
 
       const storedOutputs = await testEnv.DB.prepare(`

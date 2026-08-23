@@ -2795,3 +2795,128 @@ summary:focus-visible {
     padding-inline: 9px;
   }
 }
+
+.node-settings-form input {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.74rem;
+}
+
+.node-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.node-filter-grid input[aria-invalid="true"],
+.node-rename-row input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.node-settings-form .field-error {
+  font-size: 0.68rem;
+}
+
+.node-rename-fieldset {
+  min-width: 0;
+  margin: 28px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.node-rename-fieldset legend {
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.node-rename-heading {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.node-rename-heading small,
+.node-settings-actions small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.node-rename-heading button,
+.node-rename-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.node-rename-heading button:hover:not(:disabled),
+.node-rename-remove:hover {
+  color: var(--ink);
+}
+
+.node-rename-heading button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.node-rename-heading svg,
+.node-rename-remove svg {
+  width: 15px;
+  height: 15px;
+}
+
+.node-rename-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+  gap: 12px;
+  align-items: end;
+  padding-block: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.node-rename-remove {
+  min-height: 44px;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.node-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+@media (max-width: 760px) {
+  .node-settings-form input,
+  .node-settings-form select {
+    font-size: 1rem;
+  }
+
+  .node-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .node-rename-row {
+    grid-template-columns: minmax(0, 1fr) 34px;
+  }
+
+  .node-rename-row .field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .node-settings-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

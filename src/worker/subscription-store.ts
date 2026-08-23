@@ -1,3 +1,4 @@
+import type { NodeSettings, NodeSortMode } from "./node-transforms";
 import type { OutputTarget } from "./types";
 
 interface ProfileRow {
@@ -11,6 +12,13 @@ interface ProfileSummaryRow extends ProfileRow {
   enabled_source_count: number;
   output_count: number;
   link_count: number;
+}
+
+interface ProfileSettingsRow extends ProfileRow {
+  include_pattern: string;
+  exclude_pattern: string;
+  rename_rules: string;
+  sort_mode: NodeSortMode;
 }
 
 interface SourceRow {
@@ -76,6 +84,15 @@ function profileJson(row: ProfileRow) {
     name: row.name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function nodeSettingsJson(row: ProfileSettingsRow): NodeSettings {
+  return {
+    includePattern: row.include_pattern,
+    excludePattern: row.exclude_pattern,
+    renameRules: JSON.parse(row.rename_rules) as NodeSettings["renameRules"],
+    sortMode: row.sort_mode,
   };
 }
 
@@ -162,10 +179,18 @@ export async function deleteProfile(db: D1Database, profileId: string): Promise<
 
 export async function readProfile(db: D1Database, profileId: string) {
   const profile = await db.prepare(`
-    SELECT id, name, created_at, updated_at
+    SELECT
+      id,
+      name,
+      include_pattern,
+      exclude_pattern,
+      rename_rules,
+      sort_mode,
+      created_at,
+      updated_at
     FROM profiles
     WHERE id = ?
-  `).bind(profileId).first<ProfileRow>();
+  `).bind(profileId).first<ProfileSettingsRow>();
   if (!profile) {
     return null;
   }
@@ -196,6 +221,7 @@ export async function readProfile(db: D1Database, profileId: string) {
 
   return {
     ...profileJson(profile),
+    nodeSettings: nodeSettingsJson(profile),
     sources: sources.results.map((source) => ({
       id: source.id,
       name: source.name,
@@ -227,10 +253,18 @@ export async function readProfileLinks(db: D1Database, profileId: string) {
 
 export async function readConversionSources(db: D1Database, profileId: string) {
   const profile = await db.prepare(`
-    SELECT id, name, created_at, updated_at
+    SELECT
+      id,
+      name,
+      include_pattern,
+      exclude_pattern,
+      rename_rules,
+      sort_mode,
+      created_at,
+      updated_at
     FROM profiles
     WHERE id = ?
-  `).bind(profileId).first<ProfileRow>();
+  `).bind(profileId).first<ProfileSettingsRow>();
   if (!profile) {
     return null;
   }
@@ -240,7 +274,37 @@ export async function readConversionSources(db: D1Database, profileId: string) {
     WHERE profile_id = ? AND enabled = 1
     ORDER BY created_at ASC
   `).bind(profileId).all<StoredSourceRow>();
-  return { profile: profileJson(profile), sources: sources.results };
+  return {
+    profile: profileJson(profile),
+    nodeSettings: nodeSettingsJson(profile),
+    sources: sources.results,
+  };
+}
+
+export async function updateProfileNodeSettings(
+  db: D1Database,
+  profileId: string,
+  settings: NodeSettings,
+): Promise<NodeSettings | null> {
+  const updatedAt = new Date().toISOString();
+  const result = await db.prepare(`
+    UPDATE profiles
+    SET
+      include_pattern = ?,
+      exclude_pattern = ?,
+      rename_rules = ?,
+      sort_mode = ?,
+      updated_at = ?
+    WHERE id = ?
+  `).bind(
+    settings.includePattern,
+    settings.excludePattern,
+    JSON.stringify(settings.renameRules),
+    settings.sortMode,
+    updatedAt,
+    profileId,
+  ).run();
+  return result.meta.changes > 0 ? settings : null;
 }
 
 export async function insertSource(

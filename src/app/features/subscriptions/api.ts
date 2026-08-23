@@ -23,6 +23,19 @@ export type OutputTarget =
   | "json";
 
 export type SourceType = "subscription" | "node";
+export type NodeSortMode = "source" | "name-asc" | "name-desc";
+
+export interface NodeRenameRule {
+  pattern: string;
+  replacement: string;
+}
+
+export interface NodeSettings {
+  includePattern: string;
+  excludePattern: string;
+  renameRules: NodeRenameRule[];
+  sortMode: NodeSortMode;
+}
 
 export interface ProfileSummary {
   id: string;
@@ -68,6 +81,7 @@ export interface ProfileDetail {
   name: string;
   createdAt: string;
   updatedAt: string;
+  nodeSettings: NodeSettings;
   sources: SubscriptionSource[];
   outputs: Array<{
     target: OutputTarget;
@@ -265,6 +279,17 @@ export async function updateSubscriptionSource(
   );
 }
 
+export async function updateSubscriptionNodeSettings(
+  profileId: string,
+  settings: NodeSettings,
+): Promise<NodeSettings> {
+  const data = await requestJson<{ nodeSettings: NodeSettings }>(
+    `/api/manage/profiles/${profileId}/node-settings`,
+    jsonInit("PUT", settings),
+  );
+  return data.nodeSettings;
+}
+
 export async function refreshSubscriptionProfile(
   profileId: string,
 ): Promise<SubscriptionRefreshResult> {
@@ -300,6 +325,9 @@ export function subscriptionErrorText(error: unknown): string {
     converter_unreachable: "转换服务没有响应",
     converter_invalid_response: "转换服务返回了无法识别的结果",
     conversion_failed: "订阅转换失败，请检查订阅源",
+    invalid_node_pattern: "正则格式有误，请检查节点处理设置",
+    invalid_node_settings: "节点处理设置有误",
+    no_nodes_after_processing: "没有节点符合当前筛选条件",
     source_decryption_failed: "订阅源无法解密，请检查数据密钥",
     target_unsupported: "当前节点无法生成可用的客户端格式",
   };
