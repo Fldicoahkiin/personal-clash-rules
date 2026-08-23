@@ -12,12 +12,11 @@
 
 创建数据库并绑定为 `DB`。首次部署前先在 Workers Builds 的 Deploy command 中加入上面的迁移命令；后续构建只会执行尚未应用的迁移。
 
-D1 与 Worker 的免费额度以 Cloudflare 当前页面为准：
+D1 免费档当前包含每日 500 万行读取、10 万行写入和总计 5 GB 存储；单个免费数据库上限 500 MB。Workers 免费档包含每日 10 万次动态请求，静态资源请求不计入该额度。个人订阅管理通常低于这些额度，达到每日上限后相应操作会失败并在次日重置。
 
 - [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)
+- [D1 limits](https://developers.cloudflare.com/d1/platform/limits/)
 - [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)
-
-个人订阅管理通常低于免费额度，但超出免费日限额后请求会失败，不能把免费额度当作无限容量。
 
 ## Variables
 
