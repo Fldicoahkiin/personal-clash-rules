@@ -72,21 +72,17 @@ export function RouteTester() {
     {
       label: "网址",
       value: result?.hostname || "—",
-      detail: "输入地址",
+      detail: "",
       machine: true,
       state: null,
     },
     {
-      label: result
-        ? result.matched
-          ? "规则已命中"
-          : "规则未命中"
-        : "规则",
+      label: "命中规则",
       value: result?.rule || "—",
       detail: result
         ? result.matched
           ? result.ruleSetLabel
-          : "使用默认规则"
+          : "默认规则"
         : "",
       machine: true,
       state: result ? (result.matched ? "pass" : "stop") : null,
@@ -104,10 +100,8 @@ export function RouteTester() {
     },
     {
       label: "最终路线",
-      value: policyRoute
-        ? `${policyRoute.target} · ${policyRoute.mode}`
-        : "—",
-      detail: "",
+      value: policyRoute?.target || "—",
+      detail: policyRoute?.mode || "",
       machine: true,
       state: null,
     },
@@ -118,7 +112,7 @@ export function RouteTester() {
       <div className="route-main">
         <div className="route-intro">
           <h1 id="page-title">网址规则测试</h1>
-          <p>输入网址，查看规则、策略组和最终路线。</p>
+          <p>查看命中的规则，以及最终直连还是代理。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -138,41 +132,47 @@ export function RouteTester() {
         </form>
 
         <div className="route-result" aria-live="polite" key={resultVersion}>
-          <ol className="route-steps">
+          <ol className="route-steps" aria-label="网址规则处理路线">
             {steps.map((step) => (
               <li key={step.label}>
+                <div className="route-step-copy">
+                  <span className="route-step-label">{step.label}</span>
+                  <strong
+                    className={
+                      step.machine
+                        ? "route-value route-value-machine"
+                        : "route-value"
+                    }
+                  >
+                    {step.value}
+                  </strong>
+                </div>
                 <span
                   className={
-                    step.state
-                      ? `route-step-label route-step-label-${step.state}`
-                      : "route-step-label"
-                  }
-                >
-                  {step.state ? (
-                    <span className="route-signal-light" aria-hidden="true" />
-                  ) : null}
-                  {step.label}
-                </span>
-                <span
-                  className={
-                    step.state
-                      ? `route-node route-node-${step.state}`
-                      : "route-node"
+                    step.state === "pass"
+                      ? "route-node route-node-pass"
+                      : step.state === "stop"
+                        ? "route-node route-node-stop"
+                        : "route-node"
                   }
                   aria-hidden="true"
                 />
-                <strong
-                  className={
-                    step.machine
-                      ? "route-value route-value-machine"
-                      : "route-value"
-                  }
-                >
-                  {step.value}
-                </strong>
-                {step.detail ? (
-                  <small className="route-step-detail">{step.detail}</small>
-                ) : null}
+                <div className="route-step-meta">
+                  {step.state ? (
+                    <span
+                      className={
+                        step.state === "pass"
+                          ? "route-status route-status-pass"
+                          : "route-status route-status-stop"
+                      }
+                    >
+                      {step.state === "pass" ? "通过" : "未通过"}
+                    </span>
+                  ) : null}
+                  {step.detail ? (
+                    <small className="route-step-detail">{step.detail}</small>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ol>

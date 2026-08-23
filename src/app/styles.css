@@ -278,7 +278,7 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 224px;
+  min-height: 230px;
   margin-top: 20px;
 }
 
@@ -300,7 +300,7 @@ summary:focus-visible {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
-  padding: 28px 0 0;
+  padding: 20px 0 0;
   list-style: none;
 }
 
@@ -315,55 +315,40 @@ summary:focus-visible {
 
 .route-steps li:not(:last-child)::after {
   position: absolute;
-  top: 85px;
-  left: calc(50% + 11px);
-  width: calc(100% - 22px);
-  height: 7px;
+  z-index: 0;
+  top: 109px;
+  left: calc(50% + 16px);
+  width: calc(100% - 32px);
+  height: 8px;
   border-top: 2px solid var(--accent);
   border-bottom: 2px solid var(--accent);
   content: "";
 }
 
-.route-step-label {
-  display: inline-flex;
-  min-width: 96px;
-  min-height: 31px;
+.route-step-copy {
+  display: flex;
+  width: min(100%, 250px);
+  min-height: 88px;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 7px 9px;
-  border: 1px solid var(--line-strong);
-  background: var(--paper);
-  color: var(--ink);
+}
+
+.route-step-label {
+  color: var(--muted);
   font-size: 0.72rem;
   font-weight: 680;
 }
 
-.route-signal-light {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.route-step-label-pass {
-  border-color: var(--success);
-  color: var(--success);
-}
-
-.route-step-label-stop {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
 .route-node {
+  position: relative;
+  z-index: 2;
   width: 21px;
   height: 21px;
-  margin-block: 46px 16px;
+  margin-block: 14px 13px;
   border: 3px solid var(--accent);
   border-radius: 50%;
   background: var(--paper);
+  outline: 4px solid var(--paper);
 }
 
 .route-node-pass {
@@ -377,6 +362,7 @@ summary:focus-visible {
 }
 
 .route-value {
+  margin-top: 9px;
   max-width: 100%;
   color: var(--ink);
   font-size: 0.92rem;
@@ -384,13 +370,35 @@ summary:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.route-value-machine,
-.route-step-detail {
+.route-value-machine {
   font-family: "SFMono-Regular", Consolas, monospace;
 }
 
+.route-step-meta {
+  display: flex;
+  min-height: 25px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.route-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 720;
+}
+
+.route-status-pass {
+  color: var(--success);
+}
+
+.route-status-stop {
+  color: var(--danger);
+}
+
 .route-step-detail {
-  margin-top: 7px;
   color: var(--muted);
   font-size: 0.68rem;
   line-height: 1.35;
@@ -1133,45 +1141,72 @@ summary:focus-visible {
   }
 
   .route-steps {
+    --route-label-column: 90px;
     grid-template-columns: 1fr;
     gap: 0;
     padding: 0;
   }
 
-  .route-steps li {
-    display: grid;
-    grid-template-columns: 114px 18px minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    gap: 12px;
-    align-items: center;
-    min-height: 62px;
-    text-align: left;
-  }
-
-  .route-steps li:not(:last-child)::after {
+  .route-steps::before {
     position: absolute;
-    top: 40px;
-    bottom: -22px;
-    left: 133px;
+    z-index: 0;
+    top: 28px;
+    bottom: 28px;
+    left: calc(var(--route-label-column) + 18px);
     width: 5px;
-    height: auto;
-    border-top: 0;
     border-right: 1px solid var(--accent);
-    border-bottom: 0;
     border-left: 1px solid var(--accent);
     content: "";
   }
 
+  .route-steps li {
+    display: grid;
+    grid-template-columns: var(--route-label-column) 18px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 12px;
+    align-items: center;
+    min-height: 76px;
+    text-align: left;
+  }
+
+  .route-steps li:not(:last-child)::after {
+    display: none;
+  }
+
+  .route-step-copy {
+    display: contents;
+  }
+
+  .route-step-label {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .route-value {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
   .route-node {
     z-index: 1;
+    grid-column: 2;
+    grid-row: 1 / span 2;
     width: 16px;
     height: 16px;
     margin: 0;
   }
 
-  .route-step-detail {
+  .route-step-meta {
     grid-column: 3;
-    margin-top: -9px;
+    grid-row: 2;
+    min-height: 0;
+    justify-content: flex-start;
+  }
+
+  .route-step-detail {
+    margin: 0;
   }
 
   .route-message {
@@ -1276,6 +1311,10 @@ summary:focus-visible {
 
   .route-section {
     margin-top: 12px;
+  }
+
+  .route-steps {
+    --route-label-column: 76px;
   }
 
   .route-intro h1 {
