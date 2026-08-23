@@ -31,18 +31,41 @@ function converterUrl(env: SubscriptionEnv, path: string): URL {
   return new URL(path, `${env.SUB_STORE_URL.replace(/\/$/, "")}/`);
 }
 
-async function postToSubStore<T>(
-  env: SubscriptionEnv,
-  path: string,
-  body: unknown,
-): Promise<T> {
-  const headers = new Headers({ "Content-Type": "application/json" });
+function authorizedHeaders(env: SubscriptionEnv): Headers {
+  const headers = new Headers();
   if (env.SUB_STORE_ACCESS_CLIENT_ID && env.SUB_STORE_ACCESS_CLIENT_SECRET) {
     headers.set("CF-Access-Client-Id", env.SUB_STORE_ACCESS_CLIENT_ID);
     headers.set("CF-Access-Client-Secret", env.SUB_STORE_ACCESS_CLIENT_SECRET);
   } else if (env.SUB_STORE_TOKEN) {
     headers.set("Authorization", `Bearer ${env.SUB_STORE_TOKEN}`);
   }
+  return headers;
+}
+
+export async function probeSubStore(
+  env: SubscriptionEnv,
+): Promise<"ready" | "not_configured" | "unreachable"> {
+  if (!env.SUB_STORE_URL) {
+    return "not_configured";
+  }
+  try {
+    const response = await fetch(converterUrl(env, "/healthz"), {
+      headers: authorizedHeaders(env),
+      signal: AbortSignal.timeout(5_000),
+    });
+    return response.ok ? "ready" : "unreachable";
+  } catch {
+    return "unreachable";
+  }
+}
+
+async function postToSubStore<T>(
+  env: SubscriptionEnv,
+  path: string,
+  body: unknown,
+): Promise<T> {
+  const headers = authorizedHeaders(env);
+  headers.set("Content-Type", "application/json");
 
   let response: Response;
   try {

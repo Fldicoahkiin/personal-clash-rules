@@ -53,6 +53,13 @@ interface StoredSourceRow {
   secret_iv: string;
 }
 
+interface EditableSourceRow {
+  profile_id: string;
+  name: string;
+  source_type: "subscription" | "node";
+  enabled: number;
+}
+
 interface RefreshRow {
   id: string;
   status: "running" | "succeeded" | "failed";
@@ -163,7 +170,7 @@ export async function readProfile(db: D1Database, profileId: string) {
     return null;
   }
 
-  const [sources, outputs, refresh] = await Promise.all([
+  const [sources, outputs, refreshes] = await Promise.all([
     db.prepare(`
       SELECT id, name, source_type, enabled, created_at, updated_at
       FROM sources
@@ -181,9 +188,11 @@ export async function readProfile(db: D1Database, profileId: string) {
       FROM refresh_runs
       WHERE profile_id = ?
       ORDER BY started_at DESC
-      LIMIT 1
-    `).bind(profileId).first<RefreshRow>(),
+      LIMIT 8
+    `).bind(profileId).all<RefreshRow>(),
   ]);
+
+  const refreshHistory = refreshes.results.map(refreshJson);
 
   return {
     ...profileJson(profile),
@@ -201,7 +210,8 @@ export async function readProfile(db: D1Database, profileId: string) {
       etag: output.etag,
       generatedAt: output.generated_at,
     })),
-    latestRefresh: refresh ? refreshJson(refresh) : null,
+    latestRefresh: refreshHistory[0] ?? null,
+    refreshHistory,
   };
 }
 
@@ -315,6 +325,57 @@ export async function setSourceEnabled(
   `).bind(enabled ? 1 : 0, updatedAt, sourceId).run();
   await touchProfile(db, source.profile_id, updatedAt);
   return { id: sourceId, enabled, updatedAt };
+}
+
+export async function readEditableSource(
+  db: D1Database,
+  sourceId: string,
+): Promise<EditableSourceRow | null> {
+  return db.prepare(`
+    SELECT profile_id, name, source_type, enabled
+    FROM sources
+    WHERE id = ?
+  `).bind(sourceId).first<EditableSourceRow>();
+}
+
+export async function updateSource(
+  db: D1Database,
+  sourceId: string,
+  source: EditableSourceRow,
+  input: {
+    name: string;
+    ciphertext?: string;
+    iv?: string;
+  },
+) {
+  const updatedAt = new Date().toISOString();
+  if (input.ciphertext && input.iv) {
+    await db.prepare(`
+      UPDATE sources
+      SET name = ?, secret_ciphertext = ?, secret_iv = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(
+      input.name,
+      input.ciphertext,
+      input.iv,
+      updatedAt,
+      sourceId,
+    ).run();
+  } else {
+    await db.prepare(`
+      UPDATE sources
+      SET name = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(input.name, updatedAt, sourceId).run();
+  }
+  await touchProfile(db, source.profile_id, updatedAt);
+  return {
+    id: sourceId,
+    name: input.name,
+    type: source.source_type,
+    enabled: source.enabled === 1,
+    updatedAt,
+  };
 }
 
 export async function writeOutput(

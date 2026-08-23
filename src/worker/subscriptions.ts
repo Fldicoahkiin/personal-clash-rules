@@ -1,7 +1,7 @@
 import { authorizeControlRequest, isControlRequestAuthorized } from "./access";
 import { ApiError } from "./api-error";
 import { createShareToken, decryptSource, encryptSource, hashToken } from "./secrets";
-import { normalizeSources, produceTarget } from "./sub-store";
+import { normalizeSources, probeSubStore, produceTarget } from "./sub-store";
 import {
   createProfile,
   deleteProfile,
@@ -12,6 +12,7 @@ import {
   listProfiles,
   finishRefresh,
   readConversionSources,
+  readEditableSource,
   readProfile,
   readProfileLinks,
   readPublishedOutput,
@@ -20,6 +21,7 @@ import {
   revokeShareLink,
   setSourceEnabled,
   startRefresh,
+  updateSource,
   writeOutput,
 } from "./subscription-store";
 import { isOutputTarget, outputTargets, type SubscriptionEnv } from "./types";
@@ -39,6 +41,17 @@ function requireDatabase(env: SubscriptionEnv): D1Database {
     throw new ApiError(503, "database_unavailable", "Subscription database is not configured");
   }
   return env.DB;
+}
+
+async function probeDatabase(
+  db: D1Database,
+): Promise<"ready" | "migration_required"> {
+  try {
+    await db.prepare("SELECT id FROM profiles LIMIT 1").first();
+    return "ready";
+  } catch {
+    return "migration_required";
+  }
 }
 
 async function readObject(request: Request): Promise<Record<string, unknown>> {
@@ -208,6 +221,22 @@ async function routeControlApi(
   await authorizeControlRequest(request, env);
   const db = requireDatabase(env);
 
+  if (
+    parts.length === 3
+    && parts[2] === "status"
+    && request.method === "GET"
+  ) {
+    const [database, converter] = await Promise.all([
+      probeDatabase(db),
+      probeSubStore(env),
+    ]);
+    return json({
+      database,
+      converter,
+      refreshSchedule: "0 */6 * * *",
+    });
+  }
+
   if (parts.length === 3 && parts[2] === "profiles") {
     if (request.method === "GET") {
       return json({ profiles: await listProfiles(db) });
@@ -309,13 +338,36 @@ async function routeControlApi(
 
   if (parts.length === 4 && parts[2] === "sources" && request.method === "PATCH") {
     const body = await readObject(request);
-    if (typeof body.enabled !== "boolean") {
-      throw new ApiError(400, "invalid_field", "enabled must be a boolean");
+    if ("enabled" in body) {
+      if (typeof body.enabled !== "boolean") {
+        throw new ApiError(400, "invalid_field", "enabled must be a boolean");
+      }
+      const source = await setSourceEnabled(db, parts[3], body.enabled);
+      if (!source) {
+        throw new ApiError(404, "source_not_found", "Source not found");
+      }
+      return json({ source });
     }
-    const source = await setSourceEnabled(db, parts[3], body.enabled);
-    if (!source) {
+
+    const stored = await readEditableSource(db, parts[3]);
+    if (!stored) {
       throw new ApiError(404, "source_not_found", "Source not found");
     }
+    const name = readTextField(body, "name", { maximum: 80 });
+    let encrypted: { ciphertext: string; iv: string } | undefined;
+    if (body.value !== undefined) {
+      const value = readTextField(body, "value", { maximum: maximumSourceBytes });
+      validateSource(stored.source_type, value);
+      if (encoder.encode(value).byteLength > maximumSourceBytes) {
+        throw new ApiError(413, "source_too_large", "Source exceeds the 64 KiB limit");
+      }
+      encrypted = await encryptSource(value, env.DATA_ENCRYPTION_KEY);
+    }
+    const source = await updateSource(db, parts[3], stored, {
+      name,
+      ciphertext: encrypted?.ciphertext,
+      iv: encrypted?.iv,
+    });
     return json({ source });
   }
 

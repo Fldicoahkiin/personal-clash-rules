@@ -85,6 +85,32 @@ describe("Worker entrypoint", () => {
     await expect(signedIn.json()).resolves.toEqual({ authenticated: true });
   });
 
+  it("reports database, converter, and refresh status to an authenticated manager", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      expect(String(input)).toBe("https://sub-store.example/healthz");
+      const headers = new Headers(init?.headers);
+      expect(headers.get("cf-access-client-id")).toBe("sub-store-client-id");
+      expect(headers.get("cf-access-client-secret")).toBe("sub-store-client-secret");
+      return new Response("ok");
+    });
+
+    try {
+      const response = await exports.default.fetch(
+        "https://example.com/api/manage/status",
+        { headers: authorization },
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      await expect(response.json()).resolves.toEqual({
+        database: "ready",
+        converter: "ready",
+        refreshSchedule: "0 */6 * * *",
+      });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it("uses the personal subscription name when no profile name is provided", async () => {
     const response = await exports.default.fetch(
       "https://example.com/api/manage/profiles",
@@ -213,6 +239,64 @@ describe("Worker entrypoint", () => {
     expect(enable.status).toBe(200);
     await expect(enable.json()).resolves.toMatchObject({
       source: { id: source?.id, enabled: true },
+    });
+  });
+
+  it("updates a source without returning its replacement value", async () => {
+    const profile = await createProfile();
+    await addSource(profile.id, {
+      name: "旧机场",
+      type: "subscription",
+      value: "https://old.example/subscription",
+    });
+    const before = await testEnv.DB.prepare(`
+      SELECT id, secret_ciphertext
+      FROM sources
+      WHERE profile_id = ?
+    `).bind(profile.id).first<{ id: string; secret_ciphertext: string }>();
+    expect(before).toBeTruthy();
+
+    const replacement = "https://new.example/subscription?token=replacement-secret";
+    const response = await exports.default.fetch(
+      `https://example.com/api/manage/sources/${before?.id}`,
+      {
+        method: "PATCH",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "新机场", value: replacement }),
+      },
+    );
+    expect(response.status).toBe(200);
+    const responseText = await response.text();
+    expect(responseText).toContain("新机场");
+    expect(responseText).not.toContain(replacement);
+    expect(responseText).not.toContain("replacement-secret");
+
+    const after = await testEnv.DB.prepare(`
+      SELECT name, secret_ciphertext
+      FROM sources
+      WHERE id = ?
+    `).bind(before?.id).first<{ name: string; secret_ciphertext: string }>();
+    expect(after?.name).toBe("新机场");
+    expect(after?.secret_ciphertext).not.toBe(before?.secret_ciphertext);
+    expect(after?.secret_ciphertext).not.toContain("replacement-secret");
+
+    const rename = await exports.default.fetch(
+      `https://example.com/api/manage/sources/${before?.id}`,
+      {
+        method: "PATCH",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "仅改名称" }),
+      },
+    );
+    expect(rename.status).toBe(200);
+    const renamed = await testEnv.DB.prepare(`
+      SELECT name, secret_ciphertext
+      FROM sources
+      WHERE id = ?
+    `).bind(before?.id).first<{ name: string; secret_ciphertext: string }>();
+    expect(renamed).toEqual({
+      name: "仅改名称",
+      secret_ciphertext: after?.secret_ciphertext,
     });
   });
 
@@ -399,13 +483,28 @@ describe("Worker entrypoint", () => {
         { headers: authorization },
       );
       const detailData = await detail.json<{
-        profile: { latestRefresh: { status: string; nodeCount: number; targetCount: number } };
+        profile: {
+          latestRefresh: { status: string; nodeCount: number; targetCount: number };
+          refreshHistory: Array<{
+            status: string;
+            nodeCount: number;
+            targetCount: number;
+            finishedAt: string;
+          }>;
+        };
       }>();
       expect(detailData.profile.latestRefresh).toMatchObject({
         status: "succeeded",
         nodeCount: 2,
         targetCount: 13,
       });
+      expect(detailData.profile.refreshHistory).toHaveLength(1);
+      expect(detailData.profile.refreshHistory[0]).toMatchObject({
+        status: "succeeded",
+        nodeCount: 2,
+        targetCount: 13,
+      });
+      expect(detailData.profile.refreshHistory[0].finishedAt).toBeTruthy();
     } finally {
       fetchSpy.mockRestore();
     }
