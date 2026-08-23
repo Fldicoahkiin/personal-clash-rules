@@ -1,6 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 
 export type OutputTarget =
+  | "mihomo-config"
+  | "stash-config"
+  | "surge-config"
+  | "surfboard-config"
+  | "loon-config"
+  | "egern-config"
+  | "sing-box-config"
   | "mihomo"
   | "clash"
   | "stash"

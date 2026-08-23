@@ -1,0 +1,24 @@
+domain_suffix_set:
+  - github.com
+  - github.blog
+  - githubassets.com
+  - githubusercontent.com
+  - github.io
+  - gitlab.com
+  - gitlab.io
+  - npmjs.com
+  - npmjs.org
+  - pypi.org
+  - pythonhosted.org
+  - crates.io
+  - rust-lang.org
+  - rustup.rs
+  - docker.com
+  - docker.io
+  - quay.io
+  - jsdelivr.net
+  - unpkg.com
+  - stackoverflow.com
+  - stackexchange.com
+  - vercel.com
+  - cloudflare.com

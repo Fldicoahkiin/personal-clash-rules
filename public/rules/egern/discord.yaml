@@ -1,0 +1,22 @@
+domain_suffix_set:
+  - discord.com
+  - discord.co
+  - discord.design
+  - discord.dev
+  - discord.gift
+  - discord.gifts
+  - discord.gg
+  - discord.media
+  - discord.new
+  - discord.store
+  - discord.tools
+  - discordapp.com
+  - discordapp.net
+  - discordcdn.com
+  - discordmerch.com
+  - discordpartygames.com
+  - discordsays.com
+  - discordstatus.com
+  - dis.gd
+domain_set:
+  - discord-attachments-uploads-prd.storage.googleapis.com

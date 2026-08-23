@@ -62,8 +62,8 @@
   <g>
     <text x="1061" y="135" text-anchor="middle" class="muted mono label">CLIENT</text>
     <rect x="968" y="155" width="184" height="72" class="panel" />
-    <text x="1060" y="184" text-anchor="middle" class="ink node-title">13 种格式</text>
-    <text x="1060" y="207" text-anchor="middle" class="muted small">Mihomo · Surge · sing-box</text>
+    <text x="1060" y="184" text-anchor="middle" class="ink node-title">20 个输出</text>
+    <text x="1060" y="207" text-anchor="middle" class="muted small">7 种配置 · 13 种节点资源</text>
     <circle cx="1061" cy="242" r="10" class="paper" stroke="#085f68" stroke-width="3" />
   </g>
 

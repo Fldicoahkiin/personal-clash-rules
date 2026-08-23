@@ -11,7 +11,12 @@ import {
   subscriptionQueries,
   type ProfileDetail,
 } from "./api";
-import { primaryClientFormats, secondaryFormats, type ClientFormat } from "./client-formats";
+import {
+  completeConfigFormats,
+  nodeResourceFormats,
+  secondaryFormats,
+  type ClientFormat,
+} from "./client-formats";
 
 type LinkPanelProps = {
   profile: ProfileDetail;
@@ -109,8 +114,8 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
     <section className="control-section" aria-labelledby="links-title">
       <header className="control-section-title link-section-title">
         <div>
-          <h2 id="links-title">客户端订阅</h2>
-          <p>刷新配置后，地址保持不变。</p>
+          <h2 id="links-title">订阅链接</h2>
+          <p>刷新后地址不变。</p>
         </div>
         {activeLinks.length > 1 ? (
           <label className="compact-select">
@@ -129,22 +134,48 @@ export const LinkPanel: FC<LinkPanelProps> = ({ profile, onNotice }) => {
 
       {activeLink?.urls ? (
         <>
-          <div className="format-grid">
-            {primaryClientFormats.map((format) => (
-              <FormatRow
-                key={format.target}
-                format={format}
-                url={availableTargets.has(format.target)
-                  ? activeLink.urls?.[format.target]
-                  : undefined}
-                profileName={profile.name}
-                copied={copied}
-                onCopy={(target, url) => void copyUrl(target, url)}
-              />
-            ))}
+          <div className="format-block">
+            <div className="format-block-title">
+              <h3>完整配置</h3>
+              <span>节点 · 策略组 · 规则</span>
+            </div>
+            <div className="format-grid config-format-grid">
+              {completeConfigFormats.map((format) => (
+                <FormatRow
+                  key={format.target}
+                  format={format}
+                  url={availableTargets.has(format.target)
+                    ? activeLink.urls?.[format.target]
+                    : undefined}
+                  profileName={profile.name}
+                  copied={copied}
+                  onCopy={(target, url) => void copyUrl(target, url)}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="format-block">
+            <div className="format-block-title">
+              <h3>节点资源</h3>
+              <span>只含节点</span>
+            </div>
+            <div className="format-grid">
+              {nodeResourceFormats.map((format) => (
+                <FormatRow
+                  key={format.target}
+                  format={format}
+                  url={availableTargets.has(format.target)
+                    ? activeLink.urls?.[format.target]
+                    : undefined}
+                  profileName={profile.name}
+                  copied={copied}
+                  onCopy={(target, url) => void copyUrl(target, url)}
+                />
+              ))}
+            </div>
           </div>
           <details className="secondary-formats">
-            <summary>其他格式</summary>
+            <summary>其他节点格式</summary>
             <div>
               {secondaryFormats.map((format) => (
                 <FormatRow

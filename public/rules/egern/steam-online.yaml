@@ -1,0 +1,11 @@
+domain_suffix_set:
+  - steam-chat.com
+  - steamconnecttest.com
+  - steamgames.com
+  - steamserver.net
+  - valve.net
+  - dota2.com
+  - underlords.com
+domain_set:
+  - steambroadcast.akamaized.net
+  - steamvideo-a.akamaihd.net

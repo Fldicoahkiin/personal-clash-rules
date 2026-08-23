@@ -1,0 +1,31 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "youtube.com",
+        "youtu.be",
+        "googlevideo.com",
+        "ytimg.com",
+        "netflix.com",
+        "netflix.net",
+        "nflxext.com",
+        "nflximg.com",
+        "nflxso.net",
+        "disneyplus.com",
+        "dssott.com",
+        "hulu.com",
+        "max.com",
+        "hbomax.com",
+        "primevideo.com",
+        "amazonvideo.com",
+        "spotify.com",
+        "scdn.co",
+        "twitch.tv",
+        "twitchcdn.net",
+        "ttvnw.net",
+        "kick.com"
+      ]
+    }
+  ]
+}

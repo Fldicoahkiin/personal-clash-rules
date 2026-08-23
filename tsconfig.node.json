@@ -15,6 +15,10 @@
     "vitest.config.ts",
     "vitest.worker.config.ts",
     "tests/**/*.test.ts",
-    "src/app/lib"
+    "src/app/lib",
+    "src/config/**/*.ts",
+    "src/worker/api-error.ts",
+    "src/worker/*-profile.ts",
+    "src/worker/yaml-proxy-resource.ts"
   ]
 }

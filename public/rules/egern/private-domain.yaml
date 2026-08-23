@@ -1,0 +1,11 @@
+domain_suffix_set:
+  - localhost
+  - local
+  - lan
+  - home.arpa
+  - internal
+domain_set:
+  - router.asus.com
+  - routerlogin.net
+  - routerlogin.com
+  - console.gl-inet.com

@@ -9,5 +9,10 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/worker.ts", "src/worker/**/*.ts", "worker-configuration.d.ts"]
+  "include": [
+    "src/worker.ts",
+    "src/worker/**/*.ts",
+    "src/config/**/*.ts",
+    "worker-configuration.d.ts"
+  ]
 }

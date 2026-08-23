@@ -1,0 +1,20 @@
+domain_suffix_set:
+  - playartifact.com
+  - s.team
+  - steam.tv
+  - steam-api.com
+  - steamcommunity.com
+  - steamdeck.com
+  - steampowered.com
+  - steamstatic.com
+  - steamusercontent.com
+  - valvesoftware.com
+domain_set:
+  - steamcommunity-a.akamaihd.net.edgesuite.net
+  - steamcommunity-a.akamaihd.net
+  - steammobile.akamaized.net
+  - steamstore-a.akamaihd.net
+  - steamusercontent-a.akamaihd.net
+  - steamuserimages-a.akamaihd.net
+  - steamcloudsweden.blob.core.windows.net
+  - steamugcquincy.blob.core.windows.net

@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain": [
+        "account.apple.com",
+        "appleid.cdn-apple.com",
+        "idmsa.apple.com",
+        "gsa.apple.com",
+        "guzzoni.apple.com",
+        "apple-relay.cloudflare.com",
+        "apple-relay.fastly-edge.com",
+        "cp4.cloudflare.com",
+        "apple-relay.apple.com"
+      ],
+      "domain_suffix": [
+        "apple-cloudkit.com",
+        "apple-livephotoskit.com",
+        "cdn-apple.com",
+        "gc.apple.com",
+        "icloud.com",
+        "icloud.apple.com",
+        "icloud-content.com",
+        "iwork.apple.com",
+        "me.com",
+        "itunes.apple.com",
+        "apps.apple.com",
+        "mzstatic.com",
+        "appattest.apple.com",
+        "apps-marketplace.apple.com",
+        "itunes-apple.com",
+        "music.apple.com",
+        "tv.apple.com",
+        "books.apple.com",
+        "podcasts.apple.com",
+        "fitness.apple.com",
+        "news.apple.com",
+        "developer.apple.com",
+        "support.apple.com",
+        "store.apple.com",
+        "apple-mapkit.com",
+        "maps.apple.com",
+        "ls.apple.com",
+        "smoot.apple.com"
+      ]
+    }
+  ]
+}

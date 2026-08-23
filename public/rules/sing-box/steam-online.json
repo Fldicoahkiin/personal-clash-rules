@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "steam-chat.com",
+        "steamconnecttest.com",
+        "steamgames.com",
+        "steamserver.net",
+        "valve.net",
+        "dota2.com",
+        "underlords.com"
+      ],
+      "domain": [
+        "steambroadcast.akamaized.net",
+        "steamvideo-a.akamaihd.net"
+      ]
+    }
+  ]
+}

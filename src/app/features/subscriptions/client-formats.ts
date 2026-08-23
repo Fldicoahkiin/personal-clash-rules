@@ -8,10 +8,53 @@ export interface ClientFormat {
   clientId?: ClientId;
 }
 
-export const primaryClientFormats: ClientFormat[] = [
-  { target: "mihomo", name: "Mihomo", icon: "/client-icons/mihomo.png", clientId: "mihomo" },
-  { target: "stash", name: "Stash", icon: "/client-icons/stash.png", clientId: "stash" },
-  { target: "surge", name: "Surge", icon: "/client-icons/surge.png", clientId: "surge" },
+export const completeConfigFormats: ClientFormat[] = [
+  {
+    target: "mihomo-config",
+    name: "Mihomo",
+    icon: "/client-icons/mihomo.png",
+    clientId: "mihomo",
+  },
+  {
+    target: "stash-config",
+    name: "Stash",
+    icon: "/client-icons/stash.png",
+    clientId: "stash-config",
+  },
+  {
+    target: "surge-config",
+    name: "Surge",
+    icon: "/client-icons/surge.png",
+    clientId: "surge-config",
+  },
+  {
+    target: "surfboard-config",
+    name: "Surfboard",
+    icon: "/client-icons/surfboard.png",
+    clientId: "surfboard-config",
+  },
+  {
+    target: "loon-config",
+    name: "Loon",
+    icon: "/client-icons/loon.png",
+    clientId: "loon-config",
+  },
+  {
+    target: "egern-config",
+    name: "Egern",
+    icon: "/client-icons/egern.png",
+    clientId: "egern-config",
+  },
+  {
+    target: "sing-box-config",
+    name: "sing-box",
+    icon: "/client-icons/sing-box.png",
+  },
+];
+
+export const nodeResourceFormats: ClientFormat[] = [
+  { target: "stash", name: "Stash", icon: "/client-icons/stash.png" },
+  { target: "surge", name: "Surge", icon: "/client-icons/surge.png" },
   { target: "loon", name: "Loon", icon: "/client-icons/loon.png", clientId: "loon" },
   {
     target: "quantumult-x",
@@ -41,6 +84,7 @@ export const primaryClientFormats: ClientFormat[] = [
 ];
 
 export const secondaryFormats: ClientFormat[] = [
+  { target: "mihomo", name: "Mihomo 节点", icon: "/client-icons/mihomo.png" },
   { target: "clash", name: "Clash" },
   { target: "v2ray", name: "V2Ray" },
   { target: "uri", name: "URI" },

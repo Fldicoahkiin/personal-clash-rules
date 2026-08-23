@@ -29,11 +29,11 @@ jobs:
 
       - name: Commit updated rules
         run: |
-          if git diff --quiet -- public/rules/media/bilibili.list public/rules/media/anigamer.list; then
+          if git diff --quiet -- public/rules/media/bilibili.list public/rules/media/anigamer.list public/rules/egern public/rules/sing-box; then
             exit 0
           fi
           git config user.name "Flacier"
           git config user.email "Flacier@outlook.com"
-          git add public/rules/media/bilibili.list public/rules/media/anigamer.list
+          git add public/rules/media/bilibili.list public/rules/media/anigamer.list public/rules/egern public/rules/sing-box
           git commit -m "chore: sync regional media rules"
           git push

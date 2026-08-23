@@ -2,6 +2,7 @@ import { authorizeControlRequest, isControlRequestAuthorized } from "./access";
 import { ApiError } from "./api-error";
 import { createShareToken, decryptSource, encryptSource, hashToken } from "./secrets";
 import { normalizeSources, probeSubStore, produceTarget } from "./sub-store";
+import { managedProfileUrlPlaceholder } from "./surge-profile";
 import {
   createProfile,
   deleteProfile,
@@ -83,7 +84,13 @@ function readTextField(
 }
 
 function contentTypeFor(target: string): string {
-  return target === "json" ? "application/json; charset=utf-8" : "text/plain; charset=utf-8";
+  if (target === "json" || target === "sing-box" || target === "sing-box-config") {
+    return "application/json; charset=utf-8";
+  }
+  if (target === "mihomo-config" || target === "stash-config" || target === "egern-config") {
+    return "text/yaml; charset=utf-8";
+  }
+  return "text/plain; charset=utf-8";
 }
 
 function urlsForToken(origin: string, token: string) {
@@ -455,16 +462,21 @@ async function routePublishedOutput(
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
 
+  const content = parts[2] === "surge-config" || parts[2] === "surfboard-config"
+    ? output.content.replace(managedProfileUrlPlaceholder, url.toString())
+    : output.content;
+  const etag = content === output.content ? output.etag : `"${await hashToken(content)}"`;
+
   const headers = new Headers({
     "Content-Type": output.content_type,
-    ETag: output.etag,
+    ETag: etag,
     "X-Subscription-Profile": encodeURIComponent(output.profile_name),
     "X-Subscription-Updated-At": output.generated_at,
   });
-  if (request.headers.get("if-none-match") === output.etag) {
+  if (request.headers.get("if-none-match") === etag) {
     return new Response(null, { status: 304, headers });
   }
-  return new Response(request.method === "HEAD" ? null : output.content, { headers });
+  return new Response(request.method === "HEAD" ? null : content, { headers });
 }
 
 export async function routeSubscriptionRequest(

@@ -1,4 +1,11 @@
 export const outputTargets = [
+  "mihomo-config",
+  "stash-config",
+  "surge-config",
+  "surfboard-config",
+  "loon-config",
+  "egern-config",
+  "sing-box-config",
   "mihomo",
   "clash",
   "stash",

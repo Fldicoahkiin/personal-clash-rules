@@ -1,5 +1,8 @@
 import { env, exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
+import { parse } from "yaml";
+
+import { managedProfileUrlPlaceholder } from "../src/worker/surge-profile";
 
 const authorization = { Authorization: "Bearer worker-test-token" };
 const testEnv = env as typeof env & { DB: D1Database };
@@ -337,6 +340,16 @@ describe("Worker entrypoint", () => {
     );
     expect(outputResponse.status).toBe(200);
     const outputData = await outputResponse.json<{ etag: string }>();
+    const managedOutput = `#!MANAGED-CONFIG ${managedProfileUrlPlaceholder} interval=21600 strict=false\n[General]\n`;
+    const managedOutputResponse = await exports.default.fetch(
+      `https://example.com/api/manage/profiles/${profile.id}/outputs/surge-config`,
+      {
+        method: "PUT",
+        headers: { ...authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ content: managedOutput }),
+      },
+    );
+    expect(managedOutputResponse.status).toBe(200);
 
     const linkResponse = await exports.default.fetch(
       `https://example.com/api/manage/profiles/${profile.id}/links`,
@@ -352,6 +365,15 @@ describe("Worker entrypoint", () => {
       urls: Record<string, string>;
     }>();
     expect(linkData.urls.mihomo).toMatch(/^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo$/);
+    expect(linkData.urls["mihomo-config"]).toMatch(
+      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/mihomo-config$/,
+    );
+    expect(linkData.urls["surge-config"]).toMatch(
+      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/surge-config$/,
+    );
+    expect(linkData.urls["sing-box-config"]).toMatch(
+      /^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{43}\/sing-box-config$/,
+    );
     const rawToken = linkData.urls.mihomo.split("/").at(-2);
     const storedLink = await testEnv.DB.prepare(`
       SELECT token_hash, token_ciphertext, token_iv
@@ -380,6 +402,19 @@ describe("Worker entrypoint", () => {
     expect(published.headers.get("etag")).toBe(outputData.etag);
     expect(published.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=3600");
     await expect(published.text()).resolves.toBe(output);
+
+    const managedPublished = await exports.default.fetch(linkData.urls["surge-config"]);
+    expect(managedPublished.status).toBe(200);
+    expect(managedPublished.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    const managedPublishedEtag = managedPublished.headers.get("etag");
+    expect(managedPublishedEtag).toBeTruthy();
+    await expect(managedPublished.text()).resolves.toBe(
+      managedOutput.replace(managedProfileUrlPlaceholder, linkData.urls["surge-config"]),
+    );
+    const managedUnchanged = await exports.default.fetch(linkData.urls["surge-config"], {
+      headers: { "If-None-Match": managedPublishedEtag ?? "" },
+    });
+    expect(managedUnchanged.status).toBe(304);
 
     const unchanged = await exports.default.fetch(linkData.urls.mihomo, {
       headers: { "If-None-Match": outputData.etag },
@@ -434,9 +469,31 @@ describe("Worker entrypoint", () => {
       }
 
       if (url.endsWith("/api/proxy/parse")) {
+        const client = String(body.client);
         return Response.json({
           status: "success",
-          data: { par_res: `${body.client} generated output` },
+          data: {
+            par_res: client === "Mihomo" || client === "Stash"
+              ? `proxies:\n  - name: US-01\n    type: ss\n    server: one.example\n    port: 443\n    cipher: aes-128-gcm\n    password: test\n`
+              : client === "Egern"
+                ? `proxies:\n  - shadowsocks:\n      name: US-01\n      method: aes-128-gcm\n      server: one.example\n      port: 443\n      password: test\n`
+              : client === "Surge" || client === "Surfboard"
+                ? `US-01 = ss, one.example, 443, encrypt-method=aes-128-gcm, password=test`
+                : client === "Loon"
+                  ? `US-01=shadowsocks,one.example,443,aes-128-gcm,\"test\",udp=true`
+                  : client === "sing-box"
+                    ? JSON.stringify({
+                      outbounds: [{
+                        type: "shadowsocks",
+                        tag: "US-01",
+                        server: "one.example",
+                        server_port: 443,
+                        method: "aes-128-gcm",
+                        password: "test",
+                      }],
+                    })
+                    : `${client} generated output`,
+          },
         });
       }
 
@@ -455,9 +512,16 @@ describe("Worker entrypoint", () => {
       expect(data.refresh).toMatchObject({
         status: "succeeded",
         nodeCount: 2,
-        targetCount: 13,
+        targetCount: 20,
       });
       expect(data.refresh.targets).toContain("mihomo");
+      expect(data.refresh.targets).toContain("mihomo-config");
+      expect(data.refresh.targets).toContain("stash-config");
+      expect(data.refresh.targets).toContain("surge-config");
+      expect(data.refresh.targets).toContain("surfboard-config");
+      expect(data.refresh.targets).toContain("loon-config");
+      expect(data.refresh.targets).toContain("egern-config");
+      expect(data.refresh.targets).toContain("sing-box-config");
       expect(data.refresh.targets).toContain("sing-box");
 
       const preview = converterBodies[0];
@@ -465,18 +529,46 @@ describe("Worker entrypoint", () => {
       expect(preview.content).toBe(nodeUri);
       expect(preview.mergeSources).toBe("remoteFirst");
       const parseBodies = converterBodies.slice(1);
-      expect(parseBodies).toHaveLength(13);
+      expect(parseBodies).toHaveLength(20);
       expect(parseBodies.every((body) => (
         typeof body.data === "string" && body.data.startsWith("proxies:\n")
       ))).toBe(true);
-      expect(fetchSpy).toHaveBeenCalledTimes(14);
+      expect(fetchSpy).toHaveBeenCalledTimes(21);
 
       const storedOutputs = await testEnv.DB.prepare(`
         SELECT COUNT(*) AS count
         FROM generated_outputs
         WHERE profile_id = ?
       `).bind(profile.id).first<{ count: number }>();
-      expect(storedOutputs?.count).toBe(13);
+      expect(storedOutputs?.count).toBe(20);
+
+      const completeOutput = await testEnv.DB.prepare(`
+        SELECT content, content_type
+        FROM generated_outputs
+        WHERE profile_id = ? AND target = 'mihomo-config'
+      `).bind(profile.id).first<{ content: string; content_type: string }>();
+      expect(completeOutput?.content_type).toBe("text/yaml; charset=utf-8");
+      const completeConfig = parse(completeOutput?.content ?? "") as Record<string, unknown>;
+      expect(completeConfig.proxies).toHaveLength(1);
+      expect(completeConfig["proxy-groups"]).toEqual(expect.arrayContaining([
+        expect.objectContaining({ name: "AI" }),
+      ]));
+      expect(completeConfig.rules).toEqual(expect.arrayContaining([
+        "RULE-SET,ai-openai,AI",
+        "MATCH,DEFAULT",
+      ]));
+
+      const singBoxOutput = await testEnv.DB.prepare(`
+        SELECT content, content_type
+        FROM generated_outputs
+        WHERE profile_id = ? AND target = 'sing-box-config'
+      `).bind(profile.id).first<{ content: string; content_type: string }>();
+      expect(singBoxOutput?.content_type).toBe("application/json; charset=utf-8");
+      const singBoxConfig = JSON.parse(singBoxOutput?.content ?? "") as Record<string, unknown>;
+      expect(singBoxConfig.route).toEqual(expect.objectContaining({ final: "DEFAULT" }));
+      expect(singBoxConfig.outbounds).toEqual(expect.arrayContaining([
+        expect.objectContaining({ tag: "AI", type: "selector" }),
+      ]));
 
       const detail = await exports.default.fetch(
         `https://example.com/api/manage/profiles/${profile.id}`,
@@ -496,13 +588,13 @@ describe("Worker entrypoint", () => {
       expect(detailData.profile.latestRefresh).toMatchObject({
         status: "succeeded",
         nodeCount: 2,
-        targetCount: 13,
+        targetCount: 20,
       });
       expect(detailData.profile.refreshHistory).toHaveLength(1);
       expect(detailData.profile.refreshHistory[0]).toMatchObject({
         status: "succeeded",
         nodeCount: 2,
-        targetCount: 13,
+        targetCount: 20,
       });
       expect(detailData.profile.refreshHistory[0].finishedAt).toBeTruthy();
     } finally {
@@ -542,9 +634,33 @@ describe("Worker entrypoint", () => {
         });
       }
       if (url.endsWith("/api/proxy/parse")) {
+        const client = String(body.client);
         return Response.json({
           status: "success",
-          data: { par_res: body.client === "Surge" ? "" : `${body.client} output` },
+          data: {
+            par_res: client === "Surge"
+              ? ""
+              : client === "Mihomo" || client === "Stash"
+                ? `proxies:\n  - name: E2E\n    type: ss\n    server: node.example\n    port: 8388\n    cipher: aes-128-gcm\n    password: local-test\n`
+                : client === "Egern"
+                  ? `proxies:\n  - shadowsocks:\n      name: E2E\n      method: aes-128-gcm\n      server: node.example\n      port: 8388\n      password: local-test\n`
+                : client === "Surfboard"
+                  ? "E2E = ss, node.example, 8388, encrypt-method=aes-128-gcm, password=local-test"
+                  : client === "Loon"
+                    ? `E2E=shadowsocks,node.example,8388,aes-128-gcm,\"local-test\",udp=true`
+                    : client === "sing-box"
+                      ? JSON.stringify({
+                        outbounds: [{
+                          type: "shadowsocks",
+                          tag: "E2E",
+                          server: "node.example",
+                          server_port: 8388,
+                          method: "aes-128-gcm",
+                          password: "local-test",
+                        }],
+                      })
+                      : `${client} output`,
+          },
         });
       }
       return new Response(null, { status: 404 });
@@ -559,8 +675,8 @@ describe("Worker entrypoint", () => {
       await expect(response.json()).resolves.toMatchObject({
         refresh: {
           status: "succeeded",
-          targetCount: 12,
-          unavailableTargets: ["surge"],
+          targetCount: 18,
+          unavailableTargets: ["surge-config", "surge"],
         },
       });
 
@@ -570,7 +686,7 @@ describe("Worker entrypoint", () => {
         WHERE profile_id = ?
         ORDER BY target
       `).bind(profile.id).all<{ target: string; content: string }>();
-      expect(outputs.results).toHaveLength(12);
+      expect(outputs.results).toHaveLength(18);
       expect(outputs.results.some((output) => output.target === "surge")).toBe(false);
       expect(outputs.results.every((output) => output.content.length > 0)).toBe(true);
     } finally {

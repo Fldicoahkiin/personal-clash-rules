@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "localhost",
+        "local",
+        "lan",
+        "home.arpa",
+        "internal"
+      ],
+      "domain": [
+        "router.asus.com",
+        "routerlogin.net",
+        "routerlogin.com",
+        "console.gl-inet.com"
+      ]
+    }
+  ]
+}

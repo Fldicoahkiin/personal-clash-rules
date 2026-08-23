@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "githubcopilot.com",
+        "copilot.microsoft.com",
+        "cursor-cdn.com",
+        "cursor.com",
+        "cursor.sh",
+        "cursorapi.com",
+        "windsurf.com",
+        "codeium.com",
+        "jetbrains.ai",
+        "coderabbit.ai",
+        "devin.ai",
+        "kiro.dev",
+        "sourcegraph.com",
+        "augmentcode.com",
+        "tabnine.com"
+      ],
+      "domain": [
+        "api.githubcopilot.com",
+        "copilot-proxy.githubusercontent.com",
+        "copilot-telemetry.githubusercontent.com"
+      ]
+    }
+  ]
+}

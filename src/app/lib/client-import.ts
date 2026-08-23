@@ -1,5 +1,10 @@
 export type ClientId =
   | "mihomo"
+  | "stash-config"
+  | "surge-config"
+  | "surfboard-config"
+  | "loon-config"
+  | "egern-config"
   | "stash"
   | "surge"
   | "loon"
@@ -38,11 +43,23 @@ export function buildClientAction(
     }
     return { kind: "link", value: `mihomo://install-config?${params}` };
   }
-  if (client === "stash") {
+  if (client === "stash-config") {
     return { kind: "link", value: `stash://install-config?${params}` };
   }
-  if (client === "surge") {
+  if (client === "surge-config") {
     return { kind: "link", value: `surge:///install-config?${params}` };
+  }
+  if (client === "surfboard-config") {
+    return { kind: "link", value: `surfboard:///install-config?${params}` };
+  }
+  if (client === "loon-config") {
+    return { kind: "link", value: `loon://import?${new URLSearchParams({ sub: source })}` };
+  }
+  if (client === "egern-config") {
+    if (title) {
+      params.set("name", title);
+    }
+    return { kind: "link", value: `egern:/profiles/new?${params}` };
   }
   if (client === "loon") {
     const loonParams = new URLSearchParams({ nodelist: source });
@@ -50,13 +67,12 @@ export function buildClientAction(
   }
   if (client === "quantumult-x") {
     const remoteResource = JSON.stringify({
-      server_remote: [`${source}, tag=${title || "Flacier"}`],
+      server_remote: [`${source}, tag=${title || "订阅转换"}`],
     });
     return {
       kind: "link",
       value: `https://quantumult.app/x/open-app/add-resource?remote-resource=${encodeURIComponent(remoteResource)}`,
     };
   }
-
   return { kind: "copy", value: url.toString() };
 }

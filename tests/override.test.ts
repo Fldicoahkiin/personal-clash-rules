@@ -4,6 +4,11 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
+import {
+  mihomoProxyGroups,
+  mihomoRuleProviders,
+  mihomoRules,
+} from "../src/config/mihomo-policy";
 import { displayedPolicyGroups } from "../src/app/lib/policy-groups";
 
 const overridePath = resolve(
@@ -12,6 +17,18 @@ const overridePath = resolve(
 );
 
 describe("Clash Party override", () => {
+  it("uses the same policies as generated Mihomo profiles", async () => {
+    const config = parse(await readFile(overridePath, "utf8")) as {
+      "rule-providers": unknown;
+      "+proxy-groups": unknown;
+      "+rules": unknown;
+    };
+
+    expect(config["rule-providers"]).toEqual(mihomoRuleProviders);
+    expect(config["+proxy-groups"]).toEqual(mihomoProxyGroups);
+    expect(config["+rules"]).toEqual(mihomoRules);
+  });
+
   it("publishes Apple rules as remote providers", async () => {
     const config = parse(await readFile(overridePath, "utf8")) as {
       "rule-providers": Record<

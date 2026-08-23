@@ -1,0 +1,35 @@
+domain_suffix_set:
+  - perplexity.ai
+  - perplexity.com
+  - pplx.ai
+  - poe.com
+  - huggingface.co
+  - huggingface.com
+  - groq.com
+  - cerebras.ai
+  - cohere.com
+  - mistral.ai
+  - meta.ai
+  - midjourney.com
+  - elevenlabs.io
+  - character.ai
+  - openrouter.ai
+  - ollama.com
+  - lmstudio.ai
+  - langchain.com
+  - crewai.com
+  - replicate.com
+  - together.ai
+  - stability.ai
+  - fal.ai
+  - runwayml.com
+  - comfy.org
+  - h2o.ai
+  - duck.ai
+  - lmarena.ai
+  - manus.im
+  - manus.ai
+  - you.com
+domain_set:
+  - pplx-res.cloudinary.com
+  - gateway.ai.cloudflare.com

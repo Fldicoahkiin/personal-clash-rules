@@ -1,9 +1,22 @@
 import { stringify as stringifyYaml } from "yaml";
 
 import { ApiError } from "./api-error";
+import { createEgernProfile } from "./egern-profile";
+import { createLoonProfile } from "./loon-profile";
+import { createMihomoProfile } from "./mihomo-profile";
+import { createSingBoxProfile } from "./sing-box-profile";
+import { createStashProfile } from "./stash-profile";
+import { createSurgeProfile, createSurfboardProfile } from "./surge-profile";
 import type { OutputTarget, SubscriptionEnv } from "./types";
 
 const targetNames: Record<OutputTarget, string> = {
+  "mihomo-config": "Mihomo",
+  "stash-config": "Stash",
+  "surge-config": "Surge",
+  "surfboard-config": "Surfboard",
+  "loon-config": "Loon",
+  "egern-config": "Egern",
+  "sing-box-config": "sing-box",
   mihomo: "Mihomo",
   clash: "Clash",
   stash: "Stash",
@@ -138,19 +151,39 @@ export async function produceTarget(
     data: stringifyYaml({ proxies: nodes }),
     client: targetNames[target],
   });
-  if (typeof data.par_res === "string") {
-    if (data.par_res.trim()) {
-      return data.par_res;
-    }
-  } else if (data.par_res !== undefined) {
-    const serialized = JSON.stringify(data.par_res, null, 2);
-    if (serialized !== "null" && serialized !== "[]" && serialized !== "{}") {
-      return serialized;
-    }
+  const output = typeof data.par_res === "string"
+    ? data.par_res
+    : data.par_res === undefined
+      ? ""
+      : JSON.stringify(data.par_res, null, 2);
+  if (!output.trim() || output === "null" || output === "[]" || output === "{}") {
+    throw new ApiError(
+      422,
+      "target_unsupported",
+      `${target} could not represent the enabled nodes`,
+    );
   }
-  throw new ApiError(
-    422,
-    "target_unsupported",
-    `${target} could not represent the enabled nodes`,
-  );
+
+  if (target === "mihomo-config") {
+    return createMihomoProfile(output);
+  }
+  if (target === "stash-config") {
+    return createStashProfile(output);
+  }
+  if (target === "surge-config") {
+    return createSurgeProfile(output);
+  }
+  if (target === "surfboard-config") {
+    return createSurfboardProfile(output);
+  }
+  if (target === "loon-config") {
+    return createLoonProfile(output);
+  }
+  if (target === "egern-config") {
+    return createEgernProfile(output);
+  }
+  if (target === "sing-box-config") {
+    return createSingBoxProfile(output);
+  }
+  return output;
 }
