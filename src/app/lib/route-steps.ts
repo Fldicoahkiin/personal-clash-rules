@@ -45,7 +45,7 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       kind: "switch",
     },
     {
-      label: "去向",
+      label: "结果",
       value: policyRoute?.target || "—",
       detail: policyRoute?.mode || "",
       status: "",

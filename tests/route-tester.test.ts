@@ -1,8 +1,21 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { RouteTester } from "../src/app/components/RouteTester";
 import { createRouteSteps } from "../src/app/lib/route-steps";
 
 describe("createRouteSteps", () => {
+  it("renders a railway route with user-facing labels", () => {
+    const html = renderToStaticMarkup(createElement(RouteTester));
+
+    expect(html).toContain('class="route-railway route-railway-idle"');
+    expect(html).toContain(">命中规则<");
+    expect(html).toContain(">结果<");
+    expect(html).not.toContain("RULE SET");
+    expect(html).not.toContain("POLICY");
+  });
+
   it("shows the concrete matching rule and proxy destination", () => {
     const result = {
       hostname: "api.openai.com",
@@ -28,7 +41,7 @@ describe("createRouteSteps", () => {
         detail: "",
       }),
       expect.objectContaining({
-        label: "去向",
+        label: "结果",
         value: "PROXY",
         detail: "代理",
       }),
@@ -60,7 +73,7 @@ describe("createRouteSteps", () => {
         detail: "",
       }),
       expect.objectContaining({
-        label: "去向",
+        label: "结果",
         value: "PROXY",
         detail: "代理",
       }),
@@ -92,7 +105,7 @@ describe("createRouteSteps", () => {
         detail: "",
       }),
       expect.objectContaining({
-        label: "去向",
+        label: "结果",
         value: "DIRECT",
         detail: "直连",
       }),

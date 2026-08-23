@@ -21,6 +21,12 @@ const featuredRules = [
   { name: "AniGamer", policy: "ANIGAMER" },
 ];
 
+const mainTrackSleepers = Array.from(
+  { length: 29 },
+  (_, index) => 150 + index * 25,
+);
+const sidingSleepers = [466, 483, 500, 517, 534];
+
 export function RouteTester() {
   const [input, setInput] = useState(sampleUrl);
   const [ruleSets, setRuleSets] = useState<LoadedRuleSet[]>([]);
@@ -94,6 +100,29 @@ export function RouteTester() {
         </form>
 
         <div className="route-result" aria-live="polite" key={resultVersion}>
+          <div
+            className={`route-railway route-railway-${
+              result ? (result.matched ? "pass" : "stop") : "idle"
+            }`}
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 1000 112" preserveAspectRatio="none">
+              <g className="route-rail-main">
+                <path d="M125 41H875" />
+                <path d="M125 49H875" />
+                {mainTrackSleepers.map((x) => (
+                  <path d={`M${x} 35V55`} key={`main-${x}`} />
+                ))}
+              </g>
+              <g className="route-rail-siding">
+                <path d="M395 41C435 41 420 91 470 91H530C580 91 565 41 605 41" />
+                <path d="M395 49C435 49 420 99 470 99H530C580 99 565 49 605 49" />
+                {sidingSleepers.map((x) => (
+                  <path d={`M${x} 85V105`} key={`siding-${x}`} />
+                ))}
+              </g>
+            </svg>
+          </div>
           <ol className="route-steps" aria-label="网址规则处理路线">
             {steps.map((step) => {
               const [ruleType, ruleValue] =
@@ -128,8 +157,23 @@ export function RouteTester() {
                         step.value
                       )}
                     </strong>
-                    {step.detail && step.kind !== "terminal" ? (
-                      <small className="route-step-detail">{step.detail}</small>
+                    {step.detail || (step.kind === "signal" && step.state) ? (
+                      <span className="route-step-meta">
+                        {step.detail ? (
+                          <small className="route-step-detail">{step.detail}</small>
+                        ) : null}
+                        {step.kind === "signal" && step.state ? (
+                          <small
+                            className={
+                              step.state === "pass"
+                                ? "route-signal-status route-signal-pass"
+                                : "route-signal-status route-signal-stop"
+                            }
+                          >
+                            {step.status}
+                          </small>
+                        ) : null}
+                      </span>
                     ) : null}
                   </div>
                   <div className="route-track-stop">
@@ -155,20 +199,6 @@ export function RouteTester() {
                         <TrainSimple weight="fill" />
                       ) : null}
                     </span>
-                    {step.kind === "signal" && step.state ? (
-                      <span
-                        className={
-                          step.state === "pass"
-                            ? "route-signal-status route-signal-pass"
-                            : "route-signal-status route-signal-stop"
-                        }
-                      >
-                        {step.status}
-                      </span>
-                    ) : null}
-                    {step.kind === "terminal" && step.detail ? (
-                      <span className="route-terminal-caption">{step.detail}</span>
-                    ) : null}
                   </div>
                 </li>
               );
