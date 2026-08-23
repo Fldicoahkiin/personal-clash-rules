@@ -70,14 +70,15 @@ export function RouteTester() {
   const policyRoute = result ? describePolicyRoute(result.policy) : null;
   const steps = [
     {
-      label: "网址",
+      label: "输入地址",
       value: result?.hostname || "—",
       detail: "",
       machine: true,
       state: null,
+      terminal: false,
     },
     {
-      label: "命中规则",
+      label: "规则判断",
       value: result?.rule || "—",
       detail: result
         ? result.matched
@@ -86,24 +87,27 @@ export function RouteTester() {
         : "",
       machine: true,
       state: result ? (result.matched ? "pass" : "stop") : null,
+      terminal: false,
     },
     {
       label: "策略组",
       value: result?.policy || "—",
       detail: policyRoute
         ? policyRoute.route.includes(" → ")
-          ? `默认 ${policyRoute.route.split(" → ")[1]}`
+          ? `默认出口 ${policyRoute.route.split(" → ")[1]}`
           : "固定路线"
         : "",
       machine: true,
       state: null,
+      terminal: false,
     },
     {
-      label: "最终路线",
+      label: "最终处理",
       value: policyRoute?.target || "—",
       detail: policyRoute?.mode || "",
       machine: true,
       state: null,
+      terminal: true,
     },
   ];
 
@@ -136,12 +140,30 @@ export function RouteTester() {
             {steps.map((step) => (
               <li key={step.label}>
                 <div className="route-step-copy">
-                  <span className="route-step-label">{step.label}</span>
+                  <div className="route-step-head">
+                    <span className="route-step-label">{step.label}</span>
+                    {step.state ? (
+                      <span
+                        className={
+                          step.state === "pass"
+                            ? "route-status route-status-pass"
+                            : "route-status route-status-stop"
+                        }
+                      >
+                        <i aria-hidden="true" />
+                        {step.state === "pass" ? "通过" : "未通过"}
+                      </span>
+                    ) : null}
+                  </div>
                   <strong
                     className={
-                      step.machine
-                        ? "route-value route-value-machine"
-                        : "route-value"
+                      [
+                        "route-value",
+                        step.machine ? "route-value-machine" : "",
+                        step.terminal ? "route-value-terminal" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")
                     }
                   >
                     {step.value}
@@ -158,17 +180,6 @@ export function RouteTester() {
                   aria-hidden="true"
                 />
                 <div className="route-step-meta">
-                  {step.state ? (
-                    <span
-                      className={
-                        step.state === "pass"
-                          ? "route-status route-status-pass"
-                          : "route-status route-status-stop"
-                      }
-                    >
-                      {step.state === "pass" ? "通过" : "未通过"}
-                    </span>
-                  ) : null}
                   {step.detail ? (
                     <small className="route-step-detail">{step.detail}</small>
                   ) : null}

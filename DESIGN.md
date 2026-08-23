@@ -55,6 +55,18 @@ typography:
     fontWeight: 400
     lineHeight: 1.7
     letterSpacing: normal
+  routeValue:
+    fontFamily: "SFMono-Regular, Consolas, monospace"
+    fontSize: "0.92rem"
+    fontWeight: 680
+    lineHeight: 1.35
+    letterSpacing: normal
+  routeTerminal:
+    fontFamily: "SFMono-Regular, Consolas, monospace"
+    fontSize: "1.08rem"
+    fontWeight: 680
+    lineHeight: 1.35
+    letterSpacing: "0.04em"
 rounded:
   square: "0"
   sm: "2px"
@@ -239,7 +251,7 @@ Flacierの订阅转换像一张正在工作的规则地图册：冷白纸面承�
 
 ### Route Diagram
 
-- **Style:** 桌面用两条 2px 青线连接四个站点，线段停在节点边缘；移动端改为两条 1px 竖线。实际网址、命中规则、策略组和最终 `DIRECT` 或 `PROXY` 写在线路节点上方，辅助说明写在节点下方。
+- **Style:** 桌面用两条 2px 青线和短枕木连接四个站点，线段停在节点边缘；移动端改为两条 1px 竖线和横向短枕木。实际网址、命中规则、策略组和最终 `DIRECT` 或 `PROXY` 写在线路节点上方，辅助说明写在节点下方。
 - **Signal:** 只有规则站使用红绿状态。绿点配“通过”，红点配“未通过”；颜色不能代替文字。
 - **Behavior:** 每次测试只播放 240ms 节点落位；第二、三站分别延迟 70ms 与 140ms，`prefers-reduced-motion: reduce` 时完全静止。双轨本身不执行描线动画。
 
