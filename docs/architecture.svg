@@ -19,7 +19,7 @@
   </style>
 
   <rect class="paper" width="1200" height="560" />
-  <text x="48" y="48" class="ink title">Flacierの订阅转换</text>
+  <text x="48" y="48" class="ink title">订阅转换</text>
   <text x="48" y="75" class="muted body">GitHub 推送 · Worker 转换 · 固定订阅链接</text>
   <text x="1152" y="52" text-anchor="end" class="accent mono label">FLACIER / 2026</text>
   <line x1="48" y1="98" x2="1152" y2="98" class="line" />

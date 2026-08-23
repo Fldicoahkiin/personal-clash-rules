@@ -1769,6 +1769,44 @@ summary:focus-visible {
   height: 17px;
 }
 
+.runtime-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding-block: 13px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.runtime-status-line strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.runtime-status-line span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.runtime-status-line i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.runtime-status-line .is-ready {
+  color: var(--success);
+}
+
+.runtime-status-line .is-error {
+  color: var(--danger);
+}
+
 .conversion-line {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1904,7 +1942,7 @@ summary:focus-visible {
   height: 16px;
 }
 
-.source-row > div {
+.source-row-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -1931,6 +1969,51 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.source-edit {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(150px, 0.45fr) minmax(260px, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px 0 16px 46px;
+  border-top: 1px solid var(--line);
+}
+
+.source-edit-save,
+.source-edit-cancel {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-inline: 13px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.source-edit-save {
+  background: var(--accent);
+  color: var(--paper);
+}
+
+.source-edit-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.source-edit-save svg,
+.source-edit-cancel svg {
+  width: 15px;
+  height: 15px;
+}
+
+.source-edit-cancel:hover {
+  background: var(--surface-muted);
 }
 
 .text-danger,
@@ -2050,6 +2133,75 @@ summary:focus-visible {
   border-block: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.76rem;
+}
+
+.refresh-history {
+  padding-block: 10px 22px;
+  border-top: 1px solid var(--line);
+}
+
+.refresh-history summary {
+  width: max-content;
+  padding-block: 7px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.refresh-history-table-wrap {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+.refresh-history table {
+  width: 100%;
+  min-width: 540px;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.refresh-history th,
+.refresh-history td {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.refresh-history th {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.refresh-history td:nth-child(1),
+.refresh-history td:nth-child(3),
+.refresh-history td:nth-child(4) {
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.refresh-history td:nth-child(3),
+.refresh-history td:nth-child(4) {
+  width: 72px;
+}
+
+.refresh-history td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.refresh-history-status.is-succeeded {
+  color: var(--success);
+}
+
+.refresh-history-status.is-failed {
+  color: var(--danger);
+}
+
+.refresh-history-status.is-running {
+  color: var(--muted);
 }
 
 .compact-select {
@@ -2419,6 +2571,22 @@ summary:focus-visible {
 
   .source-create {
     grid-template-columns: 1fr;
+  }
+
+  .source-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    padding-block: 10px;
+  }
+
+  .source-row-actions {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .source-edit {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+    padding: 14px 0 6px;
   }
 
   .source-submit {

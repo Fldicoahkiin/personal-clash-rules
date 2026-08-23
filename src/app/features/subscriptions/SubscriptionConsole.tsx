@@ -17,6 +17,8 @@ import { ControlHeader } from "./ControlHeader";
 import { LinkPanel } from "./LinkPanel";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileRail } from "./ProfileRail";
+import { RefreshHistory } from "./RefreshHistory";
+import { RuntimeStatusLine } from "./RuntimeStatusLine";
 import { SourcePanel } from "./SourcePanel";
 
 type Notice = { message: string; tone: "error" | "success" };
@@ -40,6 +42,10 @@ export function SubscriptionConsole() {
   const authenticated = sessionQuery.data?.authenticated === true;
   const profilesQuery = useQuery({
     ...subscriptionQueries.list(),
+    enabled: authenticated,
+  });
+  const statusQuery = useQuery({
+    ...subscriptionQueries.status(),
     enabled: authenticated,
   });
   const profileId = selectedId ?? profilesQuery.data?.[0]?.id;
@@ -198,6 +204,12 @@ export function SubscriptionConsole() {
                   onDelete={() => deleteMutation.mutate(profile.id)}
                 />
 
+                <RuntimeStatusLine
+                  failed={statusQuery.isError}
+                  loading={statusQuery.isLoading}
+                  status={statusQuery.data}
+                />
+
                 <ol className="conversion-line" aria-label="订阅生成状态">
                   <li className={profile.sources.some((source) => source.enabled) ? "is-ready" : ""}>
                     <span className="conversion-node" />
@@ -239,6 +251,8 @@ export function SubscriptionConsole() {
                     上次刷新未完成，可以重试
                   </p>
                 ) : null}
+
+                <RefreshHistory runs={profile.refreshHistory} />
 
                 <SourcePanel profileId={profile.id} sources={profile.sources} onNotice={showNotice} />
                 <LinkPanel profile={profile} onNotice={showNotice} />

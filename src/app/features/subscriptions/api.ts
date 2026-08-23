@@ -45,6 +45,16 @@ export interface SubscriptionLink {
   urls: Partial<Record<OutputTarget, string>> | null;
 }
 
+export interface RefreshRun {
+  id: string;
+  status: "running" | "succeeded" | "failed";
+  nodeCount: number | null;
+  targetCount: number | null;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
 export interface ProfileDetail {
   id: string;
   name: string;
@@ -58,15 +68,8 @@ export interface ProfileDetail {
     generatedAt: string;
   }>;
   links: SubscriptionLink[];
-  latestRefresh: {
-    id: string;
-    status: "running" | "succeeded" | "failed";
-    nodeCount: number | null;
-    targetCount: number | null;
-    error: string | null;
-    startedAt: string;
-    finishedAt: string | null;
-  } | null;
+  latestRefresh: RefreshRun | null;
+  refreshHistory: RefreshRun[];
 }
 
 export interface SubscriptionRefreshResult {
@@ -79,6 +82,12 @@ export interface SubscriptionRefreshResult {
 
 export interface ControlSession {
   authenticated: boolean;
+}
+
+export interface RuntimeStatus {
+  database: "ready" | "migration_required";
+  converter: "ready" | "not_configured" | "unreachable";
+  refreshSchedule: "0 */6 * * *";
 }
 
 interface ApiErrorBody {
@@ -170,6 +179,10 @@ export const subscriptionQueries = {
     queryKey: ["subscription-session"] as const,
     queryFn: () => requestJson<ControlSession>("/api/manage/session"),
   }),
+  status: () => queryOptions({
+    queryKey: ["subscription-status"] as const,
+    queryFn: () => requestJson<RuntimeStatus>("/api/manage/status"),
+  }),
   list: () => queryOptions({
     queryKey: ["subscription-profiles", "list"] as const,
     queryFn: async () => {
@@ -231,6 +244,16 @@ export async function setSubscriptionSourceEnabled(
   await requestJson(
     `/api/manage/sources/${sourceId}`,
     jsonInit("PATCH", { enabled }),
+  );
+}
+
+export async function updateSubscriptionSource(
+  sourceId: string,
+  input: { name: string; value?: string },
+): Promise<void> {
+  await requestJson(
+    `/api/manage/sources/${sourceId}`,
+    jsonInit("PATCH", input),
   );
 }
 

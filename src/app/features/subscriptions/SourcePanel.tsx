@@ -1,4 +1,4 @@
-import { Eye, EyeSlash, LinkSimple, Pause, Play, Plugs, Trash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, LinkSimple, Plugs } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FC, FormEvent } from "react";
 import { useState } from "react";
@@ -9,9 +9,11 @@ import {
   setSubscriptionSourceEnabled,
   subscriptionErrorText,
   subscriptionQueries,
+  updateSubscriptionSource,
   type SourceType,
   type SubscriptionSource,
 } from "./api";
+import { SourceListRow } from "./SourceListRow";
 
 type SourcePanelProps = {
   profileId: string;
@@ -25,7 +27,6 @@ export const SourcePanel: FC<SourcePanelProps> = ({ profileId, sources, onNotice
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [revealed, setRevealed] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   async function refreshQueries() {
     await Promise.all([
@@ -48,7 +49,6 @@ export const SourcePanel: FC<SourcePanelProps> = ({ profileId, sources, onNotice
   const deleteMutation = useMutation({
     mutationFn: removeSubscriptionSource,
     onSuccess: async () => {
-      setConfirmDelete(null);
       await refreshQueries();
       onNotice("来源已移除", "success");
     },
@@ -62,6 +62,26 @@ export const SourcePanel: FC<SourcePanelProps> = ({ profileId, sources, onNotice
     onSuccess: async (_, input) => {
       await refreshQueries();
       onNotice(input.enabled ? "来源已启用" : "来源已停用", "success");
+    },
+    onError: (error) => onNotice(subscriptionErrorText(error), "error"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      sourceId,
+      nextName,
+      nextValue,
+    }: {
+      sourceId: string;
+      nextName: string;
+      nextValue?: string;
+    }) => updateSubscriptionSource(sourceId, {
+      name: nextName,
+      ...(nextValue ? { value: nextValue } : {}),
+    }),
+    onSuccess: async () => {
+      await refreshQueries();
+      onNotice("来源已更新", "success");
     },
     onError: (error) => onNotice(subscriptionErrorText(error), "error"),
   });
@@ -85,51 +105,18 @@ export const SourcePanel: FC<SourcePanelProps> = ({ profileId, sources, onNotice
       {sources.length > 0 ? (
         <div className="source-list">
           {sources.map((source) => (
-            <div className={source.enabled ? "source-row" : "source-row is-disabled"} key={source.id}>
-              <span className="source-type-icon">
-                {source.type === "subscription"
-                  ? <LinkSimple aria-hidden="true" />
-                  : <Plugs aria-hidden="true" />}
-              </span>
-              <div>
-                <strong>{source.name}</strong>
-                <span>
-                  {source.type === "subscription" ? "远程订阅" : "单个节点"}
-                  {source.enabled ? "" : " · 已停用"}
-                </span>
-              </div>
-              <div className="source-row-actions">
-                <button
-                  className="source-toggle"
-                  type="button"
-                  disabled={enabledMutation.isPending || deleteMutation.isPending}
-                  onClick={() => enabledMutation.mutate({
-                    sourceId: source.id,
-                    enabled: !source.enabled,
-                  })}
-                >
-                  {source.enabled
-                    ? <Pause aria-hidden="true" />
-                    : <Play aria-hidden="true" />}
-                  {source.enabled ? "停用" : "启用"}
-                </button>
-                <button
-                  className={confirmDelete === source.id ? "text-danger is-confirming" : "text-danger"}
-                  type="button"
-                  disabled={deleteMutation.isPending || enabledMutation.isPending}
-                  onClick={() => {
-                    if (confirmDelete === source.id) {
-                      deleteMutation.mutate(source.id);
-                    } else {
-                      setConfirmDelete(source.id);
-                    }
-                  }}
-                >
-                  <Trash aria-hidden="true" />
-                  {confirmDelete === source.id ? "确认移除" : "移除"}
-                </button>
-              </div>
-            </div>
+            <SourceListRow
+              key={source.id}
+              source={source}
+              busy={enabledMutation.isPending || deleteMutation.isPending || updateMutation.isPending}
+              onEnabledChange={(sourceId, enabled) => enabledMutation.mutate({ sourceId, enabled })}
+              onUpdate={(sourceId, nextName, nextValue) => updateMutation.mutate({
+                sourceId,
+                nextName,
+                ...(nextValue ? { nextValue } : {}),
+              })}
+              onDelete={(sourceId) => deleteMutation.mutate(sourceId)}
+            />
           ))}
         </div>
       ) : (

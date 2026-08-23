@@ -12,7 +12,7 @@ The primary user manages a personal proxy subscription and uses Mihomo or anothe
 
 ## Product Purpose
 
-Flacierの订阅转换 combines remote subscriptions and individual node URIs, converts them for supported clients, and publishes revocable links whose addresses do not change after refresh. The public page also tests the rules served by the same Worker.
+订阅转换 combines remote subscriptions and individual node URIs, converts them for supported clients, and publishes revocable links whose addresses do not change after refresh. The public page also tests the rules served by the same Worker.
 
 ## Positioning
 
@@ -32,8 +32,10 @@ The same public site serves the rule files and tests those published files, so t
 
 - Published rules cover AI, Apple, Steam, Discord, developer tools, media, social services, Bilibili, AniGamer, and local networks.
 - Remote subscriptions and node URIs can be combined into 13 output formats.
+- Saved sources can be renamed, replaced, enabled, disabled, or removed without changing published links.
 - Source values and active share tokens are encrypted before D1 storage.
 - Fixed subscription links can be refreshed without changing their addresses and can be revoked.
+- The management page shows the latest eight refresh runs and their conversion results.
 - The management API accepts Cloudflare Access identity or the control token used by automation.
 - Rule text conversion runs in the browser and remains separate from subscription conversion.
 - URL testing reports the matched rule, policy group, and final `DIRECT` or proxy route.
@@ -42,7 +44,7 @@ The same public site serves the rule files and tests those published files, so t
 
 ## Brand Commitments
 
-- Product name: Flacierの订阅转换.
+- Product name: 订阅转换.
 - Public domain: `rules.flacier.com` under `flacier.com`.
 - Interface copy is concise and factual.
 - Orange is not used.

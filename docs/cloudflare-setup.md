@@ -5,12 +5,19 @@
 - Repository: `Fldicoahkiin/personal-clash-rules`
 - Production branch: `main`
 - Build command: `pnpm build`
-- Deploy command: `npx wrangler deploy`
+- Deploy command after D1 is approved: `npx wrangler d1 migrations apply flacier-subscriptions --remote && npx wrangler deploy`
 - Worker name: `personal-clash-rules`
 
 ## D1
 
-创建数据库并绑定为 `DB`，再按文件名顺序执行 [`migrations/`](../migrations)。
+创建数据库并绑定为 `DB`。首次部署前先在 Workers Builds 的 Deploy command 中加入上面的迁移命令；后续构建只会执行尚未应用的迁移。
+
+D1 与 Worker 的免费额度以 Cloudflare 当前页面为准：
+
+- [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)
+- [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)
+
+个人订阅管理通常低于免费额度，但超出免费日限额后请求会失败，不能把免费额度当作无限容量。
 
 ## Variables
 
@@ -35,3 +42,15 @@
 - `sub.flacier.com` → optional alias for `/manage`
 
 Tunnel 在 Cloudflare 控制台创建。VPS 使用 [`deploy/sub-store/compose.yaml`](../deploy/sub-store/compose.yaml) 中的固定版本 cloudflared，并从 Docker Secret 读取 Tunnel Token；Token 不写入仓库或容器命令行。
+
+## Verify
+
+部署完成后依次检查：
+
+```text
+GET https://rules.flacier.com/health
+GET https://rules.flacier.com/api/manage/session
+GET https://substore.flacier.com/healthz
+```
+
+前两个接口应返回 `200` 且带 `Cache-Control: no-store`。第三个接口应返回 `ok`；订阅源、节点 URI、管理令牌与 Tunnel Token 都不写入 Git。
