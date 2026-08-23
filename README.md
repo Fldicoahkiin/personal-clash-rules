@@ -2,14 +2,14 @@
 
 个人订阅转换、分流规则和网址测试。
 
-[在线页面](https://rules.flacier.com/) · [订阅管理](https://rules.flacier.com/manage) · [Mihomo 覆写](https://rules.flacier.com/overrides/clash-party.yaml) · [规则目录](public/rules/manifest.yaml)
+[在线页面](https://rules.flacier.com/) · [Mihomo 覆写](https://rules.flacier.com/overrides/clash-party.yaml) · [规则目录](public/rules/manifest.yaml)
 
 ![部署结构](docs/architecture.svg)
 
 ## 功能
 
-- 合并多个订阅和单节点，生成不变的订阅链接
-- 刷新时保存处理后的节点，访问链接时生成所选客户端格式
+- 合并多个订阅和单节点，生成加密订阅链接
+- 客户端刷新时读取上游并转换，不保存订阅或节点
 - 节点筛选、改名、排序；完整配置与节点资源共 20 种输出
 - AI、Apple、Steam、Discord、Bilibili、AniGamer 等分流规则
 - 网址规则测试与规则格式转换

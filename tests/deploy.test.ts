@@ -7,18 +7,19 @@ function projectFile(path: string): string {
 }
 
 describe("Cloudflare deployment", () => {
-  it("keeps the site, API, refresh schedule, and D1 binding on one Worker", () => {
+  it("keeps the site and stateless subscription API on one Worker", () => {
     const config = projectFile("wrangler.jsonc");
     expect(config).toContain('"main": "src/worker.ts"');
     expect(config).toContain('"binding": "ASSETS"');
-    expect(config).toContain('"binding": "DB"');
-    expect(config).toContain('"crons": ["0 */6 * * *"]');
+    expect(config).toContain('"required": ["DATA_ENCRYPTION_KEY"]');
+    expect(config).not.toContain('"binding": "DB"');
+    expect(config).not.toContain('"crons"');
   });
 
-  it("does not require a private conversion host", () => {
+  it("does not require a database or private conversion host", () => {
     const types = projectFile("src/worker/types.ts");
     const setup = projectFile("docs/cloudflare-setup.md");
     expect(types).not.toContain("SUB_STORE_URL");
-    expect(setup).not.toMatch(/VPS|Tunnel|SUB_STORE_URL/u);
+    expect(setup).not.toMatch(/VPS|Tunnel|SUB_STORE_URL|D1/u);
   });
 });

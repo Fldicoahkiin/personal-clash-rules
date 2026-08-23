@@ -1,5 +1,3 @@
-import { queryOptions } from "@tanstack/react-query";
-
 export type OutputTarget =
   | "mihomo-config"
   | "stash-config"
@@ -37,119 +35,16 @@ export interface NodeSettings {
   sortMode: NodeSortMode;
 }
 
-export interface ProfileSummary {
-  id: string;
-  name: string;
-  enabledSourceCount: number;
-  nodeCount: number;
-  linkCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SubscriptionSource {
-  id: string;
-  name: string;
-  type: SourceType;
-  enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SubscriptionLink {
-  id: string;
-  name: string;
-  enabled: boolean;
-  createdAt: string;
-  revokedAt: string | null;
-  universalUrl: string | null;
-  urls: Partial<Record<OutputTarget, string>> | null;
-}
-
-export interface RefreshRun {
-  id: string;
-  status: "running" | "succeeded" | "failed";
-  nodeCount: number | null;
-  error: string | null;
-  startedAt: string;
-  finishedAt: string | null;
-}
-
-export interface ProfileDetail {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  nodeSettings: NodeSettings;
-  sources: SubscriptionSource[];
-  nodeCount: number;
-  normalizedAt: string | null;
-  links: SubscriptionLink[];
-  latestRefresh: RefreshRun | null;
-  refreshHistory: RefreshRun[];
-}
-
-export interface SubscriptionRefreshResult {
-  status: "succeeded";
-  nodeCount: number;
-  normalizedAt: string;
-}
-
-export interface CreatedSubscriptionLink {
-  link: {
-    id: string;
-    name: string;
-    enabled: boolean;
-    createdAt: string;
-    revokedAt: null;
-  };
-  universalUrl: string;
-  urls: Record<OutputTarget, string>;
-}
-
 export interface ConvertedSubscription {
-  profileId: string;
   profileName: string;
   target: OutputTarget;
   url: string;
   universalUrl: string;
 }
 
-export interface ControlSession {
-  authenticated: boolean;
-}
-
-export interface RuntimeStatus {
-  database: "ready" | "migration_required";
-  converter: "ready";
-  refreshSchedule: "0 */6 * * *";
-}
-
 interface ApiErrorBody {
   error?: string;
   message?: string;
-}
-
-const controlTokenKey = "flacier-control-token";
-
-function authenticatedHeaders(headers?: HeadersInit): Headers {
-  const next = new Headers(headers);
-  if (typeof sessionStorage === "undefined") {
-    return next;
-  }
-  const token = sessionStorage.getItem(controlTokenKey);
-  if (token) {
-    next.set("Authorization", `Bearer ${token}`);
-  }
-  return next;
-}
-
-export function setControlToken(token: string): void {
-  sessionStorage.setItem(controlTokenKey, token.trim());
-}
-
-export function clearControlToken(): void {
-  sessionStorage.removeItem(controlTokenKey);
 }
 
 export class SubscriptionApiError extends Error {
@@ -179,195 +74,46 @@ async function apiError(response: Response): Promise<SubscriptionApiError> {
   );
 }
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: authenticatedHeaders(init?.headers),
-  });
-  if (!response.ok) {
-    throw await apiError(response);
-  }
-  return await response.json() as T;
-}
-
-async function requestEmpty(path: string, init: RequestInit): Promise<void> {
-  const response = await fetch(path, {
-    ...init,
-    headers: authenticatedHeaders(init.headers),
-  });
-  if (!response.ok) {
-    throw await apiError(response);
-  }
-}
-
-function jsonInit(method: string, body?: unknown): RequestInit {
-  return {
-    method,
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  };
-}
-
-export const subscriptionQueries = {
-  all: ["subscription-profiles"] as const,
-  session: () => queryOptions({
-    queryKey: ["subscription-session"] as const,
-    queryFn: () => requestJson<ControlSession>("/api/manage/session"),
-  }),
-  status: () => queryOptions({
-    queryKey: ["subscription-status"] as const,
-    queryFn: () => requestJson<RuntimeStatus>("/api/manage/status"),
-  }),
-  list: () => queryOptions({
-    queryKey: ["subscription-profiles", "list"] as const,
-    queryFn: async () => {
-      const data = await requestJson<{ profiles: ProfileSummary[] }>("/api/manage/profiles");
-      return data.profiles;
-    },
-  }),
-  detail: (profileId: string) => queryOptions({
-    queryKey: ["subscription-profiles", "detail", profileId] as const,
-    queryFn: async () => {
-      const data = await requestJson<{ profile: ProfileDetail }>(
-        `/api/manage/profiles/${profileId}`,
-      );
-      return data.profile;
-    },
-  }),
-};
-
-export async function createSubscriptionProfile(name: string): Promise<ProfileDetail> {
-  const data = await requestJson<{ profile: ProfileDetail }>(
-    "/api/manage/profiles",
-    jsonInit("POST", { name }),
-  );
-  return data.profile;
-}
-
-export async function renameSubscriptionProfile(
-  profileId: string,
-  name: string,
-): Promise<void> {
-  await requestJson(
-    `/api/manage/profiles/${profileId}`,
-    jsonInit("PATCH", { name }),
-  );
-}
-
-export async function removeSubscriptionProfile(profileId: string): Promise<void> {
-  await requestEmpty(`/api/manage/profiles/${profileId}`, jsonInit("DELETE"));
-}
-
-export async function addSubscriptionSource(
-  profileId: string,
-  source: { name: string; type: SourceType; value: string },
-): Promise<void> {
-  await requestJson(
-    `/api/manage/profiles/${profileId}/sources`,
-    jsonInit("POST", source),
-  );
-}
-
-export async function removeSubscriptionSource(sourceId: string): Promise<void> {
-  await requestEmpty(`/api/manage/sources/${sourceId}`, jsonInit("DELETE"));
-}
-
-export async function setSubscriptionSourceEnabled(
-  sourceId: string,
-  enabled: boolean,
-): Promise<void> {
-  await requestJson(
-    `/api/manage/sources/${sourceId}`,
-    jsonInit("PATCH", { enabled }),
-  );
-}
-
-export async function updateSubscriptionSource(
-  sourceId: string,
-  input: { name: string; value?: string },
-): Promise<void> {
-  await requestJson(
-    `/api/manage/sources/${sourceId}`,
-    jsonInit("PATCH", input),
-  );
-}
-
-export async function updateSubscriptionNodeSettings(
-  profileId: string,
-  settings: NodeSettings,
-): Promise<NodeSettings> {
-  const data = await requestJson<{ nodeSettings: NodeSettings }>(
-    `/api/manage/profiles/${profileId}/node-settings`,
-    jsonInit("PUT", settings),
-  );
-  return data.nodeSettings;
-}
-
-export async function refreshSubscriptionProfile(
-  profileId: string,
-): Promise<SubscriptionRefreshResult> {
-  const data = await requestJson<{ refresh: SubscriptionRefreshResult }>(
-    `/api/manage/profiles/${profileId}/refresh`,
-    jsonInit("POST"),
-  );
-  return data.refresh;
-}
-
-export async function createSubscriptionLink(
-  profileId: string,
-  name: string,
-): Promise<CreatedSubscriptionLink> {
-  return await requestJson<CreatedSubscriptionLink>(
-    `/api/manage/profiles/${profileId}/links`,
-    jsonInit("POST", { name }),
-  );
-}
-
 export async function createConvertedSubscription(input: {
   name: string;
   nodeSettings: NodeSettings;
   sources: Array<{ name: string; type: SourceType; value: string }>;
   target: OutputTarget;
 }): Promise<ConvertedSubscription> {
-  const profile = await createSubscriptionProfile(input.name);
-  for (const source of input.sources) {
-    await addSubscriptionSource(profile.id, source);
+  const response = await fetch("/api/subscriptions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw await apiError(response);
   }
-  await updateSubscriptionNodeSettings(profile.id, input.nodeSettings);
-  await refreshSubscriptionProfile(profile.id);
-  const link = await createSubscriptionLink(profile.id, "默认链接");
-  const url = link.urls[input.target];
-  return {
-    profileId: profile.id,
-    profileName: profile.name,
-    target: input.target,
-    url,
-    universalUrl: link.universalUrl,
-  };
-}
-
-export async function revokeSubscriptionLink(linkId: string): Promise<void> {
-  await requestEmpty(`/api/manage/links/${linkId}`, jsonInit("DELETE"));
+  return await response.json() as ConvertedSubscription;
 }
 
 export function subscriptionErrorText(error: unknown): string {
   if (!(error instanceof SubscriptionApiError)) {
-    return "操作失败，请重试";
+    return "生成失败，请重试";
   }
   const messages: Record<string, string> = {
-    authentication_required: "登录已失效，请重新进入管理页",
-    no_sources: "先添加一个订阅或节点",
+    no_sources: "请添加一个订阅或节点",
+    invalid_subscription_url: "订阅地址必须是公网 HTTPS 地址",
+    invalid_node_uri: "节点链接格式不受支持",
     source_unreachable: "订阅源没有响应",
     source_failed: "订阅源返回错误",
+    source_redirect_limit: "订阅源重定向次数过多",
     source_response_too_large: "订阅源内容超过 1 MiB",
-    too_many_sources: "一个方案最多使用 10 个远程订阅",
+    too_many_sources: "订阅来源数量过多",
+    request_too_large: "输入内容超过 16 KiB",
+    subscription_link_too_long: "输入内容太多，无法放进一个订阅链接",
     no_nodes_found: "订阅源中没有可识别的节点",
-    normalized_nodes_too_large: "处理后的节点内容过大",
-    invalid_node_pattern: "正则格式有误，请检查节点处理设置",
+    invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     no_nodes_after_processing: "没有节点符合当前筛选条件",
-    source_decryption_failed: "订阅源无法解密，请检查数据密钥",
-    target_unsupported: "当前节点无法生成可用的客户端格式",
+    missing_encryption_key: "Worker 尚未配置数据密钥",
+    invalid_encryption_key: "Worker 数据密钥格式不正确",
+    target_unsupported: "当前节点无法生成所选格式",
+    output_too_large: "生成内容过大",
   };
   return messages[error.code] ?? error.message;
 }

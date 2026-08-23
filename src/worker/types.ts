@@ -24,12 +24,7 @@ export const outputTargets = [
 export type OutputTarget = (typeof outputTargets)[number];
 
 export interface SubscriptionEnv extends Env {
-  DB: D1Database;
-  DATA_ENCRYPTION_KEY?: string;
-  ACCESS_TEAM_DOMAIN?: string;
-  ACCESS_AUD?: string;
-  ACCESS_ADMIN_EMAIL?: string;
-  CONTROL_API_TOKEN?: string;
+  DATA_ENCRYPTION_KEY: string;
 }
 
 export function isOutputTarget(value: string): value is OutputTarget {

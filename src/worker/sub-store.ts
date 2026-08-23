@@ -19,6 +19,8 @@ type SingBoxOutbound = Record<string, unknown> & { type: string; tag: string };
 const TEST_URL = "https://www.gstatic.com/generate_204";
 const maximumRemoteBytes = 1024 * 1024;
 const maximumRemoteSources = 10;
+const maximumRedirects = 3;
+const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 
 function stringSetting(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
@@ -1553,14 +1555,90 @@ function prepareNodes(nodes: ProxyNode[]): SubscriptionNode[] {
   });
 }
 
-async function readRemoteSource(url: string): Promise<string> {
-  let response: Response;
+function isPrivateIpv4(hostname: string): boolean {
+  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/u.test(hostname)) {
+    return false;
+  }
+  const octets = hostname.split(".").map(Number);
+  if (octets.some((octet) => octet > 255)) {
+    return true;
+  }
+  return octets[0] === 0
+    || octets[0] === 10
+    || octets[0] === 127
+    || (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127)
+    || (octets[0] === 169 && octets[1] === 254)
+    || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
+    || (octets[0] === 192 && octets[1] === 168)
+    || (octets[0] === 198 && octets[1] >= 18 && octets[1] <= 19)
+    || octets[0] >= 224;
+}
+
+function isPrivateIpv6(hostname: string): boolean {
+  const address = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  return address === "::"
+    || address === "::1"
+    || address.startsWith("fc")
+    || address.startsWith("fd")
+    || /^fe[89ab]/u.test(address)
+    || address.startsWith("::ffff:127.")
+    || address.startsWith("::ffff:10.")
+    || address.startsWith("::ffff:192.168.");
+}
+
+export function parseRemoteSubscriptionUrl(value: string): URL {
+  let url: URL;
   try {
-    response = await fetch(url, {
-      headers: { "User-Agent": "mihomo/1.19" },
-      signal: AbortSignal.timeout(20_000),
-    });
+    url = new URL(value);
   } catch {
+    throw new ApiError(400, "invalid_subscription_url", "Subscription source is not a valid URL");
+  }
+
+  const hostname = url.hostname.toLowerCase();
+  if (url.protocol !== "https:") {
+    throw new ApiError(400, "invalid_subscription_url", "Subscription source must use HTTPS");
+  }
+  if (
+    hostname === "localhost"
+    || hostname.endsWith(".localhost")
+    || hostname.endsWith(".local")
+    || isPrivateIpv4(hostname)
+    || (hostname.includes(":") && isPrivateIpv6(hostname))
+  ) {
+    throw new ApiError(400, "invalid_subscription_url", "Subscription source must use a public host");
+  }
+  return url;
+}
+
+async function readRemoteSource(value: string): Promise<string> {
+  let url = parseRemoteSubscriptionUrl(value);
+  let response: Response | null = null;
+
+  for (let redirectCount = 0; redirectCount <= maximumRedirects; redirectCount += 1) {
+    try {
+      response = await fetch(url.toString(), {
+        headers: { "User-Agent": "mihomo/1.19" },
+        redirect: "manual",
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch {
+      throw new ApiError(502, "source_unreachable", "Subscription source did not respond");
+    }
+
+    if (!redirectStatuses.has(response.status)) {
+      break;
+    }
+    if (redirectCount === maximumRedirects) {
+      throw new ApiError(502, "source_redirect_limit", "Subscription source redirected too many times");
+    }
+    const location = response.headers.get("location");
+    if (!location) {
+      throw new ApiError(502, "source_failed", "Subscription source returned an invalid redirect");
+    }
+    url = parseRemoteSubscriptionUrl(new URL(location, url).toString());
+  }
+
+  if (!response) {
     throw new ApiError(502, "source_unreachable", "Subscription source did not respond");
   }
   if (!response.ok) {

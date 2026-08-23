@@ -11,7 +11,6 @@ export function AppHeader() {
           <a href="#tester">规则测试</a>
           <a href="#rules">规则集</a>
           <a href="#converter">格式转换</a>
-          <a href="/manage">管理</a>
         </nav>
         <a
           className="header-github"

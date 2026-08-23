@@ -22,14 +22,19 @@ describe("home page flow", () => {
   it("uses GitHub's official Primer mark instead of a third-party glyph", () => {
     const header = projectFile("src/app/components/AppHeader.tsx");
     const app = projectFile("src/app/App.tsx");
-    const controlHeader = projectFile(
-      "src/app/features/subscriptions/ControlHeader.tsx",
-    );
 
-    for (const source of [header, app, controlHeader]) {
+    for (const source of [header, app]) {
       expect(source).toContain('/brand/github-mark.svg');
       expect(source).not.toContain("GithubLogo");
     }
+  });
+
+  it("has no management navigation or management route", () => {
+    const header = projectFile("src/app/components/AppHeader.tsx");
+    const root = projectFile("src/app/Root.tsx");
+
+    expect(header).not.toContain("/manage");
+    expect(root).not.toContain("SubscriptionConsole");
   });
 
   it("uses a plain connecting line in the route tester", () => {

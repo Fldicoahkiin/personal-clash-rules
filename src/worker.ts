@@ -1,4 +1,4 @@
-import { refreshDueProfiles, routeSubscriptionRequest } from "./worker/subscriptions";
+import { routeSubscriptionRequest } from "./worker/subscriptions";
 import type { SubscriptionEnv } from "./worker/types";
 
 const securityHeaders = {
@@ -10,7 +10,7 @@ const securityHeaders = {
 } as const;
 
 function cacheControl(pathname: string): string {
-  if (pathname.startsWith("/api/manage/")) {
+  if (pathname.startsWith("/api/")) {
     return "no-store";
   }
   if (pathname.startsWith("/assets/")) {
@@ -52,12 +52,11 @@ export default {
     }
 
     if (
-      url.hostname === "sub.flacier.com"
-      && url.pathname === "/"
+      (url.pathname === "/manage" || url.pathname.startsWith("/manage/"))
       && (request.method === "GET" || request.method === "HEAD")
     ) {
       return withResponseHeaders(
-        Response.redirect(`${url.origin}/manage${url.search}`, 302),
+        Response.redirect(`${url.origin}/#subscription`, 308),
         url.pathname,
       );
     }
@@ -99,9 +98,5 @@ export default {
         { status: 500, headers: securityHeaders },
       );
     }
-  },
-  async scheduled(_controller, env): Promise<void> {
-    const result = await refreshDueProfiles(env);
-    console.log(JSON.stringify({ message: "scheduled subscription refresh", ...result }));
   },
 } satisfies ExportedHandler<SubscriptionEnv>;

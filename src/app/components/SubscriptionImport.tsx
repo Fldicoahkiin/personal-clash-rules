@@ -1,13 +1,9 @@
 import { LinkSimple } from "@phosphor-icons/react";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { type FormEvent, useReducer } from "react";
 
 import {
-  clearControlToken,
   createConvertedSubscription,
-  setControlToken,
   subscriptionErrorText,
-  subscriptionQueries,
   type ConvertedSubscription,
   type NodeSortMode,
   type OutputTarget,
@@ -31,11 +27,10 @@ type FormState = {
   renamePattern: string;
   renameReplacement: string;
   result: ConvertedSubscription | null;
-  showToken: boolean;
+  pending: boolean;
   sourceText: string;
   sortMode: NodeSortMode;
   target: OutputTarget;
-  token: string;
 };
 
 type FormAction = {
@@ -51,11 +46,10 @@ const initialState: FormState = {
   renamePattern: "",
   renameReplacement: "",
   result: null,
-  showToken: false,
+  pending: false,
   sourceText: "",
   sortMode: "source",
   target: "mihomo-config",
-  token: "",
 };
 
 function reducer(state: FormState, action: FormAction): FormState {
@@ -70,33 +64,8 @@ const allFormats = [
 
 export function SubscriptionImport() {
   const [form, dispatch] = useReducer(reducer, initialState);
-  const sessionQuery = useQuery(subscriptionQueries.session());
-  const authenticated = sessionQuery.data?.authenticated === true;
   const selectedFormat = allFormats.find((format) => format.target === form.target)
     ?? completeConfigFormats[0];
-
-  const generateMutation = useMutation({
-    mutationFn: () => createConvertedSubscription({
-      name: form.name.trim() || "个人订阅",
-      nodeSettings: {
-        includePattern: form.includePattern,
-        excludePattern: form.excludePattern,
-        renameRules: form.renamePattern
-          ? [{ pattern: form.renamePattern, replacement: form.renameReplacement }]
-          : [],
-        sortMode: form.sortMode,
-      },
-      sources: parseSubscriptionInput(form.sourceText),
-      target: form.target,
-    }),
-    onSuccess: (result) => {
-      dispatch({ key: "result", value: result });
-      dispatch({ key: "error", value: "" });
-    },
-    onError: (error) => {
-      dispatch({ key: "error", value: subscriptionErrorText(error) });
-    },
-  });
 
   function validateInput(): boolean {
     if (!form.sourceText.trim()) {
@@ -130,33 +99,33 @@ export function SubscriptionImport() {
     }
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!validateInput()) {
       return;
     }
-    if (!authenticated) {
-      dispatch({ key: "showToken", value: true });
-      return;
+    dispatch({ key: "pending", value: true });
+    try {
+      const result = await createConvertedSubscription({
+        name: form.name.trim() || "个人订阅",
+        nodeSettings: {
+          includePattern: form.includePattern,
+          excludePattern: form.excludePattern,
+          renameRules: form.renamePattern
+            ? [{ pattern: form.renamePattern, replacement: form.renameReplacement }]
+            : [],
+          sortMode: form.sortMode,
+        },
+        sources: parseSubscriptionInput(form.sourceText),
+        target: form.target,
+      });
+      dispatch({ key: "result", value: result });
+      dispatch({ key: "error", value: "" });
+    } catch (error) {
+      dispatch({ key: "error", value: subscriptionErrorText(error) });
+    } finally {
+      dispatch({ key: "pending", value: false });
     }
-    generateMutation.mutate();
-  }
-
-  async function unlockAndGenerate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!form.token.trim()) {
-      return;
-    }
-    setControlToken(form.token);
-    const session = await sessionQuery.refetch();
-    if (!session.data?.authenticated) {
-      clearControlToken();
-      dispatch({ key: "error", value: "管理令牌不正确" });
-      return;
-    }
-    dispatch({ key: "token", value: "" });
-    dispatch({ key: "showToken", value: false });
-    generateMutation.mutate();
   }
 
   async function copyResult() {
@@ -229,48 +198,17 @@ export function SubscriptionImport() {
         <div className="subscription-action-row">
           <span>{selectedFormat.name}</span>
           <div>
-            <a className="button button-secondary" href="/manage">
-              管理已有订阅
-            </a>
             <button
               className="button button-primary"
               type="submit"
-              disabled={generateMutation.isPending || sessionQuery.isLoading}
+              disabled={form.pending}
             >
               <LinkSimple aria-hidden="true" />
-              {generateMutation.isPending ? "正在生成" : "生成订阅链接"}
+              {form.pending ? "正在生成" : "生成订阅链接"}
             </button>
           </div>
         </div>
       </form>
-
-      {form.showToken && !authenticated ? (
-        <form
-          className="subscription-token"
-          onSubmit={(event) => void unlockAndGenerate(event)}
-        >
-          <label className="field">
-            <span>管理令牌</span>
-            <input
-              type="password"
-              value={form.token}
-              onChange={(event) => dispatch({
-                key: "token",
-                value: event.target.value,
-              })}
-              autoComplete="off"
-              autoFocus
-            />
-          </label>
-          <button
-            className="button button-primary"
-            type="submit"
-            disabled={!form.token.trim()}
-          >
-            验证并生成
-          </button>
-        </form>
-      ) : null}
 
       {form.error ? (
         <p className="field-error" role="alert">{form.error}</p>

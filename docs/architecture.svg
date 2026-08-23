@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title description">
   <title id="title">订阅转换部署结构</title>
-  <desc id="description">GitHub 推送由 Cloudflare 构建为一个 Worker。Worker 读取远程订阅，将标准化节点保存到 D1，并按固定链接请求生成客户端格式。</desc>
+  <desc id="description">GitHub 推送由 Cloudflare 构建为一个 Worker。网页生成加密订阅链接，客户端刷新时由 Worker 临时读取远程订阅并返回所选格式，不使用数据库。</desc>
   <style>
     .paper { fill: #faf8f4; }
     .panel { fill: #faf8f4; stroke: #091e37; stroke-width: 1.5; }
@@ -17,14 +17,14 @@
     .small { font-size: 11px; }
   </style>
 
-  <rect class="paper" width="1200" height="560" />
+  <rect class="paper" width="1200" height="500" />
   <text x="48" y="50" class="ink title">订阅转换</text>
-  <text x="48" y="76" class="muted body">一个 Worker · 一个 D1 · 一个固定链接</text>
+  <text x="48" y="76" class="muted body">一个 Worker · 无数据库 · 一个加密链接</text>
   <text x="1152" y="52" text-anchor="end" class="ink mono label">RULES.FLACIER.COM</text>
   <line x1="48" y1="100" x2="1152" y2="100" class="line" />
 
   <path d="M220 202H332M598 202H710M976 202H1080" class="flow" />
-  <path d="M465 262V346M843 246V346" class="line" />
+  <path d="M465 262V326" class="line" />
 
   <g>
     <text x="48" y="143" class="muted mono label">DEPLOY</text>
@@ -37,15 +37,15 @@
     <text x="332" y="127" class="muted mono label">RUN</text>
     <rect x="332" y="142" width="266" height="120" class="active" />
     <text x="465" y="179" text-anchor="middle" class="ink item">Cloudflare Worker</text>
-    <text x="465" y="207" text-anchor="middle" class="muted body">网页 · 管理 API · 定时刷新</text>
-    <text x="465" y="232" text-anchor="middle" class="muted body">解析节点 · 按需生成格式</text>
+    <text x="465" y="207" text-anchor="middle" class="muted body">网页 · 规则 · 订阅转换</text>
+    <text x="465" y="232" text-anchor="middle" class="muted body">读取上游 · 临时生成格式</text>
   </g>
 
   <g>
-    <text x="710" y="143" class="muted mono label">PUBLISH</text>
+    <text x="710" y="143" class="muted mono label">LINK</text>
     <rect x="710" y="158" width="266" height="88" class="panel" />
-    <text x="843" y="195" text-anchor="middle" class="ink item">固定订阅链接</text>
-    <text x="843" y="220" text-anchor="middle" class="muted mono small">/s/:token/:target</text>
+    <text x="843" y="195" text-anchor="middle" class="ink item">加密订阅链接</text>
+    <text x="843" y="220" text-anchor="middle" class="muted mono small">/s/:config/:target</text>
   </g>
 
   <g>
@@ -56,19 +56,13 @@
   </g>
 
   <g>
-    <rect x="332" y="346" width="266" height="90" class="panel" />
-    <text x="465" y="381" text-anchor="middle" class="ink item">远程订阅与单节点</text>
-    <text x="465" y="408" text-anchor="middle" class="muted body">每次刷新只读取并整理一次</text>
+    <rect x="332" y="326" width="266" height="90" class="panel" />
+    <text x="465" y="361" text-anchor="middle" class="ink item">远程订阅与单节点</text>
+    <text x="465" y="388" text-anchor="middle" class="muted body">仅在生成和客户端刷新时读取</text>
   </g>
 
-  <g>
-    <rect x="710" y="346" width="266" height="90" class="panel" />
-    <text x="843" y="381" text-anchor="middle" class="ink item">D1</text>
-    <text x="843" y="408" text-anchor="middle" class="muted body">加密来源 · 标准化节点 · 链接</text>
-  </g>
-
-  <line x1="48" y1="480" x2="1152" y2="480" class="line" />
-  <text x="48" y="516" class="muted mono small">REQUEST</text>
-  <text x="122" y="516" class="ink body">刷新保存节点；客户端请求链接时只生成所选格式。</text>
-  <text x="1152" y="516" text-anchor="end" class="muted body">节点流量不经过 Worker</text>
+  <line x1="48" y1="450" x2="1152" y2="450" class="line" />
+  <text x="48" y="479" class="muted mono small">REQUEST</text>
+  <text x="122" y="479" class="ink body">客户端刷新链接，Worker 当次读取、转换并返回。</text>
+  <text x="1152" y="479" text-anchor="end" class="muted body">不保存订阅与节点</text>
 </svg>
