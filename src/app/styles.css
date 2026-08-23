@@ -278,7 +278,7 @@ summary:focus-visible {
 
 .route-result {
   position: relative;
-  min-height: 244px;
+  min-height: 228px;
   margin-top: 20px;
 }
 
@@ -300,15 +300,15 @@ summary:focus-visible {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
-  padding: 18px 0 0;
+  padding: 20px 0 0;
   list-style: none;
 }
 
 .route-steps li {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-rows: 126px 48px;
   min-width: 0;
-  flex-direction: column;
   align-items: center;
   text-align: center;
 }
@@ -316,9 +316,9 @@ summary:focus-visible {
 .route-steps li:not(:last-child)::after {
   position: absolute;
   z-index: 0;
-  top: 120px;
-  left: calc(50% + 22px);
-  width: calc(100% - 44px);
+  top: 144px;
+  left: calc(50% + 20px);
+  width: calc(100% - 40px);
   height: 12px;
   background:
     linear-gradient(var(--accent), var(--accent)) top / 100% 2px no-repeat,
@@ -335,49 +335,58 @@ summary:focus-visible {
 .route-step-copy {
   display: flex;
   width: min(100%, 250px);
-  min-height: 106px;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
-}
-
-.route-step-head {
-  display: flex;
-  min-height: 24px;
-  align-items: center;
   justify-content: center;
-  gap: 9px;
+  padding-inline: 10px;
 }
 
 .route-step-label {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 680;
+  letter-spacing: 0.06em;
+}
+
+.route-track-stop {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 48px;
+  place-items: center;
 }
 
 .route-node {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   width: 21px;
   height: 21px;
-  margin-block: 10px 13px;
   border: 3px solid var(--accent);
   border-radius: 50%;
   background: var(--paper);
-  outline: 4px solid var(--paper);
+  box-shadow: 0 0 0 5px var(--paper);
 }
 
-.route-node-pass {
-  border-color: var(--success);
-  background: var(--success);
+.route-node-terminal {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0 0 6px var(--paper);
 }
 
-.route-node-stop {
-  border-color: var(--danger);
-  background: var(--danger);
+.route-node-terminal svg {
+  width: 21px;
+  height: 21px;
 }
 
 .route-value {
-  margin-top: 9px;
+  margin-top: 10px;
   max-width: 100%;
   color: var(--ink);
   font-size: 0.92rem;
@@ -394,40 +403,66 @@ summary:focus-visible {
   letter-spacing: 0.04em;
 }
 
-.route-step-meta {
-  display: flex;
-  min-height: 25px;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-}
-
-.route-status {
+.route-signal {
+  position: absolute;
+  z-index: 4;
+  bottom: 32px;
+  left: calc(50% + 17px);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 720;
+  gap: 5px;
+  white-space: nowrap;
 }
 
-.route-status i {
+.route-signal::after {
+  position: absolute;
+  top: 20px;
+  left: 7px;
+  width: 1px;
+  height: 19px;
+  background: var(--ink);
+  content: "";
+}
+
+.route-signal i {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 15px;
+  height: 20px;
+  place-items: center;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.route-signal i::after {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: currentColor;
+  box-shadow: 0 0 0 1px var(--paper);
+  content: "";
 }
 
-.route-status-pass {
+.route-signal b {
+  padding: 2px 4px;
+  background: var(--paper);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.route-signal-pass {
   color: var(--success);
 }
 
-.route-status-stop {
+.route-signal-stop {
   color: var(--danger);
 }
 
 .route-step-detail {
+  margin-top: 7px;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -1195,11 +1230,11 @@ summary:focus-visible {
 
   .route-steps li {
     display: grid;
-    grid-template-columns: var(--route-label-column) 18px minmax(0, 1fr);
+    grid-template-columns: var(--route-label-column) 28px minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     gap: 12px;
     align-items: center;
-    min-height: 76px;
+    min-height: 88px;
     text-align: left;
   }
 
@@ -1208,10 +1243,6 @@ summary:focus-visible {
   }
 
   .route-step-copy {
-    display: contents;
-  }
-
-  .route-step-head {
     display: contents;
   }
 
@@ -1227,6 +1258,16 @@ summary:focus-visible {
     margin-top: 0;
   }
 
+  .route-step-detail {
+    grid-column: 3;
+    grid-row: 2;
+    margin-top: 0;
+  }
+
+  .route-track-stop {
+    display: contents;
+  }
+
   .route-node {
     z-index: 1;
     grid-column: 2;
@@ -1234,19 +1275,28 @@ summary:focus-visible {
     width: 16px;
     height: 16px;
     margin: 0;
+    justify-self: center;
   }
 
-  .route-step-meta {
+  .route-node-terminal {
+    width: 28px;
+    height: 28px;
+  }
+
+  .route-node-terminal svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .route-signal {
+    position: static;
     grid-column: 3;
     grid-row: 3;
-    min-height: 0;
-    justify-content: flex-start;
+    justify-self: start;
   }
 
-  .route-status {
-    grid-column: 3;
-    grid-row: 2;
-    width: max-content;
+  .route-signal::after {
+    display: none;
   }
 
   .route-message {

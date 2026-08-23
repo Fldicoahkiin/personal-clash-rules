@@ -1,4 +1,4 @@
-import { ArrowRight } from "@phosphor-icons/react";
+import { ArrowRight, TrainSimple } from "@phosphor-icons/react";
 import { type FormEvent, useEffect, useState } from "react";
 
 import {
@@ -78,7 +78,7 @@ export function RouteTester() {
       terminal: false,
     },
     {
-      label: "规则判断",
+      label: "命中规则",
       value: result?.rule || "—",
       detail: result
         ? result.matched
@@ -94,15 +94,15 @@ export function RouteTester() {
       value: result?.policy || "—",
       detail: policyRoute
         ? policyRoute.route.includes(" → ")
-          ? `默认出口 ${policyRoute.route.split(" → ")[1]}`
-          : "固定路线"
+          ? `默认 ${policyRoute.route.split(" → ")[1]}`
+          : "固定策略"
         : "",
       machine: true,
       state: null,
       terminal: false,
     },
     {
-      label: "最终处理",
+      label: "处理方式",
       value: policyRoute?.target || "—",
       detail: policyRoute?.mode || "",
       machine: true,
@@ -115,8 +115,8 @@ export function RouteTester() {
     <section className="route-section page-width" id="tester" aria-labelledby="page-title">
       <div className="route-main">
         <div className="route-intro">
-          <h1 id="page-title">网址规则测试</h1>
-          <p>查看命中的规则，以及最终直连还是代理。</p>
+          <h1 id="page-title">网址怎么处理</h1>
+          <p>命中规则、策略组、处理方式。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -140,21 +140,7 @@ export function RouteTester() {
             {steps.map((step) => (
               <li key={step.label}>
                 <div className="route-step-copy">
-                  <div className="route-step-head">
-                    <span className="route-step-label">{step.label}</span>
-                    {step.state ? (
-                      <span
-                        className={
-                          step.state === "pass"
-                            ? "route-status route-status-pass"
-                            : "route-status route-status-stop"
-                        }
-                      >
-                        <i aria-hidden="true" />
-                        {step.state === "pass" ? "通过" : "未通过"}
-                      </span>
-                    ) : null}
-                  </div>
+                  <span className="route-step-label">{step.label}</span>
                   <strong
                     className={
                       [
@@ -168,21 +154,33 @@ export function RouteTester() {
                   >
                     {step.value}
                   </strong>
-                </div>
-                <span
-                  className={
-                    step.state === "pass"
-                      ? "route-node route-node-pass"
-                      : step.state === "stop"
-                        ? "route-node route-node-stop"
-                        : "route-node"
-                  }
-                  aria-hidden="true"
-                />
-                <div className="route-step-meta">
                   {step.detail ? (
                     <small className="route-step-detail">{step.detail}</small>
                   ) : null}
+                </div>
+                <div className="route-track-stop">
+                  {step.state ? (
+                    <span
+                      className={
+                        step.state === "pass"
+                          ? "route-signal route-signal-pass"
+                          : "route-signal route-signal-stop"
+                      }
+                    >
+                      <i aria-hidden="true" />
+                      <b>{step.state === "pass" ? "通过" : "未通过"}</b>
+                    </span>
+                  ) : null}
+                  <span
+                    className={
+                      step.terminal
+                        ? "route-node route-node-terminal"
+                        : "route-node"
+                    }
+                    aria-hidden="true"
+                  >
+                    {step.terminal ? <TrainSimple weight="fill" /> : null}
+                  </span>
                 </div>
               </li>
             ))}
