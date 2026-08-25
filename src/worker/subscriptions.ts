@@ -11,8 +11,10 @@ import {
 } from "./mihomo-profile";
 import { decodeSubscriptionConfig, encodeSubscriptionConfig, hashText } from "./secrets";
 import {
+  normalizeSourceBundle,
   normalizeSources,
   parseRemoteSubscriptionUrl,
+  probeRemoteSubscriptionUserinfo,
   produceTarget,
 } from "./sub-store";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
@@ -302,14 +304,15 @@ async function generateTarget(
   env: SubscriptionEnv,
   config: SubscriptionConfig,
   target: OutputTarget,
-): Promise<{ content: string; sourceMode: SourceMode }> {
+): Promise<{ content: string; sourceMode: SourceMode; subscriptionUserinfo?: string }> {
   let output: string;
   let sourceMode = config.sourceMode;
+  let subscriptionUserinfo: string | undefined;
   if (sourceMode === "mihomo-provider") {
     output = await generateMihomoProviderTarget(env, config, target);
   } else {
     try {
-      const normalized = await normalizeSources(env, {
+      const normalized = await normalizeSourceBundle(env, {
         profileName: config.name,
         sourceUserAgent: config.sourceUserAgent,
         subscriptionUrls: config.sources
@@ -319,7 +322,8 @@ async function generateTarget(
           .filter((source) => source.type === "node")
           .map((source) => source.value),
       });
-      const nodes = applyNodeTransforms(normalized, config.nodeSettings);
+      const nodes = applyNodeTransforms(normalized.nodes, config.nodeSettings);
+      subscriptionUserinfo = normalized.subscriptionUserinfo;
       if (nodes.length === 0) {
         throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
       }
@@ -342,7 +346,11 @@ async function generateTarget(
   if (encoder.encode(output).byteLength > maximumOutputBytes) {
     throw new ApiError(413, "output_too_large", `${target} output exceeds the 1.8 MB limit`);
   }
-  return { content: output, sourceMode };
+  return {
+    content: output,
+    sourceMode,
+    ...(subscriptionUserinfo ? { subscriptionUserinfo } : {}),
+  };
 }
 
 async function createSubscription(
@@ -421,6 +429,14 @@ async function renderSubscription(
   }
   const config = await readSubscriptionConfig(parts[1], env);
   const generated = await generateTarget(env, config, target);
+  const remoteSources = config.sources.filter((source) => source.type === "subscription");
+  const subscriptionUserinfo = generated.subscriptionUserinfo
+    ?? (generated.sourceMode === "mihomo-provider" && remoteSources.length === 1
+      ? await probeRemoteSubscriptionUserinfo(
+          remoteSources[0].value,
+          config.sourceUserAgent,
+        )
+      : undefined);
   const content = target === "surge-config" || target === "surfboard-config"
     ? generated.content.replace(managedProfileUrlPlaceholder, url.toString())
     : generated.content;
@@ -437,6 +453,9 @@ async function renderSubscription(
   });
   if (universal && !targetParameter) {
     headers.set("Vary", "User-Agent");
+  }
+  if (subscriptionUserinfo) {
+    headers.set("Subscription-Userinfo", subscriptionUserinfo);
   }
   if (request.headers.get("if-none-match") === etag) {
     return new Response(null, { status: 304, headers });

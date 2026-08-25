@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
-import { normalizeSources, produceTarget } from "../src/worker/sub-store";
+import {
+  normalizeSourceBundle,
+  normalizeSources,
+  produceTarget,
+} from "../src/worker/sub-store";
 import type { SubscriptionEnv } from "../src/worker/types";
 
 const env = {} as SubscriptionEnv;
@@ -57,6 +61,32 @@ describe("native subscription converter", () => {
       expect(nodes).toEqual([
         expect.objectContaining({ name: "TW-01", type: "trojan" }),
       ]);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("does not combine usage from multiple upstream subscriptions", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const host = new URL(String(input)).hostname;
+      return new Response(`trojan://secret@${host}:443?sni=${host}#${host}`, {
+        headers: {
+          "Subscription-Userinfo": "upload=1024; download=2048; total=107374182400",
+        },
+      });
+    });
+    try {
+      const result = await normalizeSourceBundle(env, {
+        profileName: "合并订阅",
+        subscriptionUrls: [
+          "https://first.example/subscription",
+          "https://second.example/subscription",
+        ],
+        nodes: [],
+      });
+
+      expect(result.nodes).toHaveLength(2);
+      expect(result.subscriptionUserinfo).toBeUndefined();
     } finally {
       fetchSpy.mockRestore();
     }

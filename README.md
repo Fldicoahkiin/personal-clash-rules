@@ -12,6 +12,7 @@
 - 客户端刷新时读取上游并转换，不保存订阅或节点
 - Clash Party、Mihomo 等客户端；完整配置与节点资源共 21 种输出
 - 节点筛选、改名、国旗、类型、UDP 与排序
+- 单机场订阅透传流量与到期信息
 - AI、Apple、Steam、Discord、Bilibili、AniGamer 等分流规则
 - 网址规则测试与规则格式转换
 

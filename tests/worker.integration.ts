@@ -182,6 +182,31 @@ describe("stateless subscription links", () => {
     expect(second.status).toBe(304);
   });
 
+  it("passes through traffic usage from one upstream subscription", async () => {
+    const sourceUrl = "https://provider.example/subscription";
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => (
+      new Response(nodeUri("US-01", "us.example.com", "secret"), {
+        headers: {
+          "Subscription-Userinfo": "upload=1024;download=2048; total=107374182400; expire=1805938734",
+        },
+      })
+    ));
+
+    try {
+      const { data } = await createSubscription({
+        sources: [{ name: "订阅 1", type: "subscription", value: sourceUrl }],
+      });
+      const published = await exports.default.fetch(data.url);
+
+      expect(published.headers.get("subscription-userinfo")).toBe(
+        "upload=1024; download=2048; total=107374182400; expire=1805938734",
+      );
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it("requires remote subscriptions and redirects to stay on public HTTPS", async () => {
     const insecure = await exports.default.fetch("https://example.com/api/subscriptions", {
       method: "POST",
@@ -220,9 +245,15 @@ describe("stateless subscription links", () => {
 
   it("uses a Mihomo provider when the upstream rejects the Worker with 403", async () => {
     const sourceUrl = "https://provider.example/subscription";
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(null, { status: 403 }),
-    );
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => (
+      init?.method === "HEAD"
+        ? new Response(null, {
+            headers: {
+              "Subscription-Userinfo": "upload=4096; download=8192; total=214748364800; expire=1805938734",
+            },
+          })
+        : new Response(null, { status: 403 })
+    ));
 
     try {
       const { data, response } = await createSubscription({
@@ -245,13 +276,20 @@ describe("stateless subscription links", () => {
       expect(published.status).toBe(200);
       expect(published.headers.get("content-disposition")).toContain("Flacier.yaml");
       expect(published.headers.get("profile-update-interval")).toBe("12");
+      expect(published.headers.get("subscription-userinfo")).toBe(
+        "upload=4096; download=8192; total=214748364800; expire=1805938734",
+      );
       expect(config["profile-update-interval"]).toBe(12);
       expect(config["proxy-providers"]["订阅 1"]).toMatchObject({
         type: "http",
         url: sourceUrl,
         header: { "User-Agent": ["ClashParty/2.0"] },
       });
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy).toHaveBeenLastCalledWith(
+        sourceUrl,
+        expect.objectContaining({ method: "HEAD" }),
+      );
     } finally {
       fetchSpy.mockRestore();
     }

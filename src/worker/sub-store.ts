@@ -1613,7 +1613,38 @@ export function parseRemoteSubscriptionUrl(value: string): URL {
   return url;
 }
 
-async function readRemoteSource(value: string, sourceUserAgent: string): Promise<string> {
+const subscriptionUserinfoFields = ["upload", "download", "total", "expire"] as const;
+
+function normalizeSubscriptionUserinfo(value: string | null): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const fields = new Map<string, string>();
+  for (const part of value.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator === -1) {
+      continue;
+    }
+    const key = part.slice(0, separator).trim().toLowerCase();
+    const fieldValue = part.slice(separator + 1).trim();
+    if (
+      subscriptionUserinfoFields.includes(key as typeof subscriptionUserinfoFields[number])
+      && /^\d{1,20}$/u.test(fieldValue)
+    ) {
+      fields.set(key, fieldValue);
+    }
+  }
+  const normalized = subscriptionUserinfoFields
+    .filter((field) => fields.has(field))
+    .map((field) => `${field}=${fields.get(field)}`);
+  return normalized.length > 0 ? normalized.join("; ") : undefined;
+}
+
+async function requestRemoteSource(
+  value: string,
+  sourceUserAgent: string,
+  method: "GET" | "HEAD",
+): Promise<Response> {
   let url = parseRemoteSubscriptionUrl(value);
   let response: Response | null = null;
 
@@ -1621,6 +1652,7 @@ async function readRemoteSource(value: string, sourceUserAgent: string): Promise
     try {
       response = await fetch(url.toString(), {
         headers: { "User-Agent": sourceUserAgent },
+        method,
         redirect: "manual",
         signal: AbortSignal.timeout(20_000),
       });
@@ -1647,6 +1679,14 @@ async function readRemoteSource(value: string, sourceUserAgent: string): Promise
   if (!response.ok) {
     throw new ApiError(502, "source_failed", `Subscription source returned HTTP ${response.status}`);
   }
+  return response;
+}
+
+async function readRemoteSource(
+  value: string,
+  sourceUserAgent: string,
+): Promise<{ content: string; subscriptionUserinfo?: string }> {
+  const response = await requestRemoteSource(value, sourceUserAgent, "GET");
   const declaredLength = Number(response.headers.get("content-length") || 0);
   if (declaredLength > maximumRemoteBytes) {
     throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
@@ -1655,7 +1695,24 @@ async function readRemoteSource(value: string, sourceUserAgent: string): Promise
   if (new TextEncoder().encode(content).byteLength > maximumRemoteBytes) {
     throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
   }
-  return content;
+  return {
+    content,
+    subscriptionUserinfo: normalizeSubscriptionUserinfo(
+      response.headers.get("subscription-userinfo"),
+    ),
+  };
+}
+
+export async function probeRemoteSubscriptionUserinfo(
+  value: string,
+  sourceUserAgent: string,
+): Promise<string | undefined> {
+  try {
+    const response = await requestRemoteSource(value, sourceUserAgent, "HEAD");
+    return normalizeSubscriptionUserinfo(response.headers.get("subscription-userinfo"));
+  } catch {
+    return undefined;
+  }
 }
 
 export function probeConverter(): "ready" {
@@ -1671,17 +1728,37 @@ export async function normalizeSources(
     nodes: string[];
   },
 ): Promise<SubscriptionNode[]> {
+  return (await normalizeSourceBundle(_env, input)).nodes;
+}
+
+export async function normalizeSourceBundle(
+  _env: SubscriptionEnv,
+  input: {
+    profileName: string;
+    sourceUserAgent?: string;
+    subscriptionUrls: string[];
+    nodes: string[];
+  },
+): Promise<{ nodes: SubscriptionNode[]; subscriptionUserinfo?: string }> {
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
   const remote = await Promise.all(input.subscriptionUrls.map(
     (url) => readRemoteSource(url, input.sourceUserAgent || "mihomo/1.19"),
   ));
-  const parsed = [...remote, ...input.nodes].flatMap((content) => parseProxies(decodeMaybeBase64(content)));
+  const parsed = [
+    ...remote.map((source) => source.content),
+    ...input.nodes,
+  ].flatMap((content) => parseProxies(decodeMaybeBase64(content)));
   if (parsed.length === 0) {
     throw new ApiError(422, "no_nodes_found", "Subscription sources contained no supported nodes");
   }
-  return prepareNodes(parsed);
+  return {
+    nodes: prepareNodes(parsed),
+    ...(remote.length === 1 && remote[0].subscriptionUserinfo
+      ? { subscriptionUserinfo: remote[0].subscriptionUserinfo }
+      : {}),
+  };
 }
 
 export async function produceTarget(
