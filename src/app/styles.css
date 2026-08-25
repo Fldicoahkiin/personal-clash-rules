@@ -690,17 +690,37 @@ summary:focus-visible {
   padding-bottom: 14px;
 }
 
-.subscription-more-settings {
+.subscription-more-settings,
+.subscription-link-loader {
   border-bottom: 1px solid var(--line);
 }
 
-.subscription-more-settings summary {
+.subscription-more-settings summary,
+.subscription-link-loader summary {
   width: max-content;
   padding-block: 12px;
   color: var(--muted);
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 650;
+}
+
+.subscription-link-loader-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding-bottom: 16px;
+}
+
+.subscription-link-loader .button {
+  min-height: 44px;
+}
+
+.subscription-link-error {
+  margin: -6px 0 16px;
+  color: var(--danger);
+  font-size: 0.72rem;
 }
 
 .subscription-settings-grid {
@@ -1520,6 +1540,10 @@ summary:focus-visible {
   }
 
   .subscription-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .subscription-link-loader-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 

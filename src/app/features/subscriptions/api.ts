@@ -87,8 +87,10 @@ export async function createConvertedSubscription(input: {
   name: string;
   nodeSettings: NodeSettings;
   rulePreset: RulePreset;
+  sourceUserAgent: string;
   sources: Array<{ name: string; type: SourceType; value: string }>;
   target: OutputTarget;
+  updateIntervalHours: number;
 }): Promise<ConvertedSubscription> {
   const response = await fetch("/api/subscriptions", {
     method: "POST",
@@ -123,6 +125,8 @@ export function subscriptionErrorText(error: unknown): string {
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     invalid_rule_preset: "规则方案无效",
+    invalid_source_user_agent: "订阅请求 UA 无效",
+    invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",
     no_nodes_after_processing: "没有节点符合当前筛选条件",
     source_client_fetch_only: "这个机场只能由 Clash Party 或 Mihomo 直接更新",
     source_transform_unavailable: "客户端直连模式不支持节点排序",

@@ -14,8 +14,10 @@ import {
   nodeResourceFormats,
   secondaryFormats,
 } from "../features/subscriptions/client-formats";
+import type { LoadedSubscriptionForm } from "../lib/generated-subscription";
 import { parseSubscriptionInput } from "../lib/subscription-input";
 import { SubscriptionFormatPicker } from "./SubscriptionFormatPicker";
+import { SubscriptionLinkLoader } from "./SubscriptionLinkLoader";
 import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
 
@@ -33,16 +35,19 @@ type FormState = {
   pending: boolean;
   showNodeType: boolean;
   skipCertVerify: boolean;
+  sourceUserAgent: string;
   sourceText: string;
   sortMode: NodeSortMode;
   target: OutputTarget;
   tfo: boolean;
   udp: boolean;
+  updateIntervalHours: number;
 };
 
-type FormAction = {
+type FieldAction = {
   [Key in keyof FormState]: { key: Key; value: FormState[Key] };
 }[keyof FormState];
+type FormAction = FieldAction | { key: "load"; value: LoadedSubscriptionForm };
 
 const initialState: FormState = {
   addCountryFlag: true,
@@ -58,14 +63,26 @@ const initialState: FormState = {
   pending: false,
   showNodeType: false,
   skipCertVerify: false,
+  sourceUserAgent: "mihomo/1.19",
   sourceText: "",
   sortMode: "source",
   target: "clash-party-config",
   tfo: false,
   udp: true,
+  updateIntervalHours: 6,
 };
 
 function reducer(state: FormState, action: FormAction): FormState {
+  if (action.key === "load") {
+    return {
+      ...state,
+      ...action.value,
+      copied: false,
+      error: "",
+      pending: false,
+      result: null,
+    };
+  }
   const next = { ...state, [action.key]: action.value };
   if (
     action.key !== "copied"
@@ -86,10 +103,8 @@ const allFormats = [
 
 export function SubscriptionImport() {
   const [form, dispatch] = useReducer(reducer, initialState);
-  const selectedFormat = allFormats.find((format) => format.target === form.target)
-    ?? completeConfigFormats[0];
-  const supportsRulePreset = form.target === "clash-party-config"
-    || form.target === "mihomo-config";
+  const selectedFormat = allFormats.find((format) => format.target === form.target) ?? completeConfigFormats[0];
+  const supportsRulePreset = form.target === "clash-party-config" || form.target === "mihomo-config";
 
   function validateInput(): boolean {
     if (!form.sourceText.trim()) {
@@ -106,11 +121,7 @@ export function SubscriptionImport() {
       return false;
     }
     try {
-      for (const pattern of [
-        form.includePattern,
-        form.excludePattern,
-        form.renamePattern,
-      ]) {
+      for (const pattern of [form.includePattern, form.excludePattern, form.renamePattern]) {
         if (pattern) {
           new RegExp(pattern, "u");
         }
@@ -146,8 +157,10 @@ export function SubscriptionImport() {
           udp: form.udp,
         },
         rulePreset: form.rulePreset,
+        sourceUserAgent: form.sourceUserAgent,
         sources: parseSubscriptionInput(form.sourceText),
         target: form.target,
+        updateIntervalHours: form.updateIntervalHours,
       });
       dispatch({ key: "result", value: result });
       dispatch({ key: "error", value: "" });
@@ -194,7 +207,7 @@ export function SubscriptionImport() {
             />
           </label>
           <label className="field subscription-name">
-            <span>订阅名称</span>
+            <span>输出名称</span>
             <input
               type="text"
               value={form.name}
@@ -202,7 +215,7 @@ export function SubscriptionImport() {
                 key: "name",
                 value: event.target.value,
               })}
-              placeholder="留空"
+              placeholder="留空时使用 Flacier"
               maxLength={64}
             />
           </label>
@@ -240,13 +253,18 @@ export function SubscriptionImport() {
           renameReplacement={form.renameReplacement}
           showNodeType={form.showNodeType}
           skipCertVerify={form.skipCertVerify}
+          sourceUserAgent={form.sourceUserAgent}
           sortMode={form.sortMode}
           tfo={form.tfo}
           udp={form.udp}
+          updateIntervalHours={form.updateIntervalHours}
           onBooleanChange={(key, value) => dispatch({ key, value })}
           onTextChange={(key, value) => dispatch({ key, value })}
+          onUpdateIntervalChange={(value) => dispatch({ key: "updateIntervalHours", value })}
           onSortChange={(value) => dispatch({ key: "sortMode", value })}
         />
+
+        <SubscriptionLinkLoader onLoad={(value) => dispatch({ key: "load", value })} />
 
         <div className="subscription-action-row">
           <span>{selectedFormat.name}</span>

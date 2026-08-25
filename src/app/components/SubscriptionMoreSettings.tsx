@@ -10,9 +10,11 @@ type SubscriptionMoreSettingsProps = {
   renameReplacement: string;
   showNodeType: boolean;
   skipCertVerify: boolean;
+  sourceUserAgent: string;
   sortMode: NodeSortMode;
   tfo: boolean;
   udp: boolean;
+  updateIntervalHours: number;
   onBooleanChange: (
     key: "addCountryFlag" | "showNodeType" | "skipCertVerify" | "tfo" | "udp",
     value: boolean,
@@ -22,10 +24,12 @@ type SubscriptionMoreSettingsProps = {
       | "excludePattern"
       | "includePattern"
       | "renamePattern"
-      | "renameReplacement",
+      | "renameReplacement"
+      | "sourceUserAgent",
     value: string,
   ) => void;
   onSortChange: (value: NodeSortMode) => void;
+  onUpdateIntervalChange: (value: number) => void;
 };
 
 export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
@@ -36,17 +40,42 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   renameReplacement,
   showNodeType,
   skipCertVerify,
+  sourceUserAgent,
   sortMode,
   tfo,
   udp,
+  updateIntervalHours,
   onBooleanChange,
   onSortChange,
   onTextChange,
+  onUpdateIntervalChange,
 }) => {
   return (
     <details className="subscription-more-settings">
-      <summary>更多设置</summary>
+      <summary>进阶设置</summary>
       <div className="subscription-settings-grid">
+        <label className="field">
+          <span>订阅请求 UA</span>
+          <input
+            value={sourceUserAgent}
+            onChange={(event) => onTextChange("sourceUserAgent", event.target.value)}
+            placeholder="mihomo/1.19"
+            maxLength={128}
+            spellCheck="false"
+          />
+        </label>
+        <label className="field">
+          <span>更新间隔</span>
+          <select
+            value={updateIntervalHours}
+            onChange={(event) => onUpdateIntervalChange(Number(event.target.value))}
+          >
+            <option value={1}>每小时</option>
+            <option value={6}>每 6 小时</option>
+            <option value={12}>每 12 小时</option>
+            <option value={24}>每天</option>
+          </select>
+        </label>
         <label className="field">
           <span>保留节点</span>
           <input
