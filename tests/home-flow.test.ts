@@ -55,4 +55,20 @@ describe("home page flow", () => {
     expect(tester).toContain('className="route-line"');
     expect(styles).toContain(".route-line");
   });
+
+  it("keeps the subscription name below the source and the result responsive", () => {
+    const form = projectFile("src/app/components/SubscriptionImport.tsx");
+    const result = projectFile("src/app/components/SubscriptionResult.tsx");
+    const styles = projectFile("src/app/styles.css");
+
+    expect(form.indexOf('className="field subscription-name"')).toBeGreaterThan(
+      form.indexOf('className="field subscription-source"'),
+    );
+    expect(styles).toContain(".subscription-name {");
+    expect(styles).toContain(".subscription-result-copy");
+    expect(styles).toContain(".subscription-result-actions");
+    expect(styles).not.toContain("min-width: 320px");
+    expect(result).toContain('className="subscription-result-copy"');
+    expect(result).toContain('className="subscription-result-actions"');
+  });
 });

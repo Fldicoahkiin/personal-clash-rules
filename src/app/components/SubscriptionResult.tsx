@@ -23,14 +23,14 @@ export function SubscriptionResult({
 
   return (
     <div className="subscription-result" aria-live="polite">
-      <div>
+      <div className="subscription-result-copy">
         <span>{format.name}</span>
         <code>{result.url}</code>
         {result.sourceMode === "mihomo-provider" ? (
           <small>机场节点由 Clash Party / Mihomo 直接更新</small>
         ) : null}
       </div>
-      <div>
+      <div className="subscription-result-actions">
         <button className="button button-secondary" type="button" onClick={onCopy}>
           {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
           {copied ? "已复制" : "复制链接"}

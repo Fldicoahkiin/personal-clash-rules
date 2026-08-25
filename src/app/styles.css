@@ -48,7 +48,6 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
   background: var(--paper);
 }
@@ -557,8 +556,12 @@ summary:focus-visible {
 
 .subscription-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+}
+
+.subscription-name {
+  width: min(100%, 360px);
 }
 
 .field.subscription-source textarea {
@@ -757,9 +760,9 @@ summary:focus-visible {
 }
 
 .subscription-result {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 20px;
   margin-top: 18px;
   padding: 16px;
@@ -767,7 +770,7 @@ summary:focus-visible {
   background: var(--accent-soft);
 }
 
-.subscription-result > div:first-child {
+.subscription-result-copy {
   display: grid;
   min-width: 0;
   gap: 6px;
@@ -784,15 +787,22 @@ summary:focus-visible {
 }
 
 .subscription-result code {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.subscription-result > div:last-child {
+.subscription-result-actions {
   display: flex;
   flex: 0 0 auto;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+.subscription-result-actions .button {
+  white-space: nowrap;
 }
 
 .field-error {
@@ -1246,7 +1256,11 @@ summary:focus-visible {
   }
 
   .client-picker {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .subscription-more-formats > .client-picker {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1412,6 +1426,11 @@ summary:focus-visible {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .subscription-result {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
   .converter-section,
   .policy-section,
   .rules-section {
@@ -1500,9 +1519,8 @@ summary:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .subscription-more-formats > .client-picker,
   .subscription-settings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .subscription-sort,
@@ -1514,6 +1532,14 @@ summary:focus-visible {
     max-width: none;
   }
 
+  .subscription-name {
+    width: 100%;
+  }
+
+  .subscription-heading h1 {
+    font-size: 2.35rem;
+  }
+
   .subscription-action-row {
     align-items: stretch;
     flex-direction: column;
@@ -1522,6 +1548,25 @@ summary:focus-visible {
   .subscription-action-row > div,
   .subscription-action-row .button {
     width: 100%;
+  }
+
+  .subscription-result {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .subscription-result-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .subscription-result-actions .button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .subscription-result small {
+    line-height: 1.5;
   }
 
   .use-actions {
