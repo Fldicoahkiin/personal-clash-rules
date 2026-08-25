@@ -1,6 +1,6 @@
 # Cloudflare
 
-这套部署只使用一个 Worker。Worker 同时提供网页、订阅转换和规则文件，不使用数据库。
+这套部署只使用一个 Worker。Worker 同时提供网页、订阅转换、KV 短链接和规则文件。
 
 ## Git 部署
 
@@ -12,6 +12,8 @@
 - Deploy command: `pnpm exec wrangler deploy`
 
 每次推送 `main` 后由 Cloudflare 构建并部署，不需要在本机执行部署命令。
+
+`wrangler.jsonc` 已声明 `SUBSCRIPTIONS` KV 绑定。Cloudflare 首次构建时自动创建对应的 KV 命名空间。
 
 ## 域名
 

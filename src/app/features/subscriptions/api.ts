@@ -23,7 +23,7 @@ export type OutputTarget =
 
 export type SourceType = "subscription" | "node";
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
-export type RulePreset = "flacier" | "global";
+export type RulePreset = "flacier" | "global" | "direct";
 export type SourceMode = "convert" | "mihomo-provider";
 
 export interface NodeRenameRule {
@@ -44,6 +44,11 @@ export interface NodeSettings {
 }
 
 export interface ConvertedSubscription {
+  nodeStats: {
+    output: number | null;
+    read: number | null;
+    skipped: number | null;
+  };
   profileName: string;
   sourceMode: SourceMode;
   target: OutputTarget;
@@ -120,17 +125,16 @@ export function subscriptionErrorText(error: unknown): string {
     source_response_too_large: "订阅源内容超过 1 MiB",
     too_many_sources: "订阅来源数量过多",
     request_too_large: "输入内容超过 16 KiB",
-    subscription_link_too_long: "输入内容太多，无法放进一个订阅链接",
-    no_nodes_found: "订阅源中没有可识别的节点",
+    no_nodes_found: "不兼容：订阅中没有可识别的节点",
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     invalid_rule_preset: "规则方案无效",
     invalid_source_user_agent: "订阅请求 UA 无效",
     invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",
     no_nodes_after_processing: "没有节点符合当前筛选条件",
-    source_client_fetch_only: "这个机场只能由 Clash Party 或 Mihomo 直接更新",
+    source_client_fetch_only: "不兼容：机场只能由 Clash Party 或 Mihomo 直接读取",
     source_transform_unavailable: "客户端直连模式不支持节点排序",
-    target_unsupported: "当前节点无法生成所选格式",
+    target_unsupported: "不兼容：节点协议无法生成当前格式",
     output_too_large: "生成内容过大",
   };
   return messages[error.code] ?? error.message;

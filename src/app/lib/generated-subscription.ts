@@ -89,6 +89,14 @@ export function parseGeneratedSubscriptionUrl(input: string): LoadedSubscription
     throw new Error("不是本站生成的订阅链接");
   }
   const config = objectValue(decodeToken(parts[1]));
+  const targetValue = parts[2] || url.searchParams.get("target") || "clash-party-config";
+  return loadedForm(config, targetValue);
+}
+
+function loadedForm(
+  config: Record<string, unknown>,
+  targetValue: string,
+): LoadedSubscriptionForm {
   const nodeSettings = objectValue(config.nodeSettings);
   if (!Array.isArray(config.sources) || config.sources.length === 0) {
     throw new Error("订阅链接中没有来源");
@@ -103,11 +111,12 @@ export function parseGeneratedSubscriptionUrl(input: string): LoadedSubscription
   const renameRule = Array.isArray(nodeSettings.renameRules)
     ? objectValue(nodeSettings.renameRules[0] ?? {})
     : {};
-  const targetValue = parts[2] || url.searchParams.get("target") || "clash-party-config";
   const target = outputTargets.has(targetValue as OutputTarget)
     ? targetValue as OutputTarget
     : "clash-party-config";
-  const rulePreset = config.rulePreset === "global" ? "global" : "flacier";
+  const rulePreset = config.rulePreset === "global" || config.rulePreset === "direct"
+    ? config.rulePreset
+    : "flacier";
   const sortMode = nodeSettings.sortMode === "name-asc" || nodeSettings.sortMode === "name-desc"
     ? nodeSettings.sortMode
     : "source";
@@ -135,4 +144,31 @@ export function parseGeneratedSubscriptionUrl(input: string): LoadedSubscription
     udp: booleanValue(nodeSettings.udp, true),
     updateIntervalHours,
   };
+}
+
+export async function loadGeneratedSubscriptionUrl(input: string): Promise<LoadedSubscriptionForm> {
+  let url: URL;
+  try {
+    url = new URL(input.trim());
+  } catch {
+    throw new Error("请输入完整的订阅链接");
+  }
+  const parts = url.pathname.split("/").filter(Boolean);
+  if (parts[0] !== "s" || !parts[1]) {
+    throw new Error("不是本站生成的订阅链接");
+  }
+  if (parts[1].startsWith("v1.")) {
+    return parseGeneratedSubscriptionUrl(input);
+  }
+  const response = await fetch("/api/subscriptions/resolve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: url.toString() }),
+  });
+  if (!response.ok) {
+    throw new Error(response.status === 404 ? "订阅链接不存在" : "订阅链接无法读取");
+  }
+  const value: unknown = await response.json();
+  const result = objectValue(value);
+  return loadedForm(objectValue(result.config), stringValue(result.target, "clash-party-config"));
 }

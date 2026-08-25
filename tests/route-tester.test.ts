@@ -31,12 +31,12 @@ describe("createRouteSteps", () => {
         label: "命中规则",
         value: "DOMAIN-SUFFIX,openai.com",
         detail: "OpenAI",
-        state: "pass",
-        status: "通过",
+        state: "matched",
+        status: "命中",
       }),
       expect.objectContaining({
         label: "处理结果",
-        value: "PROXY",
+        value: "代理",
         detail: "AI → GLOBAL",
       }),
     ]);
@@ -58,12 +58,12 @@ describe("createRouteSteps", () => {
         label: "命中规则",
         value: "MATCH",
         detail: "默认规则",
-        state: "stop",
-        status: "未通过",
+        state: "default",
+        status: "默认",
       }),
       expect.objectContaining({
         label: "处理结果",
-        value: "PROXY",
+        value: "代理",
         detail: "DEFAULT → GLOBAL",
       }),
     ]);
@@ -85,12 +85,12 @@ describe("createRouteSteps", () => {
         label: "命中规则",
         value: "DOMAIN,gsa.apple.com",
         detail: "Apple",
-        state: "pass",
-        status: "通过",
+        state: "matched",
+        status: "命中",
       }),
       expect.objectContaining({
         label: "处理结果",
-        value: "DIRECT",
+        value: "直连",
         detail: "APPLE → DIRECT",
       }),
     ]);

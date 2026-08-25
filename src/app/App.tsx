@@ -2,6 +2,7 @@ import { ArrowUpRight } from "@phosphor-icons/react";
 
 import { AppHeader } from "./components/AppHeader";
 import { ConverterWorkspace } from "./components/ConverterWorkspace";
+import { NetworkChecks } from "./components/NetworkChecks";
 import { PolicyMap } from "./components/PolicyMap";
 import { RouteTester } from "./components/RouteTester";
 import { RulesCatalog } from "./components/RulesCatalog";
@@ -13,6 +14,7 @@ export function App() {
       <AppHeader />
       <main>
         <SubscriptionImport />
+        <NetworkChecks />
         <RouteTester />
         <RulesCatalog />
         <ConverterWorkspace />

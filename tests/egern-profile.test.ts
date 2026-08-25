@@ -14,7 +14,7 @@ proxies:
       port: 8388
       password: test
       udp_relay: true
-`);
+`, 12);
     const config = parse(output) as Record<string, unknown>;
 
     expect(config.proxies).toHaveLength(1);
@@ -27,6 +27,7 @@ proxies:
         rule_set: expect.objectContaining({
           match: "https://rules.flacier.com/rules/egern/ai-openai.yaml",
           policy: "AI",
+          update_interval: 43_200,
         }),
       },
       { default: { policy: "DEFAULT" } },

@@ -52,7 +52,7 @@ describe("buildClientAction", () => {
     expect(buildClientAction("clash-party", subscription, "Flacier")).toEqual({
       kind: "link",
       value:
-        "clash://install-config?url=https%3A%2F%2Fexample.com%2Fsub%3Fid%3D1%26token%3Da+b&name=Flacier",
+        "mihomo://install-config?url=https%3A%2F%2Fexample.com%2Fsub%3Fid%3D1%26token%3Da+b&name=Flacier",
     });
   });
 

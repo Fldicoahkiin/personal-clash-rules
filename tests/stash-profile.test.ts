@@ -13,10 +13,13 @@ proxies:
     port: 443
     cipher: aes-128-gcm
     password: test
-`);
+`, 12);
     const config = parse(output) as Record<string, unknown>;
 
     expect(config.mode).toBe("rule");
+    expect(config["profile-update-interval"]).toBe(12);
+    expect((config["rule-providers"] as Record<string, { interval: number }>)["ai-openai"].interval)
+      .toBe(43_200);
     expect(config.proxies).toHaveLength(1);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "AUTO", "include-all": true }),

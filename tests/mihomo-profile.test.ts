@@ -26,6 +26,19 @@ proxies:
     const config = parse(output) as Record<string, unknown>;
 
     expect(config.mode).toBe("rule");
+    expect(config.dns).toMatchObject({
+      enable: true,
+      "enhanced-mode": "fake-ip",
+      "fake-ip-range": "198.18.0.1/16",
+      nameserver: [
+        "https://1.1.1.1/dns-query",
+        "https://8.8.8.8/dns-query",
+      ],
+      "proxy-server-nameserver": [
+        "https://1.1.1.1/dns-query",
+        "https://8.8.8.8/dns-query",
+      ],
+    });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "AI", proxies: ["GLOBAL", "US", "JP", "SG", "TW"] }),
@@ -142,5 +155,22 @@ proxies:
       "GEOIP,private,DIRECT,no-resolve",
       "MATCH,GLOBAL",
     ]);
+  });
+
+  it("can generate a direct preset without proxy groups", () => {
+    const output = createMihomoProfile(`
+proxies:
+  - name: US-01
+    type: ss
+    server: us.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: test
+`, "direct");
+    const config = parse(output) as Record<string, unknown>;
+
+    expect(config).not.toHaveProperty("rule-providers");
+    expect(config["proxy-groups"]).toEqual([]);
+    expect(config.rules).toEqual(["MATCH,DIRECT"]);
   });
 });

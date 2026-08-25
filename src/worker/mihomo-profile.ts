@@ -9,7 +9,7 @@ import {
 import type { NodeSettings } from "./node-transforms";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
 
-export type MihomoRulePreset = "flacier" | "global";
+export type MihomoRulePreset = "flacier" | "global" | "direct";
 
 type MihomoProviderProfile = {
   nodeResource: string;
@@ -45,6 +45,27 @@ const globalRules = [
   "MATCH,GLOBAL",
 ] as const;
 
+const dns = {
+  enable: true,
+  ipv6: true,
+  "enhanced-mode": "fake-ip",
+  "fake-ip-range": "198.18.0.1/16",
+  "fake-ip-filter": ["*.lan", "*.local", "localhost"],
+  "default-nameserver": ["1.1.1.1", "8.8.8.8"],
+  nameserver: [
+    "https://1.1.1.1/dns-query",
+    "https://8.8.8.8/dns-query",
+  ],
+  "proxy-server-nameserver": [
+    "https://1.1.1.1/dns-query",
+    "https://8.8.8.8/dns-query",
+  ],
+  "direct-nameserver": [
+    "https://1.1.1.1/dns-query",
+    "https://8.8.8.8/dns-query",
+  ],
+} as const;
+
 function profileBody(
   proxies: Array<Record<string, unknown>>,
   rulePreset: MihomoRulePreset,
@@ -52,7 +73,8 @@ function profileBody(
   updateIntervalHours = 6,
 ) {
   const flacierRules = rulePreset === "flacier";
-  const groups = flacierRules ? mihomoProxyGroups : globalProxyGroups;
+  const directRules = rulePreset === "direct";
+  const groups = directRules ? [] : flacierRules ? mihomoProxyGroups : globalProxyGroups;
   const providerNames = providers ? Object.keys(providers) : [];
   const proxyGroups = groups.map((group) => (
     providerNames.length > 0 && "include-all" in group && group["include-all"]
@@ -71,6 +93,7 @@ function profileBody(
     ipv6: true,
     "unified-delay": true,
     "tcp-concurrent": true,
+    dns,
     "profile-update-interval": updateIntervalHours,
     profile: {
       "store-selected": true,
@@ -79,7 +102,7 @@ function profileBody(
     ...(providers ? { "proxy-providers": providers } : {}),
     "proxy-groups": proxyGroups,
     ...(flacierRules ? { "rule-providers": mihomoRuleProviders } : {}),
-    rules: flacierRules ? mihomoRules : globalRules,
+    rules: directRules ? ["MATCH,DIRECT"] : flacierRules ? mihomoRules : globalRules,
   };
 }
 

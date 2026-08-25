@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
 type CreatedSubscription = {
+  nodeStats: {
+    output: number | null;
+    read: number | null;
+    skipped: number | null;
+  };
   profileName: string;
   sourceMode: string;
   target: string;
@@ -13,6 +18,15 @@ type CreatedSubscription = {
 function nodeUri(name: string, host: string, password: string): string {
   const userInfo = btoa(`aes-128-gcm:${password}`);
   return `ss://${userInfo}@${host}:8388#${name}`;
+}
+
+function legacyToken(value: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return `v1.${btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "")}`;
 }
 
 function requestBody(overrides: Record<string, unknown> = {}) {
@@ -89,16 +103,17 @@ describe("Worker entrypoint", () => {
   });
 });
 
-describe("stateless subscription links", () => {
-  it("encodes the configuration into a fixed link and renders it on demand", async () => {
+describe("KV-backed subscription links", () => {
+  it("stores the configuration behind a short link and renders it on demand", async () => {
     const { data, response } = await createSubscription();
     const responseText = JSON.stringify(data);
 
     expect(response.status).toBe(201);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(data.profileName).toBe("Flacier");
-    expect(data.url).toMatch(/^https:\/\/example\.com\/s\/v1\.[A-Za-z0-9_-]+\/mihomo-config$/u);
-    expect(data.universalUrl).toMatch(/^https:\/\/example\.com\/s\/v1\./u);
+    expect(data.nodeStats).toEqual({ read: 1, output: 1, skipped: 0 });
+    expect(data.url).toMatch(/^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{16}\/mihomo-config$/u);
+    expect(data.universalUrl).toMatch(/^https:\/\/example\.com\/s\/[A-Za-z0-9_-]{16}$/u);
     expect(responseText).not.toContain("private-node-password");
     expect(responseText).not.toContain("us.example.com");
 
@@ -120,6 +135,39 @@ describe("stateless subscription links", () => {
         udp: true,
       }),
     ]);
+  });
+
+  it("loads a short link back into the conversion form", async () => {
+    const { data } = await createSubscription({ name: "个人订阅" });
+    const response = await exports.default.fetch("https://example.com/api/subscriptions/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: data.url }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      config: {
+        name: "个人订阅",
+        sources: [expect.objectContaining({ type: "node" })],
+      },
+      target: "mihomo-config",
+    });
+  });
+
+  it("keeps previously generated encoded links readable", async () => {
+    const config = {
+      ...requestBody(),
+      version: 1,
+      sourceMode: "convert",
+      target: undefined,
+    };
+    const response = await exports.default.fetch(
+      `https://example.com/s/${legacyToken(config)}/mihomo-config`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("US-01");
   });
 
   it("does not accept a malformed encoded link", async () => {
@@ -157,6 +205,27 @@ describe("stateless subscription links", () => {
     const profile = parse(await published.text()) as { proxies: Array<{ name: string }> };
 
     expect(profile.proxies.map((proxy) => proxy.name)).toEqual(["🇺🇸 United States 02"]);
+    expect(data.nodeStats).toEqual({ read: 3, output: 1, skipped: 2 });
+  });
+
+  it("inherits the upstream profile name when the custom name is blank", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => (
+      new Response(nodeUri("US-01", "us.example.com", "secret"), {
+        headers: {
+          "Content-Disposition": "attachment; filename*=UTF-8''%E6%9C%BA%E5%9C%BA%E8%AE%A2%E9%98%85.yaml",
+        },
+      })
+    ));
+    try {
+      const { data } = await createSubscription({
+        name: "",
+        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
+      });
+
+      expect(data.profileName).toBe("机场订阅");
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it("selects a format from the universal link user agent", async () => {
@@ -265,8 +334,9 @@ describe("stateless subscription links", () => {
         target: "clash-party-config",
       });
       expect(response.status).toBe(201);
-      expect(data.profileName).toBe("Flacier");
+      expect(data.profileName).toBe("Flacierの分流规则");
       expect(data.sourceMode).toBe("mihomo-provider");
+      expect(data.nodeStats).toEqual({ read: null, output: null, skipped: null });
 
       const published = await exports.default.fetch(data.url);
       const config = parse(await published.text()) as {
@@ -274,7 +344,9 @@ describe("stateless subscription links", () => {
         "proxy-providers": Record<string, Record<string, unknown>>;
       };
       expect(published.status).toBe(200);
-      expect(published.headers.get("content-disposition")).toContain("Flacier.yaml");
+      expect(published.headers.get("content-disposition")).toContain(
+        encodeURIComponent("Flacierの分流规则.yaml"),
+      );
       expect(published.headers.get("profile-update-interval")).toBe("12");
       expect(published.headers.get("subscription-userinfo")).toBe(
         "upload=4096; download=8192; total=214748364800; expire=1805938734",
@@ -285,11 +357,30 @@ describe("stateless subscription links", () => {
         url: sourceUrl,
         header: { "User-Agent": ["ClashParty/2.0"] },
       });
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
       expect(fetchSpy).toHaveBeenLastCalledWith(
         sourceUrl,
         expect.objectContaining({ method: "HEAD" }),
       );
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("reports client-direct sources as incompatible with non-Mihomo configs", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 403 }),
+    );
+    try {
+      const { data, response } = await createSubscription({
+        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
+        target: "surge-config",
+      });
+
+      expect(response.status).toBe(422);
+      expect(data).toMatchObject({
+        error: "source_client_fetch_only",
+      });
     } finally {
       fetchSpy.mockRestore();
     }

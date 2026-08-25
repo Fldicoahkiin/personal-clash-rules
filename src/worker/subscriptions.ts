@@ -9,12 +9,13 @@ import {
   createMihomoProviderProfile,
   type MihomoRulePreset,
 } from "./mihomo-profile";
-import { decodeSubscriptionConfig, encodeSubscriptionConfig, hashText } from "./secrets";
+import { decodeSubscriptionConfig, hashText, randomSubscriptionId } from "./secrets";
 import {
+  countTargetCompatibleNodes,
   normalizeSourceBundle,
   normalizeSources,
   parseRemoteSubscriptionUrl,
-  probeRemoteSubscriptionUserinfo,
+  probeRemoteSubscriptionMetadata,
   produceTarget,
 } from "./sub-store";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
@@ -31,9 +32,9 @@ const maximumRequestBytes = 16 * 1024;
 const maximumSourceBytes = 8 * 1024;
 const maximumSources = 20;
 const maximumRemoteSources = 10;
-const maximumTokenLength = 24 * 1024;
 const maximumOutputBytes = 1_800_000;
-const defaultProfileName = "Flacier";
+const subscriptionKeyPrefix = "subscription:";
+const defaultProfileName = "Flacierの分流规则";
 const defaultSourceUserAgent = "mihomo/1.19";
 const defaultUpdateIntervalHours = 6;
 const nodeScheme = /^(?:anytls|socks5(?:\+tls)?|https?|ssr?|vmess|vless|trojan|hysteria2?|hy2|tuic|wireguard):\/\//iu;
@@ -57,8 +58,14 @@ type SubscriptionConfig = {
   updateIntervalHours: number;
 };
 
-function displayProfileName(config: SubscriptionConfig): string {
-  return config.name || defaultProfileName;
+type NodeStats = {
+  output: number | null;
+  read: number | null;
+  skipped: number | null;
+};
+
+function displayProfileName(config: SubscriptionConfig, inheritedName?: string): string {
+  return config.name || inheritedName || defaultProfileName;
 }
 
 function json(data: unknown, init: ResponseInit = {}): Response {
@@ -85,8 +92,8 @@ function readRulePreset(value: unknown): MihomoRulePreset {
   if (value === undefined || value === "flacier") {
     return "flacier";
   }
-  if (value === "global") {
-    return "global";
+  if (value === "global" || value === "direct") {
+    return value;
   }
   throw new ApiError(400, "invalid_rule_preset", "Rule preset is invalid");
 }
@@ -304,12 +311,29 @@ async function generateTarget(
   env: SubscriptionEnv,
   config: SubscriptionConfig,
   target: OutputTarget,
-): Promise<{ content: string; sourceMode: SourceMode; subscriptionUserinfo?: string }> {
+): Promise<{
+  content: string;
+  inheritedName?: string;
+  nodeStats: NodeStats;
+  sourceMode: SourceMode;
+  subscriptionUserinfo?: string;
+}> {
   let output: string;
   let sourceMode = config.sourceMode;
+  let inheritedName: string | undefined;
+  let nodeStats: NodeStats = { read: null, output: null, skipped: null };
   let subscriptionUserinfo: string | undefined;
   if (sourceMode === "mihomo-provider") {
     output = await generateMihomoProviderTarget(env, config, target);
+    const remoteSources = config.sources.filter((source) => source.type === "subscription");
+    if (remoteSources.length === 1) {
+      const metadata = await probeRemoteSubscriptionMetadata(
+        remoteSources[0].value,
+        config.sourceUserAgent,
+      );
+      inheritedName = metadata.profileName;
+      subscriptionUserinfo = metadata.subscriptionUserinfo;
+    }
   } else {
     try {
       const normalized = await normalizeSourceBundle(env, {
@@ -323,6 +347,13 @@ async function generateTarget(
           .map((source) => source.value),
       });
       const nodes = applyNodeTransforms(normalized.nodes, config.nodeSettings);
+      const outputNodeCount = countTargetCompatibleNodes(nodes, target);
+      inheritedName = normalized.profileName;
+      nodeStats = {
+        read: normalized.nodes.length,
+        output: outputNodeCount,
+        skipped: normalized.nodes.length - outputNodeCount,
+      };
       subscriptionUserinfo = normalized.subscriptionUserinfo;
       if (nodes.length === 0) {
         throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
@@ -336,11 +367,27 @@ async function generateTarget(
       );
     } catch (error) {
       const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
-      if (!hasRemoteSource || !isMihomoConfigTarget(target) || !canUseMihomoProvider(error)) {
+      if (!hasRemoteSource || !canUseMihomoProvider(error)) {
         throw error;
+      }
+      if (!isMihomoConfigTarget(target)) {
+        throw new ApiError(
+          422,
+          "source_client_fetch_only",
+          "This upstream can only be loaded directly by Mihomo or Clash Party",
+        );
       }
       sourceMode = "mihomo-provider";
       output = await generateMihomoProviderTarget(env, config, target);
+      const remoteSources = config.sources.filter((source) => source.type === "subscription");
+      if (remoteSources.length === 1) {
+        const metadata = await probeRemoteSubscriptionMetadata(
+          remoteSources[0].value,
+          config.sourceUserAgent,
+        );
+        inheritedName = metadata.profileName;
+        subscriptionUserinfo = metadata.subscriptionUserinfo;
+      }
     }
   }
   if (encoder.encode(output).byteLength > maximumOutputBytes) {
@@ -348,7 +395,9 @@ async function generateTarget(
   }
   return {
     content: output,
+    nodeStats,
     sourceMode,
+    ...(inheritedName ? { inheritedName } : {}),
     ...(subscriptionUserinfo ? { subscriptionUserinfo } : {}),
   };
 }
@@ -369,13 +418,12 @@ async function createSubscription(
 
   const generated = await generateTarget(env, config, body.target);
   config.sourceMode = generated.sourceMode;
-  const token = encodeSubscriptionConfig(JSON.stringify(config));
-  if (token.length > maximumTokenLength) {
-    throw new ApiError(413, "subscription_link_too_long", "Subscription configuration is too large for one link");
-  }
+  const token = randomSubscriptionId();
+  await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(config));
 
   return json({
-    profileName: displayProfileName(config),
+    nodeStats: generated.nodeStats,
+    profileName: displayProfileName(config, generated.inheritedName),
     sourceMode: config.sourceMode,
     target: body.target,
     url: urlsForToken(url.origin, token)[body.target],
@@ -389,7 +437,18 @@ async function readSubscriptionConfig(
 ): Promise<SubscriptionConfig> {
   let value: unknown;
   try {
-    value = JSON.parse(decodeSubscriptionConfig(token));
+    if (token.startsWith("v1.")) {
+      value = JSON.parse(decodeSubscriptionConfig(token));
+    } else {
+      if (!/^[A-Za-z0-9_-]{16}$/u.test(token)) {
+        throw new ApiError(404, "subscription_not_found", "Subscription not found");
+      }
+      const stored = await env.SUBSCRIPTIONS.get(`${subscriptionKeyPrefix}${token}`);
+      if (!stored) {
+        throw new ApiError(404, "subscription_not_found", "Subscription not found");
+      }
+      value = JSON.parse(stored);
+    }
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
@@ -401,6 +460,33 @@ async function readSubscriptionConfig(
   } catch {
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
+}
+
+async function resolveSubscription(
+  request: Request,
+  env: SubscriptionEnv,
+): Promise<Response> {
+  if (request.method !== "POST") {
+    throw new ApiError(405, "method_not_allowed", "Method not allowed");
+  }
+  const body = await readRequestObject(request);
+  if (typeof body.url !== "string") {
+    throw new ApiError(400, "invalid_subscription_url", "Subscription URL is invalid");
+  }
+  let link: URL;
+  try {
+    link = new URL(body.url.trim());
+  } catch {
+    throw new ApiError(400, "invalid_subscription_url", "Subscription URL is invalid");
+  }
+  const parts = link.pathname.split("/").filter(Boolean);
+  if (parts[0] !== "s" || !parts[1] || parts.length > 3) {
+    throw new ApiError(400, "invalid_subscription_url", "Subscription URL is invalid");
+  }
+  const config = await readSubscriptionConfig(parts[1], env);
+  const targetValue = parts[2] || link.searchParams.get("target") || "clash-party-config";
+  const target = isOutputTarget(targetValue) ? targetValue : "clash-party-config";
+  return json({ config, target });
 }
 
 async function renderSubscription(
@@ -429,19 +515,12 @@ async function renderSubscription(
   }
   const config = await readSubscriptionConfig(parts[1], env);
   const generated = await generateTarget(env, config, target);
-  const remoteSources = config.sources.filter((source) => source.type === "subscription");
-  const subscriptionUserinfo = generated.subscriptionUserinfo
-    ?? (generated.sourceMode === "mihomo-provider" && remoteSources.length === 1
-      ? await probeRemoteSubscriptionUserinfo(
-          remoteSources[0].value,
-          config.sourceUserAgent,
-        )
-      : undefined);
+  const subscriptionUserinfo = generated.subscriptionUserinfo;
   const content = target === "surge-config" || target === "surfboard-config"
     ? generated.content.replace(managedProfileUrlPlaceholder, url.toString())
     : generated.content;
   const etag = `"${await hashText(content)}"`;
-  const profileName = displayProfileName(config);
+  const profileName = displayProfileName(config, generated.inheritedName);
   const headers = new Headers({
     "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${profileName}.yaml`)}`,
     "Content-Type": contentTypeFor(target),
@@ -471,6 +550,9 @@ export async function routeSubscriptionRequest(
   try {
     if (url.pathname === "/api/subscriptions") {
       return await createSubscription(request, url, env);
+    }
+    if (url.pathname === "/api/subscriptions/resolve") {
+      return await resolveSubscription(request, env);
     }
     if (url.pathname.startsWith("/api/")) {
       throw new ApiError(404, "api_not_found", "API endpoint not found");

@@ -42,8 +42,7 @@ export function buildClientAction(
     if (title) {
       params.set("name", title);
     }
-    const scheme = client === "clash-party" ? "clash" : "mihomo";
-    return { kind: "link", value: `${scheme}://install-config?${params}` };
+    return { kind: "link", value: `mihomo://install-config?${params}` };
   }
   if (client === "stash-config") {
     return { kind: "link", value: `stash://install-config?${params}` };

@@ -56,7 +56,7 @@ function loonGroupLine(source: (typeof mihomoProxyGroups)[number], names: string
   return `${group.name} = ${group.type}, ${members.join(", ")}`;
 }
 
-function loonRemoteRules(): string[] {
+function loonRemoteRules(updateIntervalSeconds: number): string[] {
   return mihomoRules.flatMap((rule) => {
     if (!rule.startsWith("RULE-SET,")) {
       return [];
@@ -66,11 +66,11 @@ function loonRemoteRules(): string[] {
     if (!provider) {
       throw new Error(`Unknown rule provider: ${name}`);
     }
-    return [`${provider.url}, policy=${policy}, tag=${name}, enabled=true`];
+    return [`${provider.url}, policy=${policy}, tag=${name}, enabled=true, update-interval=${updateIntervalSeconds}`];
   });
 }
 
-export function createLoonProfile(nodeResource: string): string {
+export function createLoonProfile(nodeResource: string, updateIntervalHours = 6): string {
   const nodes = readLoonNodes(nodeResource);
   return [
     "[General]",
@@ -89,7 +89,7 @@ export function createLoonProfile(nodeResource: string): string {
     "FINAL,DEFAULT",
     "",
     "[Remote Rule]",
-    ...loonRemoteRules(),
+    ...loonRemoteRules(updateIntervalHours * 3600),
     "",
   ].join("\n");
 }

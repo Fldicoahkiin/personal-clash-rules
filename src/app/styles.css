@@ -351,19 +351,15 @@ summary:focus-visible {
   outline: 8px solid var(--paper);
 }
 
-.route-marker-pass,
-.route-marker-stop {
+.route-marker-matched {
   width: 28px;
   height: 28px;
   border: 0;
-}
-
-.route-marker-pass {
   background: var(--success);
 }
 
-.route-marker-stop {
-  background: var(--danger);
+.route-marker-default {
+  border-color: var(--muted);
 }
 
 .route-marker svg {
@@ -421,12 +417,12 @@ summary:focus-visible {
   content: "·";
 }
 
-.route-status-pass {
+.route-status-matched {
   color: var(--success);
 }
 
-.route-status-stop {
-  color: var(--danger);
+.route-status-default {
+  color: var(--muted);
 }
 
 .route-step-detail {
@@ -814,6 +810,34 @@ summary:focus-visible {
   white-space: nowrap;
 }
 
+.subscription-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 2px 0 0;
+}
+
+.subscription-result-meta div {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.subscription-result-meta dt,
+.subscription-result-meta dd {
+  margin: 0;
+  font-size: 0.69rem;
+}
+
+.subscription-result-meta dt {
+  color: var(--muted);
+}
+
+.subscription-result-meta dd {
+  color: var(--ink);
+  font-weight: 680;
+}
+
 .subscription-result-actions {
   display: flex;
   flex: 0 0 auto;
@@ -829,6 +853,64 @@ summary:focus-visible {
   margin: 14px 0 0;
   color: var(--danger);
   font-size: 0.78rem;
+}
+
+.network-checks {
+  padding-block: 54px 10px;
+}
+
+.network-checks ul {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+  list-style: none;
+}
+
+.network-checks li + li {
+  border-left: 1px solid var(--line);
+}
+
+.network-checks a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 82px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.network-checks a:hover {
+  background: var(--surface-muted);
+}
+
+.network-checks a > svg:first-child {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+
+.network-checks a > svg:last-child {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+
+.network-checks a span {
+  display: grid;
+  gap: 3px;
+}
+
+.network-checks a strong {
+  font-size: 0.78rem;
+}
+
+.network-checks a small {
+  color: var(--muted);
+  font-size: 0.68rem;
 }
 
 .button {
@@ -1451,6 +1533,18 @@ summary:focus-visible {
     align-items: stretch;
   }
 
+  .network-checks ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .network-checks li:nth-child(3) {
+    border-left: 0;
+  }
+
+  .network-checks li:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
   .converter-section,
   .policy-section,
   .rules-section {
@@ -1591,6 +1685,26 @@ summary:focus-visible {
 
   .subscription-result small {
     line-height: 1.5;
+  }
+
+  .subscription-result-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 12px;
+  }
+
+  .network-checks {
+    padding-top: 42px;
+  }
+
+  .network-checks ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .network-checks li + li,
+  .network-checks li:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .use-actions {

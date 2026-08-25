@@ -55,7 +55,7 @@ const initialState: FormState = {
   error: "",
   excludePattern: "",
   includePattern: "",
-  name: "",
+  name: "Flacierの分流规则",
   renamePattern: "",
   renameReplacement: "",
   result: null,
@@ -215,7 +215,6 @@ export function SubscriptionImport() {
                 key: "name",
                 value: event.target.value,
               })}
-              placeholder="留空时使用 Flacier"
               maxLength={64}
             />
           </label>
@@ -241,6 +240,7 @@ export function SubscriptionImport() {
             >
               <option value="flacier">Flacier 分流</option>
               <option value="global">全局代理</option>
+              <option value="direct">全局直连</option>
             </select>
           </label>
         ) : null}

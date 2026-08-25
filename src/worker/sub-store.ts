@@ -1538,6 +1538,13 @@ function isTargetCompatible(proxy: ProxyNode, target: OutputTarget): boolean {
   return false;
 }
 
+export function countTargetCompatibleNodes(
+  nodes: SubscriptionNode[],
+  target: OutputTarget,
+): number {
+  return (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target)).length;
+}
+
 function prepareNodes(nodes: ProxyNode[]): SubscriptionNode[] {
   const fingerprints = new Set<string>();
   const names = new Set(["DIRECT", "REJECT", ...mihomoProxyGroups.map((group) => group.name)]);
@@ -1615,6 +1622,23 @@ export function parseRemoteSubscriptionUrl(value: string): URL {
 
 const subscriptionUserinfoFields = ["upload", "download", "total", "expire"] as const;
 
+function subscriptionProfileName(response: Response): string | undefined {
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const encodedName = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/iu)?.[1];
+  const plainName = disposition.match(/filename\s*=\s*"?([^";]+)"?/iu)?.[1];
+  let value = encodedName ?? plainName ?? response.headers.get("profile-title") ?? "";
+  try {
+    value = decodeURIComponent(value);
+  } catch {
+    return undefined;
+  }
+  const name = value
+    .replace(/[\\/\u0000-\u001F\u007F]/gu, "")
+    .replace(/\.(?:conf|json|txt|ya?ml)$/iu, "")
+    .trim();
+  return name ? name.slice(0, 64) : undefined;
+}
+
 function normalizeSubscriptionUserinfo(value: string | null): string | undefined {
   if (!value) {
     return undefined;
@@ -1685,7 +1709,7 @@ async function requestRemoteSource(
 async function readRemoteSource(
   value: string,
   sourceUserAgent: string,
-): Promise<{ content: string; subscriptionUserinfo?: string }> {
+): Promise<{ content: string; profileName?: string; subscriptionUserinfo?: string }> {
   const response = await requestRemoteSource(value, sourceUserAgent, "GET");
   const declaredLength = Number(response.headers.get("content-length") || 0);
   if (declaredLength > maximumRemoteBytes) {
@@ -1695,23 +1719,32 @@ async function readRemoteSource(
   if (new TextEncoder().encode(content).byteLength > maximumRemoteBytes) {
     throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
   }
+  const profileName = subscriptionProfileName(response);
   return {
     content,
+    ...(profileName ? { profileName } : {}),
     subscriptionUserinfo: normalizeSubscriptionUserinfo(
       response.headers.get("subscription-userinfo"),
     ),
   };
 }
 
-export async function probeRemoteSubscriptionUserinfo(
+export async function probeRemoteSubscriptionMetadata(
   value: string,
   sourceUserAgent: string,
-): Promise<string | undefined> {
+): Promise<{ profileName?: string; subscriptionUserinfo?: string }> {
   try {
     const response = await requestRemoteSource(value, sourceUserAgent, "HEAD");
-    return normalizeSubscriptionUserinfo(response.headers.get("subscription-userinfo"));
+    const profileName = subscriptionProfileName(response);
+    const subscriptionUserinfo = normalizeSubscriptionUserinfo(
+      response.headers.get("subscription-userinfo"),
+    );
+    return {
+      ...(profileName ? { profileName } : {}),
+      ...(subscriptionUserinfo ? { subscriptionUserinfo } : {}),
+    };
   } catch {
-    return undefined;
+    return {};
   }
 }
 
@@ -1739,7 +1772,7 @@ export async function normalizeSourceBundle(
     subscriptionUrls: string[];
     nodes: string[];
   },
-): Promise<{ nodes: SubscriptionNode[]; subscriptionUserinfo?: string }> {
+): Promise<{ nodes: SubscriptionNode[]; profileName?: string; subscriptionUserinfo?: string }> {
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
@@ -1755,6 +1788,9 @@ export async function normalizeSourceBundle(
   }
   return {
     nodes: prepareNodes(parsed),
+    ...(remote.length === 1 && remote[0].profileName
+      ? { profileName: remote[0].profileName }
+      : {}),
     ...(remote.length === 1 && remote[0].subscriptionUserinfo
       ? { subscriptionUserinfo: remote[0].subscriptionUserinfo }
       : {}),
@@ -1776,12 +1812,12 @@ export async function produceTarget(
   if (target === "clash-party-config" || target === "mihomo-config") {
     return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours);
   }
-  if (target === "stash-config") return createStashProfile(mihomoNodes);
-  if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported));
-  if (target === "surfboard-config") return createSurfboardProfile(renderSurfboardProxies(supported));
-  if (target === "loon-config") return createLoonProfile(renderLoonProxies(supported));
-  if (target === "egern-config") return createEgernProfile(renderEgernYaml(supported));
-  if (target === "sing-box-config") return createSingBoxProfile(renderSingBoxJson(supported));
+  if (target === "stash-config") return createStashProfile(mihomoNodes, updateIntervalHours);
+  if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported), updateIntervalHours);
+  if (target === "surfboard-config") return createSurfboardProfile(renderSurfboardProxies(supported), updateIntervalHours);
+  if (target === "loon-config") return createLoonProfile(renderLoonProxies(supported), updateIntervalHours);
+  if (target === "egern-config") return createEgernProfile(renderEgernYaml(supported), updateIntervalHours);
+  if (target === "sing-box-config") return createSingBoxProfile(renderSingBoxJson(supported), updateIntervalHours);
   if (target === "mihomo" || target === "clash" || target === "stash") return mihomoNodes;
   if (target === "surge") return renderSurgeProxies(supported);
   if (target === "surfboard") return renderSurfboardProxies(supported);

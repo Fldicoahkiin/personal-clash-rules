@@ -2,7 +2,7 @@ import { ArrowCounterClockwise } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import {
-  parseGeneratedSubscriptionUrl,
+  loadGeneratedSubscriptionUrl,
   type LoadedSubscriptionForm,
 } from "../lib/generated-subscription";
 
@@ -13,13 +13,17 @@ type SubscriptionLinkLoaderProps = {
 export function SubscriptionLinkLoader({ onLoad }: SubscriptionLinkLoaderProps) {
   const [link, setLink] = useState("");
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
 
-  function load() {
+  async function load() {
+    setPending(true);
     try {
-      onLoad(parseGeneratedSubscriptionUrl(link));
+      onLoad(await loadGeneratedSubscriptionUrl(link));
       setError("");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "订阅链接无法读取");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -41,11 +45,11 @@ export function SubscriptionLinkLoader({ onLoad }: SubscriptionLinkLoaderProps) 
         <button
           className="button button-secondary"
           type="button"
-          disabled={!link.trim()}
-          onClick={load}
+          disabled={!link.trim() || pending}
+          onClick={() => void load()}
         >
           <ArrowCounterClockwise aria-hidden="true" />
-          载入
+          {pending ? "正在载入" : "载入"}
         </button>
       </div>
       {error ? <p className="subscription-link-error" role="alert">{error}</p> : null}

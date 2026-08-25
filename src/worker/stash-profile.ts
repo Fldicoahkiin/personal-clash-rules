@@ -17,14 +17,22 @@ function stashProxyGroups(): Array<Record<string, unknown>> {
   });
 }
 
-export function createStashProfile(nodeResource: string): string {
+function ruleProviders(updateIntervalHours: number) {
+  return Object.fromEntries(Object.entries(mihomoRuleProviders).map(([name, provider]) => [
+    name,
+    { ...provider, interval: updateIntervalHours * 3600 },
+  ]));
+}
+
+export function createStashProfile(nodeResource: string, updateIntervalHours = 6): string {
   return stringifyYaml({
     mode: "rule",
     "log-level": "info",
     ipv6: true,
+    "profile-update-interval": updateIntervalHours,
     proxies: readYamlProxyResource(nodeResource, "Stash"),
     "proxy-groups": stashProxyGroups(),
-    "rule-providers": mihomoRuleProviders,
+    "rule-providers": ruleProviders(updateIntervalHours),
     rules: mihomoRules,
   });
 }

@@ -148,17 +148,17 @@ function routeRules(): Array<Record<string, unknown>> {
   return rules;
 }
 
-function remoteRuleSets(): Array<Record<string, unknown>> {
+function remoteRuleSets(updateIntervalHours: number): Array<Record<string, unknown>> {
   return Object.keys(mihomoRuleProviders).map((name) => ({
     type: "remote",
     tag: name,
     format: "source",
     url: `https://rules.flacier.com/rules/sing-box/${name}.json`,
-    update_interval: "1d",
+    update_interval: `${updateIntervalHours}h`,
   }));
 }
 
-export function createSingBoxProfile(nodeResource: string): string {
+export function createSingBoxProfile(nodeResource: string, updateIntervalHours = 6): string {
   const nodes = readNodeResource(nodeResource);
   const nodeTags = nodes.outbounds.map((outbound) => outbound.tag);
   const reservedTags = new Set([
@@ -203,7 +203,7 @@ export function createSingBoxProfile(nodeResource: string): string {
     ...(nodes.endpoints ? { endpoints: nodes.endpoints } : {}),
     route: {
       rules: routeRules(),
-      rule_set: remoteRuleSets(),
+      rule_set: remoteRuleSets(updateIntervalHours),
       final: "DEFAULT",
       auto_detect_interface: true,
       default_http_client: "rule-download",

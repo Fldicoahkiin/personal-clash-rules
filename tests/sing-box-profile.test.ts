@@ -23,7 +23,7 @@ describe("createSingBoxProfile", () => {
         },
       ],
       endpoints: [{ type: "wireguard", tag: "private-endpoint" }],
-    }));
+    }), 12);
     const config = JSON.parse(output) as Record<string, unknown>;
 
     expect(config.inbounds).toEqual([
@@ -70,7 +70,7 @@ describe("createSingBoxProfile", () => {
           tag: "ai-openai",
           format: "source",
           url: "https://rules.flacier.com/rules/sing-box/ai-openai.json",
-          update_interval: "1d",
+          update_interval: "12h",
         },
       ]),
     }));

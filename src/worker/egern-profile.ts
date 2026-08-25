@@ -68,7 +68,7 @@ function egernPolicyGroup(
   return { select: { name: group.name, policies } };
 }
 
-function egernRules(): Array<Record<string, unknown>> {
+function egernRules(updateIntervalSeconds: number): Array<Record<string, unknown>> {
   const rules: Array<Record<string, unknown>> = [];
   for (const rule of mihomoRules) {
     if (rule.startsWith("PROCESS-NAME-REGEX,")) {
@@ -89,7 +89,7 @@ function egernRules(): Array<Record<string, unknown>> {
       rule_set: {
         match: `https://rules.flacier.com/rules/egern/${name}.yaml`,
         policy,
-        update_interval: 86_400,
+        update_interval: updateIntervalSeconds,
         ...(options.includes("no-resolve") ? { no_resolve: true } : {}),
       },
     });
@@ -97,7 +97,7 @@ function egernRules(): Array<Record<string, unknown>> {
   return rules;
 }
 
-export function createEgernProfile(nodeResource: string): string {
+export function createEgernProfile(nodeResource: string, updateIntervalHours = 6): string {
   const proxies = readYamlProxyResource(nodeResource, "Egern");
   const names = proxies.map(proxyName);
   if (names.some((name) => !name)) {
@@ -108,6 +108,6 @@ export function createEgernProfile(nodeResource: string): string {
     vif_only: true,
     proxies,
     policy_groups: mihomoProxyGroups.map((group) => egernPolicyGroup(group, names)),
-    rules: egernRules(),
+    rules: egernRules(updateIntervalHours * 3600),
   });
 }

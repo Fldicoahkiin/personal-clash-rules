@@ -14,9 +14,21 @@ describe("home page flow", () => {
     expect(app.indexOf("<SubscriptionImport />")).toBeLessThan(
       app.indexOf("<RouteTester />"),
     );
+    expect(app.indexOf("<NetworkChecks />")).toBeLessThan(
+      app.indexOf("<RouteTester />"),
+    );
     expect(app.indexOf("<RouteTester />")).toBeLessThan(
       app.indexOf("<ConverterWorkspace />"),
     );
+  });
+
+  it("links to external DNS, WebRTC, IPv6 and connection checks", () => {
+    const checks = projectFile("src/app/components/NetworkChecks.tsx");
+
+    expect(checks).toContain("https://browserleaks.com/dns");
+    expect(checks).toContain("https://browserleaks.com/webrtc");
+    expect(checks).toContain("https://test-ipv6.com/");
+    expect(checks).toContain("https://1.1.1.1/help");
   });
 
   it("uses GitHub's official Primer mark instead of a third-party glyph", () => {
@@ -37,14 +49,15 @@ describe("home page flow", () => {
     expect(root).not.toContain("SubscriptionConsole");
   });
 
-  it("uses the Flacier product name and leaves the custom subscription name empty", () => {
+  it("uses the Flacier product name as an editable value instead of placeholder text", () => {
     const header = projectFile("src/app/components/AppHeader.tsx");
     const form = projectFile("src/app/components/SubscriptionImport.tsx");
     const html = projectFile("index.html");
 
     expect(header).toContain("Flacierの订阅转换");
     expect(form).toContain('<h1 id="subscription-title">Flacierの订阅转换</h1>');
-    expect(form).toContain('name: ""');
+    expect(form).toContain('name: "Flacierの分流规则"');
+    expect(form).not.toContain('placeholder="留空时使用');
     expect(html).toContain("<title>Flacierの订阅转换</title>");
   });
 

@@ -2,7 +2,7 @@ import type { RouteMatch } from "./rule-matcher";
 import { describePolicyRoute } from "./policy-groups";
 
 type RouteStepKind = "input" | "rule" | "result";
-type RouteStepState = "pass" | "stop" | null;
+type RouteStepState = "matched" | "default" | null;
 
 export interface RouteStep {
   label: string;
@@ -30,14 +30,14 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       label: "命中规则",
       value: result?.rule || "—",
       detail: result?.ruleSetLabel || "",
-      status: result ? (result.matched ? "通过" : "未通过") : "",
+      status: result ? (result.matched ? "命中" : "默认") : "",
       machine: true,
-      state: result ? (result.matched ? "pass" : "stop") : null,
+      state: result ? (result.matched ? "matched" : "default") : null,
       kind: "rule",
     },
     {
       label: "处理结果",
-      value: policyRoute?.target || "—",
+      value: policyRoute?.mode || "—",
       detail: policyRoute?.route || "",
       status: "",
       machine: true,

@@ -41,7 +41,11 @@ describe("native subscription converter", () => {
 
   it("fetches each remote source once while normalizing", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response("trojan://secret@tw.example.com:443?sni=tw.example.com#TW-01"),
+      new Response("trojan://secret@tw.example.com:443?sni=tw.example.com#TW-01", {
+        headers: {
+          "Content-Disposition": "attachment; filename*=UTF-8''%E6%9C%BA%E5%9C%BA%E8%AE%A2%E9%98%85.yaml",
+        },
+      }),
     );
     try {
       const nodes = await normalizeSources(env, {
@@ -61,6 +65,27 @@ describe("native subscription converter", () => {
       expect(nodes).toEqual([
         expect.objectContaining({ name: "TW-01", type: "trojan" }),
       ]);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("inherits a profile name from one upstream response", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("trojan://secret@tw.example.com:443?sni=tw.example.com#TW-01", {
+        headers: {
+          "Content-Disposition": "attachment; filename*=UTF-8''%E6%9C%BA%E5%9C%BA%E8%AE%A2%E9%98%85.yaml",
+        },
+      }),
+    );
+    try {
+      const result = await normalizeSourceBundle(env, {
+        profileName: "",
+        subscriptionUrls: ["https://provider.example/subscription"],
+        nodes: [],
+      });
+
+      expect(result.profileName).toBe("机场订阅");
     } finally {
       fetchSpy.mockRestore();
     }

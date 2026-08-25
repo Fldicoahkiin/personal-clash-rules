@@ -53,7 +53,7 @@ function surgeGroupLine(source: (typeof mihomoProxyGroups)[number]): string {
   return `${group.name} = ${[group.type, ...members, ...parameters].join(", ")}`;
 }
 
-function surgeRules(): string[] {
+function surgeRules(updateIntervalSeconds: number): string[] {
   return mihomoRules.flatMap((rule) => {
     if (rule.startsWith("PROCESS-NAME-REGEX,")) {
       return [];
@@ -74,7 +74,7 @@ function surgeRules(): string[] {
       provider.url,
       policy,
       ...options,
-      "update-interval=86400",
+      `update-interval=${updateIntervalSeconds}`,
     ].join(",")];
   });
 }
@@ -82,9 +82,11 @@ function surgeRules(): string[] {
 function createProfile(
   nodeResource: string,
   client: "Surge" | "Surfboard",
+  updateIntervalHours: number,
 ): string {
+  const updateIntervalSeconds = updateIntervalHours * 3600;
   const sections = [
-    `#!MANAGED-CONFIG ${managedProfileUrlPlaceholder} interval=21600 strict=false`,
+    `#!MANAGED-CONFIG ${managedProfileUrlPlaceholder} interval=${updateIntervalSeconds} strict=false`,
     "",
     "[General]",
     "loglevel = notify",
@@ -103,16 +105,16 @@ function createProfile(
     "[Rule]",
     "PROCESS-NAME,codex,AI",
     "PROCESS-NAME,claude,AI",
-    ...surgeRules(),
+    ...surgeRules(updateIntervalSeconds),
     "",
   ];
   return sections.join("\n");
 }
 
-export function createSurgeProfile(nodeResource: string): string {
-  return createProfile(nodeResource, "Surge");
+export function createSurgeProfile(nodeResource: string, updateIntervalHours = 6): string {
+  return createProfile(nodeResource, "Surge", updateIntervalHours);
 }
 
-export function createSurfboardProfile(nodeResource: string): string {
-  return createProfile(nodeResource, "Surfboard");
+export function createSurfboardProfile(nodeResource: string, updateIntervalHours = 6): string {
+  return createProfile(nodeResource, "Surfboard", updateIntervalHours);
 }

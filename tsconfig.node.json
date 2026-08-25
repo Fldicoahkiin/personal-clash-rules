@@ -17,6 +17,7 @@
     "vitest.worker.config.ts",
     "tests/**/*.test.ts",
     "src/app/components/RouteTester.tsx",
+    "src/app/components/SubscriptionResult.tsx",
     "src/app/lib",
     "src/app/features/subscriptions",
     "src/config/**/*.ts",

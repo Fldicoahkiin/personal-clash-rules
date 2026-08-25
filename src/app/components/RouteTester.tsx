@@ -1,4 +1,4 @@
-import { ArrowRight, Check, X } from "@phosphor-icons/react";
+import { ArrowRight, Check } from "@phosphor-icons/react";
 import { type FormEvent, useEffect, useState } from "react";
 
 import {
@@ -138,9 +138,9 @@ export function RouteTester() {
                         {step.kind === "rule" && step.state ? (
                           <small
                             className={
-                              step.state === "pass"
-                                ? "route-status route-status-pass"
-                                : "route-status route-status-stop"
+                              step.state === "matched"
+                                ? "route-status route-status-matched"
+                                : "route-status route-status-default"
                             }
                           >
                             {step.status}
@@ -158,11 +158,8 @@ export function RouteTester() {
                       aria-label={step.kind === "rule" ? `规则${step.status}` : undefined}
                       aria-hidden={step.kind !== "rule"}
                     >
-                      {step.kind === "rule" && step.state === "pass" ? (
+                      {step.kind === "rule" && step.state === "matched" ? (
                         <Check aria-hidden="true" />
-                      ) : null}
-                      {step.kind === "rule" && step.state === "stop" ? (
-                        <X aria-hidden="true" />
                       ) : null}
                     </span>
                   </div>

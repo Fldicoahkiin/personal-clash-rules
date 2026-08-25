@@ -24,8 +24,8 @@ function fromBase64Url(value: string): Uint8Array {
   }
 }
 
-export function encodeSubscriptionConfig(value: string): string {
-  return `${tokenVersion}.${toBase64Url(encoder.encode(value))}`;
+export function randomSubscriptionId(): string {
+  return toBase64Url(crypto.getRandomValues(new Uint8Array(12)));
 }
 
 export function decodeSubscriptionConfig(token: string): string {
