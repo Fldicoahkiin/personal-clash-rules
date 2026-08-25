@@ -228,21 +228,28 @@ describe("stateless subscription links", () => {
       const { data, response } = await createSubscription({
         name: "",
         rulePreset: "flacier",
+        sourceUserAgent: "ClashParty/2.0",
+        updateIntervalHours: 12,
         sources: [{ name: "订阅 1", type: "subscription", value: sourceUrl }],
         target: "clash-party-config",
       });
       expect(response.status).toBe(201);
-      expect(data.profileName).toBe("");
+      expect(data.profileName).toBe("Flacier");
       expect(data.sourceMode).toBe("mihomo-provider");
 
       const published = await exports.default.fetch(data.url);
       const config = parse(await published.text()) as {
+        "profile-update-interval": number;
         "proxy-providers": Record<string, Record<string, unknown>>;
       };
       expect(published.status).toBe(200);
+      expect(published.headers.get("content-disposition")).toContain("Flacier.yaml");
+      expect(published.headers.get("profile-update-interval")).toBe("12");
+      expect(config["profile-update-interval"]).toBe(12);
       expect(config["proxy-providers"]["订阅 1"]).toMatchObject({
         type: "http",
         url: sourceUrl,
+        header: { "User-Agent": ["ClashParty/2.0"] },
       });
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     } finally {

@@ -42,11 +42,18 @@ describe("native subscription converter", () => {
     try {
       const nodes = await normalizeSources(env, {
         profileName: "个人订阅",
+        sourceUserAgent: "ClashParty/2.0",
         subscriptionUrls: ["https://provider.example/subscription"],
         nodes: [],
       });
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://provider.example/subscription",
+        expect.objectContaining({
+          headers: { "User-Agent": "ClashParty/2.0" },
+        }),
+      );
       expect(nodes).toEqual([
         expect.objectContaining({ name: "TW-01", type: "trojan" }),
       ]);

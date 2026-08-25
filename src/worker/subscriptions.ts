@@ -31,6 +31,9 @@ const maximumSources = 20;
 const maximumRemoteSources = 10;
 const maximumTokenLength = 24 * 1024;
 const maximumOutputBytes = 1_800_000;
+const defaultProfileName = "Flacier";
+const defaultSourceUserAgent = "mihomo/1.19";
+const defaultUpdateIntervalHours = 6;
 const nodeScheme = /^(?:anytls|socks5(?:\+tls)?|https?|ssr?|vmess|vless|trojan|hysteria2?|hy2|tuic|wireguard):\/\//iu;
 
 type SubscriptionSource = {
@@ -46,9 +49,15 @@ type SubscriptionConfig = {
   name: string;
   nodeSettings: NodeSettings;
   rulePreset: MihomoRulePreset;
+  sourceUserAgent: string;
   sourceMode: SourceMode;
   sources: SubscriptionSource[];
+  updateIntervalHours: number;
 };
+
+function displayProfileName(config: SubscriptionConfig): string {
+  return config.name || defaultProfileName;
+}
 
 function json(data: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -78,6 +87,30 @@ function readRulePreset(value: unknown): MihomoRulePreset {
     return "global";
   }
   throw new ApiError(400, "invalid_rule_preset", "Rule preset is invalid");
+}
+
+function readSourceUserAgent(value: unknown): string {
+  if (value === undefined) {
+    return defaultSourceUserAgent;
+  }
+  if (typeof value !== "string") {
+    throw new ApiError(400, "invalid_source_user_agent", "Source User-Agent must be a string");
+  }
+  const sourceUserAgent = value.trim();
+  if (!sourceUserAgent || sourceUserAgent.length > 128 || /[\u0000-\u001F\u007F]/u.test(sourceUserAgent)) {
+    throw new ApiError(400, "invalid_source_user_agent", "Source User-Agent is invalid");
+  }
+  return sourceUserAgent;
+}
+
+function readUpdateIntervalHours(value: unknown): number {
+  if (value === undefined) {
+    return defaultUpdateIntervalHours;
+  }
+  if (!Number.isInteger(value) || Number(value) < 1 || Number(value) > 168) {
+    throw new ApiError(400, "invalid_update_interval", "Update interval is invalid");
+  }
+  return Number(value);
 }
 
 function readSourceMode(value: unknown): SourceMode {
@@ -157,8 +190,10 @@ function readConfig(value: unknown): SubscriptionConfig {
     name: readName(input.name),
     nodeSettings: readSettings(input.nodeSettings),
     rulePreset: readRulePreset(input.rulePreset),
+    sourceUserAgent: readSourceUserAgent(input.sourceUserAgent),
     sourceMode: readSourceMode(input.sourceMode),
     sources: readSources(input.sources),
+    updateIntervalHours: readUpdateIntervalHours(input.updateIntervalHours),
   };
 }
 
@@ -244,6 +279,7 @@ async function generateMihomoProviderTarget(
   if (nodeSources.length > 0) {
     const normalized = await normalizeSources(env, {
       profileName: config.name,
+      sourceUserAgent: config.sourceUserAgent,
       subscriptionUrls: [],
       nodes: nodeSources,
     });
@@ -257,6 +293,8 @@ async function generateMihomoProviderTarget(
       .filter((source) => source.type === "subscription")
       .map((source) => ({ name: source.name, url: source.value })),
     rulePreset: config.rulePreset,
+    sourceUserAgent: config.sourceUserAgent,
+    updateIntervalHours: config.updateIntervalHours,
   });
 }
 
@@ -273,6 +311,7 @@ async function generateTarget(
     try {
       const normalized = await normalizeSources(env, {
         profileName: config.name,
+        sourceUserAgent: config.sourceUserAgent,
         subscriptionUrls: config.sources
           .filter((source) => source.type === "subscription")
           .map((source) => source.value),
@@ -284,7 +323,13 @@ async function generateTarget(
       if (nodes.length === 0) {
         throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
       }
-      output = await produceTarget(env, nodes, target, config.rulePreset);
+      output = await produceTarget(
+        env,
+        nodes,
+        target,
+        config.rulePreset,
+        config.updateIntervalHours,
+      );
     } catch (error) {
       const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
       if (!hasRemoteSource || !isMihomoConfigTarget(target) || !canUseMihomoProvider(error)) {
@@ -322,7 +367,7 @@ async function createSubscription(
   }
 
   return json({
-    profileName: config.name,
+    profileName: displayProfileName(config),
     sourceMode: config.sourceMode,
     target: body.target,
     url: urlsForToken(url.origin, token)[body.target],
@@ -380,10 +425,13 @@ async function renderSubscription(
     ? generated.content.replace(managedProfileUrlPlaceholder, url.toString())
     : generated.content;
   const etag = `"${await hashText(content)}"`;
+  const profileName = displayProfileName(config);
   const headers = new Headers({
+    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${profileName}.yaml`)}`,
     "Content-Type": contentTypeFor(target),
     ETag: etag,
-    "X-Subscription-Profile": encodeURIComponent(config.name),
+    "Profile-Update-Interval": String(config.updateIntervalHours),
+    "X-Subscription-Profile": encodeURIComponent(profileName),
     "X-Subscription-Source-Mode": generated.sourceMode,
     "X-Subscription-Target": target,
   });

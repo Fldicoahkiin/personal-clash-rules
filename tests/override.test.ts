@@ -109,7 +109,7 @@ describe("Clash Party override", () => {
     for (const country of ["US", "JP", "SG", "HK", "TW", "KR", "EU"]) {
       expect(groups.get(country)?.type, country).toBe("select");
       expect(groups.get(country)?.filter, country).toBeTruthy();
-      expect(groups.get(country)?.["empty-fallback"], country).toBe("DIRECT");
+      expect(groups.get(country), country).not.toHaveProperty("empty-fallback");
       expect(groups.get(country)?.["exclude-type"], country).toBe("direct");
     }
     expect(groups.get("AI")?.proxies).toEqual([

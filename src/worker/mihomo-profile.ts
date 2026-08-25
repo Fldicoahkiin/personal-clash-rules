@@ -16,6 +16,8 @@ type MihomoProviderProfile = {
   nodeSettings: NodeSettings;
   providers: Array<{ name: string; url: string }>;
   rulePreset: MihomoRulePreset;
+  sourceUserAgent: string;
+  updateIntervalHours: number;
 };
 
 const globalProxyGroups = [
@@ -47,8 +49,20 @@ function profileBody(
   proxies: Array<Record<string, unknown>>,
   rulePreset: MihomoRulePreset,
   providers?: Record<string, Record<string, unknown>>,
+  updateIntervalHours = 6,
 ) {
   const flacierRules = rulePreset === "flacier";
+  const groups = flacierRules ? mihomoProxyGroups : globalProxyGroups;
+  const providerNames = providers ? Object.keys(providers) : [];
+  const proxyGroups = groups.map((group) => (
+    providerNames.length > 0 && "include-all" in group && group["include-all"]
+      ? {
+          ...group,
+          use: providerNames,
+          "include-all-providers": true,
+        }
+      : group
+  ));
   return {
     "mixed-port": 7890,
     "allow-lan": false,
@@ -57,12 +71,13 @@ function profileBody(
     ipv6: true,
     "unified-delay": true,
     "tcp-concurrent": true,
+    "profile-update-interval": updateIntervalHours,
     profile: {
       "store-selected": true,
     },
     proxies,
     ...(providers ? { "proxy-providers": providers } : {}),
-    "proxy-groups": flacierRules ? mihomoProxyGroups : globalProxyGroups,
+    "proxy-groups": proxyGroups,
     ...(flacierRules ? { "rule-providers": mihomoRuleProviders } : {}),
     rules: flacierRules ? mihomoRules : globalRules,
   };
@@ -95,10 +110,13 @@ function providerOverride(settings: NodeSettings): Record<string, unknown> | und
 export function createMihomoProfile(
   nodeResource: string,
   rulePreset: MihomoRulePreset = "flacier",
+  updateIntervalHours = 6,
 ): string {
   return stringifyYaml(profileBody(
     readYamlProxyResource(nodeResource, "Mihomo"),
     rulePreset,
+    undefined,
+    updateIntervalHours,
   ));
 }
 
@@ -110,8 +128,8 @@ export function createMihomoProviderProfile(input: MihomoProviderProfile): strin
       type: "http",
       url: provider.url,
       path: `./proxy-providers/flacier-${index + 1}.yaml`,
-      interval: 3600,
-      header: { "User-Agent": ["mihomo/1.19"] },
+      interval: input.updateIntervalHours * 3600,
+      header: { "User-Agent": [input.sourceUserAgent] },
       "health-check": {
         enable: true,
         url: "https://cp.cloudflare.com/generate_204",
@@ -131,5 +149,6 @@ export function createMihomoProviderProfile(input: MihomoProviderProfile): strin
     readYamlProxyResource(input.nodeResource, "Mihomo", true),
     input.rulePreset,
     providers,
+    input.updateIntervalHours,
   ));
 }

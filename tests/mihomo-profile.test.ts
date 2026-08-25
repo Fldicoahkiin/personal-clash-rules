@@ -32,6 +32,9 @@ proxies:
       expect.objectContaining({ name: "STEAM-DOWNLOAD", proxies: expect.arrayContaining(["DIRECT"]) }),
       expect.objectContaining({ name: "ANIGAMER", proxies: expect.arrayContaining(["TW"]) }),
     ]));
+    expect((config["proxy-groups"] as Array<Record<string, unknown>>).every(
+      (group) => typeof group.icon === "string",
+    )).toBe(true);
     expect(config["rule-providers"]).toMatchObject({
       "ai-openai": {
         behavior: "classical",
@@ -73,19 +76,25 @@ proxies:
         tfo: true,
         udp: true,
       },
+      sourceUserAgent: "ClashParty/2.0",
       rulePreset: "flacier",
+      updateIntervalHours: 12,
     });
     const config = parse(output) as {
       proxies: unknown[];
+      "profile-update-interval": number;
       "proxy-groups": Array<Record<string, unknown>>;
       "proxy-providers": Record<string, Record<string, unknown>>;
     };
 
     expect(config.proxies).toEqual([]);
+    expect(config["profile-update-interval"]).toBe(12);
     const provider = config["proxy-providers"]["订阅 1"];
     expect(provider).toMatchObject({
       type: "http",
       url: "https://provider.example/sub",
+      interval: 43_200,
+      header: { "User-Agent": ["ClashParty/2.0"] },
       filter: "US|JP",
       "exclude-filter": "过期|官网",
       override: {
@@ -98,8 +107,21 @@ proxies:
       expect.arrayContaining([{ pattern: "USA", target: "US" }]),
     );
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: "AUTO",
+        "include-all-providers": true,
+        use: ["订阅 1"],
+      }),
+      expect.objectContaining({
+        name: "US",
+        "include-all-providers": true,
+        use: ["订阅 1"],
+      }),
       expect.objectContaining({ name: "AI", proxies: expect.arrayContaining(["GLOBAL"]) }),
     ]));
+    expect(config["proxy-groups"].find((group) => group.name === "US")).not.toHaveProperty(
+      "empty-fallback",
+    );
   });
 
   it("can generate a global proxy preset without Flacier rule providers", () => {

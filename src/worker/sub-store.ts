@@ -1613,14 +1613,14 @@ export function parseRemoteSubscriptionUrl(value: string): URL {
   return url;
 }
 
-async function readRemoteSource(value: string): Promise<string> {
+async function readRemoteSource(value: string, sourceUserAgent: string): Promise<string> {
   let url = parseRemoteSubscriptionUrl(value);
   let response: Response | null = null;
 
   for (let redirectCount = 0; redirectCount <= maximumRedirects; redirectCount += 1) {
     try {
       response = await fetch(url.toString(), {
-        headers: { "User-Agent": "mihomo/1.19" },
+        headers: { "User-Agent": sourceUserAgent },
         redirect: "manual",
         signal: AbortSignal.timeout(20_000),
       });
@@ -1664,12 +1664,19 @@ export function probeConverter(): "ready" {
 
 export async function normalizeSources(
   _env: SubscriptionEnv,
-  input: { profileName: string; subscriptionUrls: string[]; nodes: string[] },
+  input: {
+    profileName: string;
+    sourceUserAgent?: string;
+    subscriptionUrls: string[];
+    nodes: string[];
+  },
 ): Promise<SubscriptionNode[]> {
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
-  const remote = await Promise.all(input.subscriptionUrls.map(readRemoteSource));
+  const remote = await Promise.all(input.subscriptionUrls.map(
+    (url) => readRemoteSource(url, input.sourceUserAgent || "mihomo/1.19"),
+  ));
   const parsed = [...remote, ...input.nodes].flatMap((content) => parseProxies(decodeMaybeBase64(content)));
   if (parsed.length === 0) {
     throw new ApiError(422, "no_nodes_found", "Subscription sources contained no supported nodes");
@@ -1682,6 +1689,7 @@ export async function produceTarget(
   nodes: SubscriptionNode[],
   target: OutputTarget,
   rulePreset: MihomoRulePreset = "flacier",
+  updateIntervalHours = 6,
 ): Promise<string> {
   const supported = (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
@@ -1689,7 +1697,7 @@ export async function produceTarget(
   }
   const mihomoNodes = stringifyYaml({ proxies: supported });
   if (target === "clash-party-config" || target === "mihomo-config") {
-    return createMihomoProfile(mihomoNodes, rulePreset);
+    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours);
   }
   if (target === "stash-config") return createStashProfile(mihomoNodes);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported));

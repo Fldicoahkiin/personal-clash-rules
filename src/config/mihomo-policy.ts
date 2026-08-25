@@ -35,6 +35,7 @@ export const mihomoRuleProviders = Object.fromEntries(
 );
 
 const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
+const policyIconBase = "https://rules.flacier.com/policy-icons";
 
 export const countryNodeFilters = {
   US: "🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$)",
@@ -93,10 +94,10 @@ function countryGroup(name: string, filter: string) {
     name,
     type: "select",
     "include-all": true,
-    "empty-fallback": "DIRECT",
     "exclude-type": "direct",
     filter,
     "exclude-filter": metadataFilter,
+    icon: `${policyIconBase}/region.svg`,
   };
 }
 
@@ -110,6 +111,7 @@ export const mihomoProxyGroups = [
     interval: 300,
     tolerance: 80,
     "exclude-filter": metadataFilter,
+    icon: `${policyIconBase}/auto.svg`,
   },
   countryGroup(
     "US",
@@ -145,27 +147,80 @@ export const mihomoProxyGroups = [
     proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
     "include-all": true,
     "exclude-filter": metadataFilter,
+    icon: `${policyIconBase}/globe.svg`,
   },
-  { name: "AI", type: "select", proxies: ["GLOBAL", "US", "JP", "SG", "TW"] },
-  { name: "APPLE", type: "select", proxies: ["DIRECT", "GLOBAL", "US", "JP", "SG"] },
-  { name: "STEAM", type: "select", proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG"] },
+  {
+    name: "AI",
+    type: "select",
+    proxies: ["GLOBAL", "US", "JP", "SG", "TW"],
+    icon: `${policyIconBase}/ai.svg`,
+  },
+  {
+    name: "APPLE",
+    type: "select",
+    proxies: ["DIRECT", "GLOBAL", "US", "JP", "SG"],
+    icon: `${policyIconBase}/apple.svg`,
+  },
+  {
+    name: "STEAM",
+    type: "select",
+    proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG"],
+    icon: `${policyIconBase}/steam.svg`,
+  },
   {
     name: "STEAM-DOWNLOAD",
     type: "select",
     proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+    icon: `${policyIconBase}/download.svg`,
   },
   {
     name: "STEAM-ONLINE",
     type: "select",
     proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+    icon: `${policyIconBase}/game.svg`,
   },
-  { name: "DISCORD", type: "select", proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"] },
-  { name: "DEV", type: "select", proxies: ["GLOBAL", "DIRECT", "US", "JP", "SG"] },
-  { name: "MEDIA", type: "select", proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"] },
-  { name: "BILIBILI", type: "select", proxies: ["DIRECT", "GLOBAL", "HK", "TW", "SG"] },
-  { name: "ANIGAMER", type: "select", proxies: ["TW", "GLOBAL", "DIRECT", "AUTO"] },
-  { name: "SOCIAL", type: "select", proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"] },
-  { name: "DEFAULT", type: "select", proxies: ["GLOBAL", "DIRECT", "AUTO"] },
+  {
+    name: "DISCORD",
+    type: "select",
+    proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
+    icon: `${policyIconBase}/chat.svg`,
+  },
+  {
+    name: "DEV",
+    type: "select",
+    proxies: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
+    icon: `${policyIconBase}/code.svg`,
+  },
+  {
+    name: "MEDIA",
+    type: "select",
+    proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
+    icon: `${policyIconBase}/play.svg`,
+  },
+  {
+    name: "BILIBILI",
+    type: "select",
+    proxies: ["DIRECT", "GLOBAL", "HK", "TW", "SG"],
+    icon: `${policyIconBase}/play.svg`,
+  },
+  {
+    name: "ANIGAMER",
+    type: "select",
+    proxies: ["TW", "GLOBAL", "DIRECT", "AUTO"],
+    icon: `${policyIconBase}/play.svg`,
+  },
+  {
+    name: "SOCIAL",
+    type: "select",
+    proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
+    icon: `${policyIconBase}/chat.svg`,
+  },
+  {
+    name: "DEFAULT",
+    type: "select",
+    proxies: ["GLOBAL", "DIRECT", "AUTO"],
+    icon: `${policyIconBase}/route.svg`,
+  },
 ] as const;
 
 export const mihomoRules = [
