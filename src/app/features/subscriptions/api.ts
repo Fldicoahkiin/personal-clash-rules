@@ -52,8 +52,25 @@ export interface ConvertedSubscription {
   profileName: string;
   sourceMode: SourceMode;
   target: OutputTarget;
+  usage: {
+    combined: SubscriptionUsage | null;
+    sources: SubscriptionUsageSource[];
+  };
   url: string;
   universalUrl: string;
+}
+
+export interface SubscriptionUsage {
+  upload: string;
+  download: string;
+  total: string;
+  expire?: string;
+}
+
+export interface SubscriptionUsageSource {
+  name: string;
+  status: "available" | "missing" | "client-only";
+  usage?: SubscriptionUsage;
 }
 
 interface ApiErrorBody {

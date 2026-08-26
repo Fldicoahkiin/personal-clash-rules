@@ -11,12 +11,16 @@ import {
 } from "./mihomo-profile";
 import { decodeSubscriptionConfig, hashText, randomSubscriptionId } from "./secrets";
 import {
+  combineSubscriptionUsage,
   countTargetCompatibleNodes,
+  formatSubscriptionUserinfo,
   normalizeSourceBundle,
   normalizeSources,
   parseRemoteSubscriptionUrl,
   probeRemoteSubscriptionMetadata,
   produceTarget,
+  type RemoteSubscriptionMetadata,
+  type SubscriptionUsage,
 } from "./sub-store";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
 import { targetForUserAgent } from "./subscription-target";
@@ -63,6 +67,40 @@ type NodeStats = {
   read: number | null;
   skipped: number | null;
 };
+
+type SubscriptionUsageSource = {
+  name: string;
+  status: "available" | "missing" | "client-only";
+  usage?: SubscriptionUsage;
+};
+
+type GeneratedUsage = {
+  combined: SubscriptionUsage | null;
+  sources: SubscriptionUsageSource[];
+};
+
+function generatedUsage(
+  remoteSources: SubscriptionSource[],
+  metadata: RemoteSubscriptionMetadata[],
+  sourceMode: SourceMode,
+): GeneratedUsage {
+  return {
+    combined: combineSubscriptionUsage(metadata.map((source) => source.usage)) ?? null,
+    sources: remoteSources.map((source, index) => {
+      const sourceMetadata = metadata[index] ?? { usageStatus: "unavailable" as const };
+      const status = sourceMetadata.usageStatus === "available"
+        ? "available"
+        : sourceMetadata.usageStatus === "missing" && sourceMode === "convert"
+          ? "missing"
+          : "client-only";
+      return {
+        name: source.name,
+        status,
+        ...(sourceMetadata.usage ? { usage: sourceMetadata.usage } : {}),
+      };
+    }),
+  };
+}
 
 function displayProfileName(config: SubscriptionConfig, inheritedName?: string): string {
   return config.name || inheritedName || defaultProfileName;
@@ -316,24 +354,20 @@ async function generateTarget(
   inheritedName?: string;
   nodeStats: NodeStats;
   sourceMode: SourceMode;
-  subscriptionUserinfo?: string;
+  usage: GeneratedUsage;
 }> {
   let output: string;
   let sourceMode = config.sourceMode;
   let inheritedName: string | undefined;
   let nodeStats: NodeStats = { read: null, output: null, skipped: null };
-  let subscriptionUserinfo: string | undefined;
+  const remoteSources = config.sources.filter((source) => source.type === "subscription");
+  let remoteMetadata: RemoteSubscriptionMetadata[] = [];
   if (sourceMode === "mihomo-provider") {
     output = await generateMihomoProviderTarget(env, config, target);
-    const remoteSources = config.sources.filter((source) => source.type === "subscription");
-    if (remoteSources.length === 1) {
-      const metadata = await probeRemoteSubscriptionMetadata(
-        remoteSources[0].value,
-        config.sourceUserAgent,
-      );
-      inheritedName = metadata.profileName;
-      subscriptionUserinfo = metadata.subscriptionUserinfo;
-    }
+    remoteMetadata = await Promise.all(remoteSources.map((source) => (
+      probeRemoteSubscriptionMetadata(source.value, config.sourceUserAgent)
+    )));
+    inheritedName = remoteSources.length === 1 ? remoteMetadata[0]?.profileName : undefined;
   } else {
     try {
       const normalized = await normalizeSourceBundle(env, {
@@ -354,7 +388,7 @@ async function generateTarget(
         output: outputNodeCount,
         skipped: normalized.nodes.length - outputNodeCount,
       };
-      subscriptionUserinfo = normalized.subscriptionUserinfo;
+      remoteMetadata = normalized.remoteMetadata;
       if (nodes.length === 0) {
         throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
       }
@@ -379,15 +413,10 @@ async function generateTarget(
       }
       sourceMode = "mihomo-provider";
       output = await generateMihomoProviderTarget(env, config, target);
-      const remoteSources = config.sources.filter((source) => source.type === "subscription");
-      if (remoteSources.length === 1) {
-        const metadata = await probeRemoteSubscriptionMetadata(
-          remoteSources[0].value,
-          config.sourceUserAgent,
-        );
-        inheritedName = metadata.profileName;
-        subscriptionUserinfo = metadata.subscriptionUserinfo;
-      }
+      remoteMetadata = await Promise.all(remoteSources.map((source) => (
+        probeRemoteSubscriptionMetadata(source.value, config.sourceUserAgent)
+      )));
+      inheritedName = remoteSources.length === 1 ? remoteMetadata[0]?.profileName : undefined;
     }
   }
   if (encoder.encode(output).byteLength > maximumOutputBytes) {
@@ -397,8 +426,8 @@ async function generateTarget(
     content: output,
     nodeStats,
     sourceMode,
+    usage: generatedUsage(remoteSources, remoteMetadata, sourceMode),
     ...(inheritedName ? { inheritedName } : {}),
-    ...(subscriptionUserinfo ? { subscriptionUserinfo } : {}),
   };
 }
 
@@ -426,6 +455,7 @@ async function createSubscription(
     profileName: displayProfileName(config, generated.inheritedName),
     sourceMode: config.sourceMode,
     target: body.target,
+    usage: generated.usage,
     url: urlsForToken(url.origin, token)[body.target],
     universalUrl: universalUrlForToken(url.origin, token),
   }, { status: 201 });
@@ -515,7 +545,9 @@ async function renderSubscription(
   }
   const config = await readSubscriptionConfig(parts[1], env);
   const generated = await generateTarget(env, config, target);
-  const subscriptionUserinfo = generated.subscriptionUserinfo;
+  const subscriptionUserinfo = generated.usage.combined
+    ? formatSubscriptionUserinfo(generated.usage.combined)
+    : undefined;
   const content = target === "surge-config" || target === "surfboard-config"
     ? generated.content.replace(managedProfileUrlPlaceholder, url.toString())
     : generated.content;

@@ -1622,6 +1622,19 @@ export function parseRemoteSubscriptionUrl(value: string): URL {
 
 const subscriptionUserinfoFields = ["upload", "download", "total", "expire"] as const;
 
+export type SubscriptionUsage = {
+  upload: string;
+  download: string;
+  total: string;
+  expire?: string;
+};
+
+export type RemoteSubscriptionMetadata = {
+  profileName?: string;
+  usage?: SubscriptionUsage;
+  usageStatus: "available" | "missing" | "unavailable";
+};
+
 function subscriptionProfileName(response: Response): string | undefined {
   const disposition = response.headers.get("content-disposition") ?? "";
   const encodedName = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/iu)?.[1];
@@ -1639,7 +1652,7 @@ function subscriptionProfileName(response: Response): string | undefined {
   return name ? name.slice(0, 64) : undefined;
 }
 
-function normalizeSubscriptionUserinfo(value: string | null): string | undefined {
+function parseSubscriptionUsage(value: string | null): SubscriptionUsage | undefined {
   if (!value) {
     return undefined;
   }
@@ -1658,10 +1671,57 @@ function normalizeSubscriptionUserinfo(value: string | null): string | undefined
       fields.set(key, fieldValue);
     }
   }
-  const normalized = subscriptionUserinfoFields
-    .filter((field) => fields.has(field))
-    .map((field) => `${field}=${fields.get(field)}`);
-  return normalized.length > 0 ? normalized.join("; ") : undefined;
+  const upload = fields.get("upload");
+  const download = fields.get("download");
+  const total = fields.get("total");
+  if (!upload || !download || !total) {
+    return undefined;
+  }
+  const expire = fields.get("expire");
+  return {
+    upload,
+    download,
+    total,
+    ...(expire ? { expire } : {}),
+  };
+}
+
+export function formatSubscriptionUserinfo(usage: SubscriptionUsage): string {
+  return subscriptionUserinfoFields
+    .filter((field) => usage[field] !== undefined)
+    .map((field) => `${field}=${usage[field]}`)
+    .join("; ");
+}
+
+export function combineSubscriptionUsage(
+  usages: Array<SubscriptionUsage | undefined>,
+): SubscriptionUsage | undefined {
+  if (usages.length === 0 || usages.some((usage) => usage === undefined)) {
+    return undefined;
+  }
+  const complete = usages as SubscriptionUsage[];
+  const positiveExpires = complete
+    .map((usage) => usage.expire)
+    .filter((expire): expire is string => expire !== undefined && BigInt(expire) > 0n);
+  const expire = positiveExpires.reduce<string | undefined>((earliest, value) => (
+    earliest === undefined || BigInt(value) < BigInt(earliest) ? value : earliest
+  ), undefined);
+  return {
+    upload: complete.reduce((sum, usage) => sum + BigInt(usage.upload), 0n).toString(),
+    download: complete.reduce((sum, usage) => sum + BigInt(usage.download), 0n).toString(),
+    total: complete.reduce((sum, usage) => sum + BigInt(usage.total), 0n).toString(),
+    ...(expire ? { expire } : {}),
+  };
+}
+
+function remoteSubscriptionMetadata(response: Response): RemoteSubscriptionMetadata {
+  const profileName = subscriptionProfileName(response);
+  const usage = parseSubscriptionUsage(response.headers.get("subscription-userinfo"));
+  return {
+    usageStatus: usage ? "available" : "missing",
+    ...(profileName ? { profileName } : {}),
+    ...(usage ? { usage } : {}),
+  };
 }
 
 async function requestRemoteSource(
@@ -1709,7 +1769,7 @@ async function requestRemoteSource(
 async function readRemoteSource(
   value: string,
   sourceUserAgent: string,
-): Promise<{ content: string; profileName?: string; subscriptionUserinfo?: string }> {
+): Promise<{ content: string; metadata: RemoteSubscriptionMetadata }> {
   const response = await requestRemoteSource(value, sourceUserAgent, "GET");
   const declaredLength = Number(response.headers.get("content-length") || 0);
   if (declaredLength > maximumRemoteBytes) {
@@ -1719,32 +1779,21 @@ async function readRemoteSource(
   if (new TextEncoder().encode(content).byteLength > maximumRemoteBytes) {
     throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
   }
-  const profileName = subscriptionProfileName(response);
   return {
     content,
-    ...(profileName ? { profileName } : {}),
-    subscriptionUserinfo: normalizeSubscriptionUserinfo(
-      response.headers.get("subscription-userinfo"),
-    ),
+    metadata: remoteSubscriptionMetadata(response),
   };
 }
 
 export async function probeRemoteSubscriptionMetadata(
   value: string,
   sourceUserAgent: string,
-): Promise<{ profileName?: string; subscriptionUserinfo?: string }> {
+): Promise<RemoteSubscriptionMetadata> {
   try {
     const response = await requestRemoteSource(value, sourceUserAgent, "HEAD");
-    const profileName = subscriptionProfileName(response);
-    const subscriptionUserinfo = normalizeSubscriptionUserinfo(
-      response.headers.get("subscription-userinfo"),
-    );
-    return {
-      ...(profileName ? { profileName } : {}),
-      ...(subscriptionUserinfo ? { subscriptionUserinfo } : {}),
-    };
+    return remoteSubscriptionMetadata(response);
   } catch {
-    return {};
+    return { usageStatus: "unavailable" };
   }
 }
 
@@ -1772,7 +1821,12 @@ export async function normalizeSourceBundle(
     subscriptionUrls: string[];
     nodes: string[];
   },
-): Promise<{ nodes: SubscriptionNode[]; profileName?: string; subscriptionUserinfo?: string }> {
+): Promise<{
+  nodes: SubscriptionNode[];
+  profileName?: string;
+  remoteMetadata: RemoteSubscriptionMetadata[];
+  subscriptionUsage?: SubscriptionUsage;
+}> {
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
@@ -1786,14 +1840,16 @@ export async function normalizeSourceBundle(
   if (parsed.length === 0) {
     throw new ApiError(422, "no_nodes_found", "Subscription sources contained no supported nodes");
   }
+  const subscriptionUsage = combineSubscriptionUsage(
+    remote.map((source) => source.metadata.usage),
+  );
   return {
     nodes: prepareNodes(parsed),
-    ...(remote.length === 1 && remote[0].profileName
-      ? { profileName: remote[0].profileName }
+    remoteMetadata: remote.map((source) => source.metadata),
+    ...(remote.length === 1 && remote[0].metadata.profileName
+      ? { profileName: remote[0].metadata.profileName }
       : {}),
-    ...(remote.length === 1 && remote[0].subscriptionUserinfo
-      ? { subscriptionUserinfo: remote[0].subscriptionUserinfo }
-      : {}),
+    ...(subscriptionUsage ? { subscriptionUsage } : {}),
   };
 }
 

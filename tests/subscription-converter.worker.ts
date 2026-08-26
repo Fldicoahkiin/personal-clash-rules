@@ -91,12 +91,14 @@ describe("native subscription converter", () => {
     }
   });
 
-  it("does not combine usage from multiple upstream subscriptions", async () => {
+  it("combines complete usage from multiple upstream subscriptions", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const host = new URL(String(input)).hostname;
       return new Response(`trojan://secret@${host}:443?sni=${host}#${host}`, {
         headers: {
-          "Subscription-Userinfo": "upload=1024; download=2048; total=107374182400",
+          "Subscription-Userinfo": host === "first.example"
+            ? "upload=1024; download=2048; total=107374182400; expire=1805938734"
+            : "upload=4096; download=8192; total=214748364800; expire=1837474734",
         },
       });
     });
@@ -111,7 +113,45 @@ describe("native subscription converter", () => {
       });
 
       expect(result.nodes).toHaveLength(2);
-      expect(result.subscriptionUserinfo).toBeUndefined();
+      expect(result.subscriptionUsage).toEqual({
+        upload: "5120",
+        download: "10240",
+        total: "322122547200",
+        expire: "1805938734",
+      });
+      expect(result.remoteMetadata).toEqual([
+        expect.objectContaining({ usageStatus: "available" }),
+        expect.objectContaining({ usageStatus: "available" }),
+      ]);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("does not publish a partial total when one upstream omits usage", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const host = new URL(String(input)).hostname;
+      return new Response(`trojan://secret@${host}:443?sni=${host}#${host}`, {
+        headers: host === "first.example"
+          ? { "Subscription-Userinfo": "upload=1024; download=2048; total=107374182400" }
+          : {},
+      });
+    });
+    try {
+      const result = await normalizeSourceBundle(env, {
+        profileName: "合并订阅",
+        subscriptionUrls: [
+          "https://first.example/subscription",
+          "https://second.example/subscription",
+        ],
+        nodes: [],
+      });
+
+      expect(result.subscriptionUsage).toBeUndefined();
+      expect(result.remoteMetadata.map((source) => source.usageStatus)).toEqual([
+        "available",
+        "missing",
+      ]);
     } finally {
       fetchSpy.mockRestore();
     }

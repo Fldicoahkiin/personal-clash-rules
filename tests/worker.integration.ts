@@ -11,6 +11,24 @@ type CreatedSubscription = {
   profileName: string;
   sourceMode: string;
   target: string;
+  usage: {
+    combined: {
+      upload: string;
+      download: string;
+      total: string;
+      expire?: string;
+    } | null;
+    sources: Array<{
+      name: string;
+      status: "available" | "missing" | "client-only";
+      usage?: {
+        upload: string;
+        download: string;
+        total: string;
+        expire?: string;
+      };
+    }>;
+  };
   url: string;
   universalUrl: string;
 };
@@ -270,7 +288,94 @@ describe("KV-backed subscription links", () => {
       expect(published.headers.get("subscription-userinfo")).toBe(
         "upload=1024; download=2048; total=107374182400; expire=1805938734",
       );
+      expect(data.usage).toEqual({
+        combined: {
+          upload: "1024",
+          download: "2048",
+          total: "107374182400",
+          expire: "1805938734",
+        },
+        sources: [{
+          name: "订阅 1",
+          status: "available",
+          usage: {
+            upload: "1024",
+            download: "2048",
+            total: "107374182400",
+            expire: "1805938734",
+          },
+        }],
+      });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("publishes a synthetic total for multiple complete subscriptions", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const host = new URL(String(input)).hostname;
+      return new Response(nodeUri(host, host, "secret"), {
+        headers: {
+          "Subscription-Userinfo": host === "first.example"
+            ? "upload=1024; download=2048; total=107374182400; expire=1805938734"
+            : "upload=4096; download=8192; total=214748364800; expire=1837474734",
+        },
+      });
+    });
+
+    try {
+      const { data } = await createSubscription({
+        sources: [
+          { name: "机场 A", type: "subscription", value: "https://first.example/sub" },
+          { name: "机场 B", type: "subscription", value: "https://second.example/sub" },
+        ],
+      });
+      const published = await exports.default.fetch(data.url);
+
+      expect(published.headers.get("subscription-userinfo")).toBe(
+        "upload=5120; download=10240; total=322122547200; expire=1805938734",
+      );
+      expect(data.usage.combined).toEqual({
+        upload: "5120",
+        download: "10240",
+        total: "322122547200",
+        expire: "1805938734",
+      });
+      expect(data.usage.sources.map((source) => source.status)).toEqual([
+        "available",
+        "available",
+      ]);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("omits a synthetic total when one subscription has no usage", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const host = new URL(String(input)).hostname;
+      return new Response(nodeUri(host, host, "secret"), {
+        headers: host === "first.example"
+          ? { "Subscription-Userinfo": "upload=1024; download=2048; total=107374182400" }
+          : {},
+      });
+    });
+
+    try {
+      const { data } = await createSubscription({
+        sources: [
+          { name: "机场 A", type: "subscription", value: "https://first.example/sub" },
+          { name: "机场 B", type: "subscription", value: "https://second.example/sub" },
+        ],
+      });
+      const published = await exports.default.fetch(data.url);
+
+      expect(published.headers.get("subscription-userinfo")).toBeNull();
+      expect(data.usage.combined).toBeNull();
+      expect(data.usage.sources.map((source) => source.status)).toEqual([
+        "available",
+        "missing",
+      ]);
     } finally {
       fetchSpy.mockRestore();
     }
@@ -337,6 +442,9 @@ describe("KV-backed subscription links", () => {
       expect(data.profileName).toBe("Flacierの分流规则");
       expect(data.sourceMode).toBe("mihomo-provider");
       expect(data.nodeStats).toEqual({ read: null, output: null, skipped: null });
+      expect(data.usage.sources).toEqual([
+        expect.objectContaining({ name: "订阅 1", status: "available" }),
+      ]);
 
       const published = await exports.default.fetch(data.url);
       const config = parse(await published.text()) as {
@@ -362,6 +470,27 @@ describe("KV-backed subscription links", () => {
         sourceUrl,
         expect.objectContaining({ method: "HEAD" }),
       );
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("reports client-only usage when a provider source hides its metadata", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 403 }),
+    );
+
+    try {
+      const { data, response } = await createSubscription({
+        sources: [{ name: "机场 A", type: "subscription", value: "https://provider.example/sub" }],
+        target: "clash-party-config",
+      });
+
+      expect(response.status).toBe(201);
+      expect(data.usage).toEqual({
+        combined: null,
+        sources: [{ name: "机场 A", status: "client-only" }],
+      });
     } finally {
       fetchSpy.mockRestore();
     }

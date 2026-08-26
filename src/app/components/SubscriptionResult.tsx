@@ -1,6 +1,10 @@
 import { ArrowUpRight, Check, Copy } from "@phosphor-icons/react";
 
-import type { ConvertedSubscription } from "../features/subscriptions/api";
+import type {
+  ConvertedSubscription,
+  SubscriptionUsage,
+  SubscriptionUsageSource,
+} from "../features/subscriptions/api";
 import type { ClientFormat } from "../features/subscriptions/client-formats";
 import { buildClientAction } from "../lib/client-import";
 
@@ -10,6 +14,32 @@ type SubscriptionResultProps = {
   result: ConvertedSubscription;
   onCopy: () => void;
 };
+
+const byteUnits = ["B", "KB", "MB", "GB", "TB", "PB"];
+
+function formatBytes(rawValue: string): string {
+  const value = BigInt(rawValue);
+  let divisor = 1n;
+  let unit = 0;
+  while (unit < byteUnits.length - 1 && value >= divisor * 1024n) {
+    divisor *= 1024n;
+    unit += 1;
+  }
+  const whole = value / divisor;
+  const decimal = (value % divisor) * 10n / divisor;
+  return `${whole}${decimal > 0n ? `.${decimal}` : ""} ${byteUnits[unit]}`;
+}
+
+function formatUsage(usage: SubscriptionUsage): string {
+  const used = (BigInt(usage.upload) + BigInt(usage.download)).toString();
+  return `${formatBytes(used)} / ${formatBytes(usage.total)}`;
+}
+
+function usageStatus(source: SubscriptionUsageSource): string {
+  if (source.status === "available") return "已读取";
+  if (source.status === "missing") return "未返回";
+  return "Worker 不可见";
+}
 
 export function SubscriptionResult({
   copied,
@@ -48,6 +78,27 @@ export function SubscriptionResult({
             <dd>{countValue(result.nodeStats.skipped, "由客户端确认")}</dd>
           </div>
         </dl>
+        {result.usage.sources.length > 0 ? (
+          <div className="subscription-usage">
+            <div className="subscription-usage-total">
+              <strong>合计流量</strong>
+              <span>
+                {result.usage.combined
+                  ? formatUsage(result.usage.combined)
+                  : "未合并"}
+              </span>
+            </div>
+            <ul>
+              {result.usage.sources.map((source) => (
+                <li key={source.name}>
+                  <span>{source.name}</span>
+                  <span>{usageStatus(source)}</span>
+                  <strong>{source.usage ? formatUsage(source.usage) : "—"}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
       <div className="subscription-result-actions">
         <button className="button button-secondary" type="button" onClick={onCopy}>
