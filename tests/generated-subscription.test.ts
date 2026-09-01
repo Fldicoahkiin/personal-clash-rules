@@ -20,7 +20,10 @@ describe("parseGeneratedSubscriptionUrl", () => {
         addCountryFlag: true,
         excludePattern: "过期",
         includePattern: "US|JP",
-        renameRules: [{ pattern: "USA", replacement: "US" }],
+        renameRules: [
+          { pattern: "USA", replacement: "US" },
+          { pattern: "Tokyo", replacement: "JP" },
+        ],
         showNodeType: true,
         skipCertVerify: false,
         sortMode: "name-asc",
@@ -28,6 +31,7 @@ describe("parseGeneratedSubscriptionUrl", () => {
         udp: true,
       },
       rulePreset: "flacier",
+      fallbackMode: "mihomo-provider",
       sourceMode: "convert",
       sourceUserAgent: "ClashParty/2.0",
       sources: [
@@ -42,8 +46,11 @@ describe("parseGeneratedSubscriptionUrl", () => {
         excludePattern: "过期",
         includePattern: "US|JP",
         name: "个人订阅",
-        renamePattern: "USA",
-        renameReplacement: "US",
+        allowClientFallback: true,
+        renameRules: [
+          { pattern: "USA", replacement: "US" },
+          { pattern: "Tokyo", replacement: "JP" },
+        ],
         rulePreset: "flacier",
         sourceText: "https://provider.example/sub\nss://example",
         sourceUserAgent: "ClashParty/2.0",

@@ -22,10 +22,11 @@ describe("subscription controls", () => {
   it("explains every advanced setting and keeps the country flag wording", () => {
     const html = renderToStaticMarkup(createElement(SubscriptionMoreSettings, {
       addCountryFlag: true,
+      allowClientFallback: false,
+      dnsMode: "doh",
       excludePattern: "",
       includePattern: "",
-      renamePattern: "",
-      renameReplacement: "",
+      renameRules: [{ id: "rename-test", pattern: "", replacement: "" }],
       showNodeType: false,
       skipCertVerify: false,
       sourceUserAgent: "mihomo/1.19",
@@ -33,7 +34,10 @@ describe("subscription controls", () => {
       tfo: false,
       udp: true,
       updateIntervalHours: 6,
+      xudp: false,
       onBooleanChange: () => undefined,
+      onDnsModeChange: () => undefined,
+      onRenameRulesChange: () => undefined,
       onSortChange: () => undefined,
       onTextChange: () => undefined,
       onUpdateIntervalChange: () => undefined,
@@ -50,12 +54,15 @@ describe("subscription controls", () => {
       "按节点名称识别国家或地区",
       "在名称前显示协议类型",
       "用于语音、游戏和 QUIC",
+      "为 VMess 与 VLESS 使用 XUDP",
       "仅用于证书异常的 TLS 节点",
       "仅对支持 TFO 的连接生效",
     ]) {
       expect(html).toContain(description);
     }
     expect(html).toContain("国家旗帜");
+    expect(html).toContain("客户端直读备用");
+    expect(html).toContain("添加重命名");
     expect(html).not.toContain("Emoji");
   });
 });

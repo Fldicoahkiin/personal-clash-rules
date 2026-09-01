@@ -1,13 +1,21 @@
+import { Plus, X } from "@phosphor-icons/react";
 import type { FC } from "react";
 
-import type { NodeSortMode } from "../features/subscriptions/api";
+import type { DnsMode, NodeSortMode } from "../features/subscriptions/api";
+
+type RenameRuleDraft = {
+  id: string;
+  pattern: string;
+  replacement: string;
+};
 
 type SubscriptionMoreSettingsProps = {
   addCountryFlag: boolean;
+  allowClientFallback: boolean;
+  dnsMode: DnsMode;
   excludePattern: string;
   includePattern: string;
-  renamePattern: string;
-  renameReplacement: string;
+  renameRules: RenameRuleDraft[];
   showNodeType: boolean;
   skipCertVerify: boolean;
   sourceUserAgent: string;
@@ -15,16 +23,17 @@ type SubscriptionMoreSettingsProps = {
   tfo: boolean;
   udp: boolean;
   updateIntervalHours: number;
+  xudp: boolean;
   onBooleanChange: (
-    key: "addCountryFlag" | "showNodeType" | "skipCertVerify" | "tfo" | "udp",
+    key: "addCountryFlag" | "allowClientFallback" | "showNodeType" | "skipCertVerify" | "tfo" | "udp" | "xudp",
     value: boolean,
   ) => void;
+  onDnsModeChange: (value: DnsMode) => void;
+  onRenameRulesChange: (value: RenameRuleDraft[]) => void;
   onTextChange: (
     key:
       | "excludePattern"
       | "includePattern"
-      | "renamePattern"
-      | "renameReplacement"
       | "sourceUserAgent",
     value: string,
   ) => void;
@@ -34,10 +43,11 @@ type SubscriptionMoreSettingsProps = {
 
 export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   addCountryFlag,
+  allowClientFallback,
+  dnsMode,
   excludePattern,
   includePattern,
-  renamePattern,
-  renameReplacement,
+  renameRules,
   showNodeType,
   skipCertVerify,
   sourceUserAgent,
@@ -45,7 +55,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   tfo,
   udp,
   updateIntervalHours,
+  xudp,
   onBooleanChange,
+  onDnsModeChange,
+  onRenameRulesChange,
   onSortChange,
   onTextChange,
   onUpdateIntervalChange,
@@ -108,31 +121,85 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
             spellCheck="false"
           />
         </label>
+        <fieldset className="subscription-rename-rules">
+          <legend className="field-label">
+            <strong>节点重命名</strong>
+            <small>按顺序执行正则替换</small>
+          </legend>
+          <div className="subscription-rename-list">
+            {renameRules.map((rule) => (
+              <div className="subscription-rename-row" key={rule.id}>
+                <label className="field">
+                  <span className="field-label">
+                    <strong>名称匹配</strong>
+                    <small>正则匹配节点名称</small>
+                  </span>
+                  <input
+                    value={rule.pattern}
+                    onChange={(event) => onRenameRulesChange(renameRules.map((candidate) => (
+                      candidate.id === rule.id
+                        ? { ...candidate, pattern: event.target.value }
+                        : candidate
+                    )))}
+                    placeholder="^US-"
+                    maxLength={128}
+                    spellCheck="false"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">
+                    <strong>替换为</strong>
+                    <small>替换匹配到的名称</small>
+                  </span>
+                  <input
+                    value={rule.replacement}
+                    onChange={(event) => onRenameRulesChange(renameRules.map((candidate) => (
+                      candidate.id === rule.id
+                        ? { ...candidate, replacement: event.target.value }
+                        : candidate
+                    )))}
+                    placeholder="United States "
+                    maxLength={128}
+                    spellCheck="false"
+                  />
+                </label>
+                <button
+                  className="subscription-rename-remove"
+                  type="button"
+                  aria-label="删除这条重命名"
+                  disabled={renameRules.length === 1}
+                  onClick={() => onRenameRulesChange(renameRules.filter((candidate) => candidate.id !== rule.id))}
+                >
+                  <X aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            className="subscription-rename-add"
+            type="button"
+            disabled={renameRules.length >= 12}
+            onClick={() => onRenameRulesChange([
+              ...renameRules,
+              { id: crypto.randomUUID(), pattern: "", replacement: "" },
+            ])}
+          >
+            <Plus aria-hidden="true" />
+            添加重命名
+          </button>
+        </fieldset>
         <label className="field">
           <span className="field-label">
-            <strong>名称匹配</strong>
-            <small>正则匹配节点名称</small>
+            <strong>Clash DNS</strong>
+            <small>仅影响 Clash Party 与 Mihomo 完整配置</small>
           </span>
-          <input
-            value={renamePattern}
-            onChange={(event) => onTextChange("renamePattern", event.target.value)}
-            placeholder="^🇺🇸\\s*"
-            maxLength={128}
-            spellCheck="false"
-          />
-        </label>
-        <label className="field">
-          <span className="field-label">
-            <strong>替换为</strong>
-            <small>替换匹配到的名称</small>
-          </span>
-          <input
-            value={renameReplacement}
-            onChange={(event) => onTextChange("renameReplacement", event.target.value)}
-            placeholder="US "
-            maxLength={128}
-            spellCheck="false"
-          />
+          <select
+            value={dnsMode}
+            onChange={(event) => onDnsModeChange(event.target.value as DnsMode)}
+          >
+            <option value="doh">内置 DoH</option>
+            <option value="system">使用系统 DNS</option>
+          </select>
         </label>
         <label className="field subscription-sort">
           <span className="field-label">
@@ -149,6 +216,17 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           </select>
         </label>
         <div className="subscription-option-list" aria-label="节点选项">
+          <label>
+            <input
+              type="checkbox"
+              checked={allowClientFallback}
+              onChange={(event) => onBooleanChange("allowClientFallback", event.target.checked)}
+            />
+            <span className="subscription-option-copy">
+              <strong>客户端直读备用</strong>
+              <small>机场拒绝 Worker 时，仅供 Clash Party 与 Mihomo 使用</small>
+            </span>
+          </label>
           <label>
             <input
               type="checkbox"
@@ -180,6 +258,17 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
             <span className="subscription-option-copy">
               <strong>UDP</strong>
               <small>用于语音、游戏和 QUIC</small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={xudp}
+              onChange={(event) => onBooleanChange("xudp", event.target.checked)}
+            />
+            <span className="subscription-option-copy">
+              <strong>XUDP</strong>
+              <small>为 VMess 与 VLESS 使用 XUDP</small>
             </span>
           </label>
           <label>

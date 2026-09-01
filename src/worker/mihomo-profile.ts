@@ -10,8 +10,10 @@ import type { NodeSettings } from "./node-transforms";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
 
 export type MihomoRulePreset = "flacier" | "global" | "direct";
+export type MihomoDnsMode = "doh" | "system";
 
 type MihomoProviderProfile = {
+  dnsMode: MihomoDnsMode;
   nodeResource: string;
   nodeSettings: NodeSettings;
   providers: Array<{ name: string; url: string }>;
@@ -71,6 +73,7 @@ function profileBody(
   rulePreset: MihomoRulePreset,
   providers?: Record<string, Record<string, unknown>>,
   updateIntervalHours = 6,
+  dnsMode: MihomoDnsMode = "doh",
 ) {
   const flacierRules = rulePreset === "flacier";
   const directRules = rulePreset === "direct";
@@ -93,7 +96,7 @@ function profileBody(
     ipv6: true,
     "unified-delay": true,
     "tcp-concurrent": true,
-    dns,
+    dns: dnsMode === "doh" ? dns : { enable: false },
     "profile-update-interval": updateIntervalHours,
     profile: {
       "store-selected": true,
@@ -134,12 +137,14 @@ export function createMihomoProfile(
   nodeResource: string,
   rulePreset: MihomoRulePreset = "flacier",
   updateIntervalHours = 6,
+  dnsMode: MihomoDnsMode = "doh",
 ): string {
   return stringifyYaml(profileBody(
     readYamlProxyResource(nodeResource, "Mihomo"),
     rulePreset,
     undefined,
     updateIntervalHours,
+    dnsMode,
   ));
 }
 
@@ -173,5 +178,6 @@ export function createMihomoProviderProfile(input: MihomoProviderProfile): strin
     input.rulePreset,
     providers,
     input.updateIntervalHours,
+    input.dnsMode,
   ));
 }

@@ -7,6 +7,7 @@ import {
 } from "./node-transforms";
 import {
   createMihomoProviderProfile,
+  type MihomoDnsMode,
   type MihomoRulePreset,
 } from "./mihomo-profile";
 import { decodeSubscriptionConfig, hashText, randomSubscriptionId } from "./secrets";
@@ -50,10 +51,13 @@ type SubscriptionSource = {
 };
 
 type SourceMode = "convert" | "mihomo-provider";
+type FallbackMode = "error" | "mihomo-provider";
 
 type SubscriptionConfig = {
   version: 1;
+  dnsMode: MihomoDnsMode;
   name: string;
+  fallbackMode: FallbackMode;
   nodeSettings: NodeSettings;
   rulePreset: MihomoRulePreset;
   sourceUserAgent: string;
@@ -136,6 +140,16 @@ function readRulePreset(value: unknown): MihomoRulePreset {
   throw new ApiError(400, "invalid_rule_preset", "Rule preset is invalid");
 }
 
+function readDnsMode(value: unknown): MihomoDnsMode {
+  if (value === undefined || value === "doh") {
+    return "doh";
+  }
+  if (value === "system") {
+    return "system";
+  }
+  throw new ApiError(400, "invalid_dns_mode", "DNS mode is invalid");
+}
+
 function readSourceUserAgent(value: unknown): string {
   if (value === undefined) {
     return defaultSourceUserAgent;
@@ -166,6 +180,19 @@ function readSourceMode(value: unknown): SourceMode {
   }
   if (value === "mihomo-provider") {
     return "mihomo-provider";
+  }
+  throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
+}
+
+function readFallbackMode(value: unknown, fallback: FallbackMode): FallbackMode {
+  if (value === "error") {
+    return "error";
+  }
+  if (value === "mihomo-provider") {
+    return "mihomo-provider";
+  }
+  if (value === undefined) {
+    return fallback;
   }
   throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
 }
@@ -224,7 +251,10 @@ function readSources(value: unknown): SubscriptionSource[] {
   return sources;
 }
 
-function readConfig(value: unknown): SubscriptionConfig {
+function readConfig(
+  value: unknown,
+  fallbackMode: FallbackMode = "mihomo-provider",
+): SubscriptionConfig {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
   }
@@ -234,6 +264,8 @@ function readConfig(value: unknown): SubscriptionConfig {
   }
   return {
     version: 1,
+    dnsMode: readDnsMode(input.dnsMode),
+    fallbackMode: readFallbackMode(input.fallbackMode, fallbackMode),
     name: readName(input.name),
     nodeSettings: readSettings(input.nodeSettings),
     rulePreset: readRulePreset(input.rulePreset),
@@ -334,6 +366,7 @@ async function generateMihomoProviderTarget(
     nodeResource = await produceTarget(env, nodes, "mihomo");
   }
   return createMihomoProviderProfile({
+    dnsMode: config.dnsMode,
     nodeResource,
     nodeSettings: config.nodeSettings,
     providers: config.sources
@@ -398,10 +431,15 @@ async function generateTarget(
         target,
         config.rulePreset,
         config.updateIntervalHours,
+        config.dnsMode,
       );
     } catch (error) {
       const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
-      if (!hasRemoteSource || !canUseMihomoProvider(error)) {
+      if (
+        !hasRemoteSource
+        || config.fallbackMode !== "mihomo-provider"
+        || !canUseMihomoProvider(error)
+      ) {
         throw error;
       }
       if (!isMihomoConfigTarget(target)) {
@@ -443,17 +481,16 @@ async function createSubscription(
   if (typeof body.target !== "string" || !isOutputTarget(body.target)) {
     throw new ApiError(400, "unsupported_target", "Output target is not supported");
   }
-  const config = readConfig(body);
+  const config = readConfig(body, "error");
 
   const generated = await generateTarget(env, config, body.target);
-  config.sourceMode = generated.sourceMode;
   const token = randomSubscriptionId();
   await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(config));
 
   return json({
     nodeStats: generated.nodeStats,
     profileName: displayProfileName(config, generated.inheritedName),
-    sourceMode: config.sourceMode,
+    sourceMode: generated.sourceMode,
     target: body.target,
     usage: generated.usage,
     url: urlsForToken(url.origin, token)[body.target],

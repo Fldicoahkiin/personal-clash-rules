@@ -25,6 +25,8 @@ export type SourceType = "subscription" | "node";
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
 export type RulePreset = "flacier" | "global" | "direct";
 export type SourceMode = "convert" | "mihomo-provider";
+export type FallbackMode = "error" | "mihomo-provider";
+export type DnsMode = "doh" | "system";
 
 export interface NodeRenameRule {
   pattern: string;
@@ -41,6 +43,7 @@ export interface NodeSettings {
   sortMode: NodeSortMode;
   tfo: boolean;
   udp: boolean;
+  xudp: boolean;
 }
 
 export interface ConvertedSubscription {
@@ -106,6 +109,8 @@ async function apiError(response: Response): Promise<SubscriptionApiError> {
 }
 
 export async function createConvertedSubscription(input: {
+  dnsMode: DnsMode;
+  fallbackMode: FallbackMode;
   name: string;
   nodeSettings: NodeSettings;
   rulePreset: RulePreset;
@@ -130,7 +135,7 @@ export function subscriptionErrorText(error: unknown): string {
     return "生成失败，请重试";
   }
   if (error.code === "source_failed" && /HTTP (?:403|429)$/u.test(error.message)) {
-    return "机场拒绝 Cloudflare 读取，请选择 Clash Party 或 Mihomo";
+    return "机场拒绝 Worker 读取；可在进阶设置开启客户端直读备用";
   }
   const messages: Record<string, string> = {
     no_sources: "请添加一个订阅或节点",
@@ -146,6 +151,7 @@ export function subscriptionErrorText(error: unknown): string {
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     invalid_rule_preset: "规则方案无效",
+    invalid_dns_mode: "DNS 模板无效",
     invalid_source_user_agent: "订阅请求 UA 无效",
     invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",
     no_nodes_after_processing: "没有节点符合当前筛选条件",

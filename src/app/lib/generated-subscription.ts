@@ -1,16 +1,19 @@
 import type {
+  DnsMode,
   NodeSortMode,
+  NodeRenameRule,
   OutputTarget,
   RulePreset,
 } from "../features/subscriptions/api";
 
 export type LoadedSubscriptionForm = {
   addCountryFlag: boolean;
+  allowClientFallback: boolean;
+  dnsMode: DnsMode;
   excludePattern: string;
   includePattern: string;
   name: string;
-  renamePattern: string;
-  renameReplacement: string;
+  renameRules: NodeRenameRule[];
   rulePreset: RulePreset;
   showNodeType: boolean;
   skipCertVerify: boolean;
@@ -21,6 +24,7 @@ export type LoadedSubscriptionForm = {
   tfo: boolean;
   udp: boolean;
   updateIntervalHours: number;
+  xudp: boolean;
 };
 
 const outputTargets = new Set<OutputTarget>([
@@ -108,9 +112,15 @@ function loadedForm(
     }
     return source.value.trim();
   }).join("\n");
-  const renameRule = Array.isArray(nodeSettings.renameRules)
-    ? objectValue(nodeSettings.renameRules[0] ?? {})
-    : {};
+  const renameRules = Array.isArray(nodeSettings.renameRules)
+    ? nodeSettings.renameRules.map((candidate) => {
+        const rule = objectValue(candidate);
+        return {
+          pattern: stringValue(rule.pattern),
+          replacement: stringValue(rule.replacement),
+        };
+      }).filter((rule) => rule.pattern)
+    : [];
   const target = outputTargets.has(targetValue as OutputTarget)
     ? targetValue as OutputTarget
     : "clash-party-config";
@@ -128,11 +138,13 @@ function loadedForm(
 
   return {
     addCountryFlag: booleanValue(nodeSettings.addCountryFlag, true),
+    allowClientFallback: config.fallbackMode === "mihomo-provider"
+      || config.sourceMode === "mihomo-provider",
+    dnsMode: config.dnsMode === "system" ? "system" : "doh",
     excludePattern: stringValue(nodeSettings.excludePattern),
     includePattern: stringValue(nodeSettings.includePattern),
     name: stringValue(config.name),
-    renamePattern: stringValue(renameRule.pattern),
-    renameReplacement: stringValue(renameRule.replacement),
+    renameRules,
     rulePreset,
     showNodeType: booleanValue(nodeSettings.showNodeType, false),
     skipCertVerify: booleanValue(nodeSettings.skipCertVerify, false),
@@ -143,6 +155,7 @@ function loadedForm(
     tfo: booleanValue(nodeSettings.tfo, false),
     udp: booleanValue(nodeSettings.udp, true),
     updateIntervalHours,
+    xudp: booleanValue(nodeSettings.xudp, false),
   };
 }
 

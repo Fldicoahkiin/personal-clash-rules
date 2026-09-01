@@ -431,6 +431,7 @@ describe("KV-backed subscription links", () => {
 
     try {
       const { data, response } = await createSubscription({
+        fallbackMode: "mihomo-provider",
         name: "",
         rulePreset: "flacier",
         sourceUserAgent: "ClashParty/2.0",
@@ -465,7 +466,7 @@ describe("KV-backed subscription links", () => {
         url: sourceUrl,
         header: { "User-Agent": ["ClashParty/2.0"] },
       });
-      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      expect(fetchSpy).toHaveBeenCalledTimes(4);
       expect(fetchSpy).toHaveBeenLastCalledWith(
         sourceUrl,
         expect.objectContaining({ method: "HEAD" }),
@@ -482,6 +483,7 @@ describe("KV-backed subscription links", () => {
 
     try {
       const { data, response } = await createSubscription({
+        fallbackMode: "mihomo-provider",
         sources: [{ name: "机场 A", type: "subscription", value: "https://provider.example/sub" }],
         target: "clash-party-config",
       });
@@ -502,6 +504,7 @@ describe("KV-backed subscription links", () => {
     );
     try {
       const { data, response } = await createSubscription({
+        fallbackMode: "mihomo-provider",
         sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
         target: "surge-config",
       });
@@ -510,6 +513,60 @@ describe("KV-backed subscription links", () => {
       expect(data).toMatchObject({
         error: "source_client_fetch_only",
       });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("does not silently replace Worker conversion with client fetching", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 403 }),
+    );
+
+    try {
+      const { data, response } = await createSubscription({
+        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
+        target: "clash-party-config",
+      });
+
+      expect(response.status).toBe(502);
+      expect(data).toMatchObject({ error: "source_failed" });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("retries Worker conversion when an upstream becomes readable again", async () => {
+    let blocked = true;
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (blocked) {
+        return new Response(null, { status: 403 });
+      }
+      return init?.method === "HEAD"
+        ? new Response(null)
+        : new Response(nodeUri("US-01", "us.example.com", "secret"));
+    });
+
+    try {
+      const { data, response } = await createSubscription({
+        fallbackMode: "mihomo-provider",
+        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
+        target: "clash-party-config",
+      });
+      expect(response.status).toBe(201);
+      expect(data.sourceMode).toBe("mihomo-provider");
+
+      blocked = false;
+      const published = await exports.default.fetch(data.url);
+      const config = parse(await published.text()) as Record<string, unknown>;
+
+      expect(published.status).toBe(200);
+      expect(published.headers.get("x-subscription-source-mode")).toBe("convert");
+      expect(config).not.toHaveProperty("proxy-providers");
+      expect(config.proxies).toEqual([
+        expect.objectContaining({ name: "🇺🇸 US-01" }),
+      ]);
     } finally {
       fetchSpy.mockRestore();
     }

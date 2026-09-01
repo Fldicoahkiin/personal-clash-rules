@@ -118,4 +118,23 @@ describe("applyNodeTransforms", () => {
       tfo: true,
     }]);
   });
+
+  it("enables XUDP only for VMess and VLESS nodes", () => {
+    const nodes = [
+      { name: "VMess", type: "vmess" },
+      { name: "VLESS", type: "vless" },
+      { name: "SS", type: "ss" },
+    ];
+
+    expect(applyNodeTransforms(nodes, {
+      ...defaultNodeSettings,
+      addCountryFlag: false,
+      udp: false,
+      xudp: true,
+    })).toEqual([
+      { name: "VMess", type: "vmess", "packet-encoding": "xudp" },
+      { name: "VLESS", type: "vless", "packet-encoding": "xudp" },
+      { name: "SS", type: "ss" },
+    ]);
+  });
 });

@@ -7,6 +7,7 @@ import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
 import {
   createMihomoProfile,
+  type MihomoDnsMode,
   type MihomoRulePreset,
 } from "./mihomo-profile";
 import type { SubscriptionNode } from "./node-transforms";
@@ -1859,6 +1860,7 @@ export async function produceTarget(
   target: OutputTarget,
   rulePreset: MihomoRulePreset = "flacier",
   updateIntervalHours = 6,
+  dnsMode: MihomoDnsMode = "doh",
 ): Promise<string> {
   const supported = (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
@@ -1866,7 +1868,7 @@ export async function produceTarget(
   }
   const mihomoNodes = stringifyYaml({ proxies: supported });
   if (target === "clash-party-config" || target === "mihomo-config") {
-    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours);
+    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode);
   }
   if (target === "stash-config") return createStashProfile(mihomoNodes, updateIntervalHours);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported), updateIntervalHours);

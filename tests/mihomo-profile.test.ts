@@ -74,8 +74,24 @@ proxies:
     );
   });
 
+  it("can leave DNS resolution to the operating system", () => {
+    const output = createMihomoProfile(`
+proxies:
+  - name: US-01
+    type: ss
+    server: us.example.com
+    port: 443
+    cipher: aes-128-gcm
+    password: test
+`, "flacier", 6, "system");
+    const config = parse(output) as Record<string, unknown>;
+
+    expect(config.dns).toEqual({ enable: false });
+  });
+
   it("builds a client-fetched provider profile when a Worker fetch is blocked", () => {
     const output = createMihomoProviderProfile({
+      dnsMode: "doh",
       nodeResource: "proxies: []",
       providers: [{ name: "订阅 1", url: "https://provider.example/sub" }],
       nodeSettings: {
@@ -88,6 +104,7 @@ proxies:
         sortMode: "source",
         tfo: true,
         udp: true,
+        xudp: false,
       },
       sourceUserAgent: "ClashParty/2.0",
       rulePreset: "flacier",

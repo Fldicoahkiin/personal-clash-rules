@@ -5,6 +5,8 @@ import {
   createConvertedSubscription,
   subscriptionErrorText,
   type ConvertedSubscription,
+  type DnsMode,
+  type NodeRenameRule,
   type NodeSortMode,
   type OutputTarget,
   type RulePreset,
@@ -23,13 +25,14 @@ import { SubscriptionResult } from "./SubscriptionResult";
 
 type FormState = {
   addCountryFlag: boolean;
+  allowClientFallback: boolean;
   copied: boolean;
+  dnsMode: DnsMode;
   error: string;
   excludePattern: string;
   includePattern: string;
   name: string;
-  renamePattern: string;
-  renameReplacement: string;
+  renameRules: RenameRuleDraft[];
   result: ConvertedSubscription | null;
   rulePreset: RulePreset;
   pending: boolean;
@@ -42,7 +45,10 @@ type FormState = {
   tfo: boolean;
   udp: boolean;
   updateIntervalHours: number;
+  xudp: boolean;
 };
+
+type RenameRuleDraft = NodeRenameRule & { id: string };
 
 type FieldAction = {
   [Key in keyof FormState]: { key: Key; value: FormState[Key] };
@@ -51,13 +57,14 @@ type FormAction = FieldAction | { key: "load"; value: LoadedSubscriptionForm };
 
 const initialState: FormState = {
   addCountryFlag: true,
+  allowClientFallback: false,
   copied: false,
+  dnsMode: "doh",
   error: "",
   excludePattern: "",
   includePattern: "",
   name: "Flacierの分流规则",
-  renamePattern: "",
-  renameReplacement: "",
+  renameRules: [{ id: "rename-initial", pattern: "", replacement: "" }],
   result: null,
   rulePreset: "flacier",
   pending: false,
@@ -70,6 +77,7 @@ const initialState: FormState = {
   tfo: false,
   udp: true,
   updateIntervalHours: 6,
+  xudp: false,
 };
 
 function reducer(state: FormState, action: FormAction): FormState {
@@ -77,6 +85,12 @@ function reducer(state: FormState, action: FormAction): FormState {
     return {
       ...state,
       ...action.value,
+      renameRules: action.value.renameRules.length > 0
+        ? action.value.renameRules.map((rule) => ({
+            ...rule,
+            id: crypto.randomUUID(),
+          }))
+        : [{ id: crypto.randomUUID(), pattern: "", replacement: "" }],
       copied: false,
       error: "",
       pending: false,
@@ -121,7 +135,11 @@ export function SubscriptionImport() {
       return false;
     }
     try {
-      for (const pattern of [form.includePattern, form.excludePattern, form.renamePattern]) {
+      for (const pattern of [
+        form.includePattern,
+        form.excludePattern,
+        ...form.renameRules.map((rule) => rule.pattern),
+      ]) {
         if (pattern) {
           new RegExp(pattern, "u");
         }
@@ -142,19 +160,22 @@ export function SubscriptionImport() {
     dispatch({ key: "pending", value: true });
     try {
       const result = await createConvertedSubscription({
+        dnsMode: form.dnsMode,
+        fallbackMode: form.allowClientFallback ? "mihomo-provider" : "error",
         name: form.name.trim(),
         nodeSettings: {
           addCountryFlag: form.addCountryFlag,
           includePattern: form.includePattern,
           excludePattern: form.excludePattern,
-          renameRules: form.renamePattern
-            ? [{ pattern: form.renamePattern, replacement: form.renameReplacement }]
-            : [],
+          renameRules: form.renameRules
+            .filter((rule) => rule.pattern.trim())
+            .map(({ pattern, replacement }) => ({ pattern, replacement })),
           showNodeType: form.showNodeType,
           skipCertVerify: form.skipCertVerify,
           sortMode: form.sortMode,
           tfo: form.tfo,
           udp: form.udp,
+          xudp: form.xudp,
         },
         rulePreset: form.rulePreset,
         sourceUserAgent: form.sourceUserAgent,
@@ -247,10 +268,11 @@ export function SubscriptionImport() {
 
         <SubscriptionMoreSettings
           addCountryFlag={form.addCountryFlag}
+          allowClientFallback={form.allowClientFallback}
+          dnsMode={form.dnsMode}
           excludePattern={form.excludePattern}
           includePattern={form.includePattern}
-          renamePattern={form.renamePattern}
-          renameReplacement={form.renameReplacement}
+          renameRules={form.renameRules}
           showNodeType={form.showNodeType}
           skipCertVerify={form.skipCertVerify}
           sourceUserAgent={form.sourceUserAgent}
@@ -258,7 +280,10 @@ export function SubscriptionImport() {
           tfo={form.tfo}
           udp={form.udp}
           updateIntervalHours={form.updateIntervalHours}
+          xudp={form.xudp}
           onBooleanChange={(key, value) => dispatch({ key, value })}
+          onDnsModeChange={(value) => dispatch({ key: "dnsMode", value })}
+          onRenameRulesChange={(value) => dispatch({ key: "renameRules", value })}
           onTextChange={(key, value) => dispatch({ key, value })}
           onUpdateIntervalChange={(value) => dispatch({ key: "updateIntervalHours", value })}
           onSortChange={(value) => dispatch({ key: "sortMode", value })}

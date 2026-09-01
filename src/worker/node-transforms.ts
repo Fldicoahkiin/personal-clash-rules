@@ -21,6 +21,7 @@ export interface NodeSettings {
   sortMode: NodeSortMode;
   tfo: boolean;
   udp: boolean;
+  xudp: boolean;
 }
 
 export interface SubscriptionNode {
@@ -38,6 +39,7 @@ export const defaultNodeSettings: NodeSettings = {
   sortMode: "source",
   tfo: false,
   udp: true,
+  xudp: false,
 };
 
 const maximumFilterLength = 256;
@@ -127,6 +129,7 @@ export function parseNodeSettings(input: Record<string, unknown>): NodeSettings 
     sortMode: input.sortMode as NodeSortMode,
     tfo: readBoolean(input.tfo),
     udp: readBoolean(input.udp),
+    xudp: readBoolean(input.xudp),
   };
 }
 
@@ -192,6 +195,9 @@ export function applyNodeTransforms(
     names.add(name);
     return [{
       ...node,
+      ...(settings.xudp && (node.type === "vmess" || node.type === "vless")
+        ? { "packet-encoding": "xudp" }
+        : {}),
       ...(settings.udp ? { udp: true } : {}),
       ...(settings.skipCertVerify ? { "skip-cert-verify": true } : {}),
       ...(settings.tfo ? { tfo: true } : {}),
