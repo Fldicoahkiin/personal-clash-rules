@@ -241,6 +241,10 @@ describe("KV-backed subscription links", () => {
       });
 
       expect(data.profileName).toBe("机场订阅");
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://provider.example/sub",
+        expect.objectContaining({ headers: { "User-Agent": "clash.meta" } }),
+      );
     } finally {
       fetchSpy.mockRestore();
     }

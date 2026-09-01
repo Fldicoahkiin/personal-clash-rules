@@ -29,7 +29,7 @@ describe("subscription controls", () => {
       renameRules: [{ id: "rename-test", pattern: "", replacement: "" }],
       showNodeType: false,
       skipCertVerify: false,
-      sourceUserAgent: "mihomo/1.19",
+      sourceUserAgent: "clash.meta",
       sortMode: "source",
       tfo: false,
       udp: true,

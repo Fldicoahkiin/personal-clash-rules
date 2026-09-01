@@ -75,7 +75,7 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           <input
             value={sourceUserAgent}
             onChange={(event) => onTextChange("sourceUserAgent", event.target.value)}
-            placeholder="mihomo/1.19"
+            placeholder="clash.meta"
             maxLength={128}
             spellCheck="false"
           />

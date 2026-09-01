@@ -40,7 +40,7 @@ const maximumRemoteSources = 10;
 const maximumOutputBytes = 1_800_000;
 const subscriptionKeyPrefix = "subscription:";
 const defaultProfileName = "Flacierの分流规则";
-const defaultSourceUserAgent = "mihomo/1.19";
+const defaultSourceUserAgent = "clash.meta";
 const defaultUpdateIntervalHours = 6;
 const nodeScheme = /^(?:anytls|socks5(?:\+tls)?|https?|ssr?|vmess|vless|trojan|hysteria2?|hy2|tuic|wireguard):\/\//iu;
 

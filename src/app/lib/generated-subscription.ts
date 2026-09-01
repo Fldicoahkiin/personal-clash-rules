@@ -149,7 +149,7 @@ function loadedForm(
     showNodeType: booleanValue(nodeSettings.showNodeType, false),
     skipCertVerify: booleanValue(nodeSettings.skipCertVerify, false),
     sourceText,
-    sourceUserAgent: stringValue(config.sourceUserAgent, "mihomo/1.19"),
+    sourceUserAgent: stringValue(config.sourceUserAgent, "clash.meta"),
     sortMode,
     target,
     tfo: booleanValue(nodeSettings.tfo, false),

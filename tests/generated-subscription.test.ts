@@ -64,4 +64,19 @@ describe("parseGeneratedSubscriptionUrl", () => {
     expect(() => parseGeneratedSubscriptionUrl("https://example.com/sub"))
       .toThrow("不是本站生成的订阅链接");
   });
+
+  it("uses the compatible subscription user agent for older links", () => {
+    const token = tokenFor({
+      version: 1,
+      name: "个人订阅",
+      nodeSettings: {},
+      rulePreset: "flacier",
+      sourceMode: "convert",
+      sources: [{ name: "节点 1", type: "node", value: "ss://example" }],
+      updateIntervalHours: 6,
+    });
+
+    expect(parseGeneratedSubscriptionUrl(`https://rules.flacier.com/s/${token}/mihomo-config`))
+      .toMatchObject({ sourceUserAgent: "clash.meta" });
+  });
 });

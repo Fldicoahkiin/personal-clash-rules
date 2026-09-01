@@ -70,7 +70,7 @@ const initialState: FormState = {
   pending: false,
   showNodeType: false,
   skipCertVerify: false,
-  sourceUserAgent: "mihomo/1.19",
+  sourceUserAgent: "clash.meta",
   sourceText: "",
   sortMode: "source",
   target: "clash-party-config",

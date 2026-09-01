@@ -1832,7 +1832,7 @@ export async function normalizeSourceBundle(
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
   const remote = await Promise.all(input.subscriptionUrls.map(
-    (url) => readRemoteSource(url, input.sourceUserAgent || "mihomo/1.19"),
+    (url) => readRemoteSource(url, input.sourceUserAgent || "clash.meta"),
   ));
   const parsed = [
     ...remote.map((source) => source.content),
