@@ -108,46 +108,48 @@ export function RouteTester() {
                 >
                   <div className="route-step-copy">
                     <span className="route-step-label">{step.label}</span>
-                    <strong
-                      className={
-                        [
-                          "route-value",
-                          step.machine ? "route-value-machine" : "",
-                          step.kind === "rule" ? "route-value-rule" : "",
-                          step.kind === "result" ? "route-value-result" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")
-                      }
-                      aria-label={step.value}
-                    >
-                      {ruleValue ? (
-                        <>
-                          <span>{ruleType},</span>
-                          <span>{ruleValue}</span>
-                        </>
-                      ) : (
-                        step.value
-                      )}
-                    </strong>
-                    {step.detail || (step.kind === "rule" && step.state) ? (
-                      <span className="route-step-meta">
-                        {step.detail ? (
-                          <small className="route-step-detail">{step.detail}</small>
-                        ) : null}
-                        {step.kind === "rule" && step.state ? (
-                          <small
-                            className={
-                              step.state === "matched"
-                                ? "route-status route-status-matched"
-                                : "route-status route-status-default"
-                            }
-                          >
-                            {step.status}
-                          </small>
-                        ) : null}
-                      </span>
-                    ) : null}
+                    <div className="route-step-body">
+                      <strong
+                        className={
+                          [
+                            "route-value",
+                            step.machine ? "route-value-machine" : "",
+                            step.kind === "rule" ? "route-value-rule" : "",
+                            step.kind === "result" ? "route-value-result" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                        }
+                        aria-label={step.value}
+                      >
+                        {ruleValue ? (
+                          <>
+                            <span>{ruleType},</span>
+                            <span>{ruleValue}</span>
+                          </>
+                        ) : (
+                          step.value
+                        )}
+                      </strong>
+                      {step.detail || (step.kind === "rule" && step.state) ? (
+                        <span className="route-step-meta">
+                          {step.detail ? (
+                            <small className="route-step-detail">{step.detail}</small>
+                          ) : null}
+                          {step.kind === "rule" && step.state ? (
+                            <small
+                              className={
+                                step.state === "matched"
+                                  ? "route-status route-status-matched"
+                                  : "route-status route-status-default"
+                              }
+                            >
+                              {step.status}
+                            </small>
+                          ) : null}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="route-marker-row">
                     <span

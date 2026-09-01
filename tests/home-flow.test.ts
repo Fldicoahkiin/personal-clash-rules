@@ -67,6 +67,10 @@ describe("home page flow", () => {
 
     expect(tester).toContain('className="route-line"');
     expect(styles).toContain(".route-line");
+    expect(styles).toContain(".route-steps li::before");
+    expect(styles).toContain(".route-steps li:first-child::before");
+    expect(styles).toContain(".route-steps li:last-child::before");
+    expect(styles).not.toContain("outline: 8px solid var(--paper)");
   });
 
   it("keeps the subscription name below the source and the result responsive", () => {

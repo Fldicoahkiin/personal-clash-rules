@@ -285,9 +285,9 @@ summary:focus-visible {
 .route-line {
   position: absolute;
   z-index: 0;
-  right: calc(16.666% + 24px);
+  right: calc(16.666% + 16px);
   bottom: 27px;
-  left: calc(16.666% + 24px);
+  left: calc(16.666% + 16px);
   height: 1px;
   background: var(--line-strong);
   pointer-events: none;
@@ -322,6 +322,13 @@ summary:focus-visible {
   padding-inline: 10px;
 }
 
+.route-step-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
 .route-step-label {
   color: var(--muted);
   font-size: 0.72rem;
@@ -348,7 +355,6 @@ summary:focus-visible {
   border-radius: 50%;
   background: var(--paper);
   color: var(--paper);
-  outline: 8px solid var(--paper);
 }
 
 .route-marker-matched {
@@ -382,23 +388,29 @@ summary:focus-visible {
 
 .route-value-result {
   font-size: 1.08rem;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
 }
 
 .route-value-rule {
-  display: grid;
-  justify-items: center;
-  gap: 1px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.route-value-rule span {
+.route-value-rule span:first-child {
   white-space: nowrap;
+}
+
+.route-value-rule span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .route-step-meta {
   display: flex;
   min-height: 1rem;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   margin-top: 7px;
@@ -1522,12 +1534,7 @@ summary:focus-visible {
   }
 
   .route-line {
-    top: 44px;
-    right: auto;
-    bottom: 44px;
-    left: calc(var(--route-label-column) + 26px);
-    width: 1px;
-    height: auto;
+    display: none;
   }
 
   .route-steps {
@@ -1539,11 +1546,31 @@ summary:focus-visible {
   .route-steps li {
     display: grid;
     grid-template-columns: var(--route-label-column) 28px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    gap: 12px;
+    grid-template-rows: minmax(88px, auto);
+    column-gap: 12px;
     align-items: center;
     min-height: 88px;
     text-align: left;
+  }
+
+  .route-steps li::before {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--route-label-column) + 26px);
+    width: 1px;
+    transform: translateX(-50%);
+    background: var(--line-strong);
+    content: "";
+  }
+
+  .route-steps li:first-child::before {
+    top: 50%;
+  }
+
+  .route-steps li:last-child::before {
+    bottom: 50%;
   }
 
   .route-step-copy {
@@ -1552,18 +1579,23 @@ summary:focus-visible {
 
   .route-step-label {
     grid-column: 1;
-    grid-row: 1 / span 3;
+    grid-row: 1;
     align-self: center;
   }
 
-  .route-value {
+  .route-step-body {
     grid-column: 3;
     grid-row: 1;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .route-value {
     margin-top: 0;
   }
 
   .route-value-rule {
-    justify-items: start;
+    justify-content: flex-start;
   }
 
   .route-step-detail {
@@ -1571,16 +1603,13 @@ summary:focus-visible {
   }
 
   .route-step-meta {
-    grid-column: 3;
-    grid-row: 2;
     justify-content: flex-start;
-    margin: 0;
   }
 
   .route-marker-row {
     z-index: 1;
     grid-column: 2;
-    grid-row: 1 / span 3;
+    grid-row: 1;
     width: 28px;
     height: 100%;
     justify-self: center;

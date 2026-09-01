@@ -11,6 +11,7 @@ describe("createRouteSteps", () => {
 
     expect(html).toContain(">规则测试<");
     expect(html).toContain('class="route-line"');
+    expect(html).toContain('class="route-step-body"');
     expect(html).toContain(">命中规则<");
     expect(html).toContain(">处理结果<");
   });
@@ -38,6 +39,7 @@ describe("createRouteSteps", () => {
         label: "处理结果",
         value: "代理",
         detail: "AI → GLOBAL",
+        machine: false,
       }),
     ]);
   });

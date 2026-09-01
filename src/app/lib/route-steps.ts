@@ -40,7 +40,7 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       value: policyRoute?.mode || "—",
       detail: policyRoute?.route || "",
       status: "",
-      machine: true,
+      machine: false,
       state: null,
       kind: "result",
     },
