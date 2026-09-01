@@ -119,6 +119,25 @@ describe("Worker entrypoint", () => {
     expect(response.status).toBe(405);
     expect(response.headers.get("allow")).toBe("GET, HEAD");
   });
+
+  it("stops reading an API request after the body limit", async () => {
+    let pulls = 0;
+    const response = await exports.default.fetch("https://example.com/api/subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: new ReadableStream({
+        pull(controller) {
+          pulls += 1;
+          controller.enqueue(new Uint8Array(1024));
+          if (pulls === 40) controller.close();
+        },
+      }),
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toMatchObject({ error: "request_too_large" });
+    expect(pulls).toBeLessThan(40);
+  });
 });
 
 describe("KV-backed subscription links", () => {

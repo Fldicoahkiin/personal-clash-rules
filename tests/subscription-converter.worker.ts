@@ -70,6 +70,30 @@ describe("native subscription converter", () => {
     }
   });
 
+  it("stops reading a remote source after the response limit", async () => {
+    let pulls = 0;
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new ReadableStream({
+        pull(controller) {
+          pulls += 1;
+          controller.enqueue(new Uint8Array(64 * 1024));
+          if (pulls === 40) controller.close();
+        },
+      })),
+    );
+    try {
+      await expect(normalizeSourceBundle(env, {
+        profileName: "个人订阅",
+        subscriptionUrls: ["https://provider.example/subscription"],
+        nodes: [],
+      })).rejects.toMatchObject({ code: "source_response_too_large" });
+
+      expect(pulls).toBeLessThan(40);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it("inherits a profile name from one upstream response", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("trojan://secret@tw.example.com:443?sni=tw.example.com#TW-01", {

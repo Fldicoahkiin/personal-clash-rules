@@ -1774,11 +1774,30 @@ async function readRemoteSource(
   const response = await requestRemoteSource(value, sourceUserAgent, "GET");
   const declaredLength = Number(response.headers.get("content-length") || 0);
   if (declaredLength > maximumRemoteBytes) {
+    await response.body?.cancel();
     throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
   }
-  const content = await response.text();
-  if (new TextEncoder().encode(content).byteLength > maximumRemoteBytes) {
-    throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+  let content = "";
+  let receivedBytes = 0;
+  if (reader) {
+    try {
+      while (true) {
+        const { done, value: chunk } = await reader.read();
+        if (done) break;
+        receivedBytes += chunk.byteLength;
+        if (receivedBytes > maximumRemoteBytes) {
+          await reader.cancel();
+          throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
+        }
+        content += decoder.decode(chunk, { stream: true });
+      }
+      content += decoder.decode();
+    } finally {
+      reader.releaseLock();
+    }
   }
   return {
     content,

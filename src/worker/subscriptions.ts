@@ -279,12 +279,30 @@ function readConfig(
 async function readRequestObject(request: Request): Promise<Record<string, unknown>> {
   const declaredLength = Number(request.headers.get("content-length") || 0);
   if (declaredLength > maximumRequestBytes) {
+    await request.body?.cancel();
     throw new ApiError(413, "request_too_large", "Request exceeds the 16 KiB limit");
   }
 
-  const body = await request.text();
-  if (encoder.encode(body).byteLength > maximumRequestBytes) {
-    throw new ApiError(413, "request_too_large", "Request exceeds the 16 KiB limit");
+  const reader = request.body?.getReader();
+  const decoder = new TextDecoder();
+  let body = "";
+  let receivedBytes = 0;
+  if (reader) {
+    try {
+      while (true) {
+        const { done, value: chunk } = await reader.read();
+        if (done) break;
+        receivedBytes += chunk.byteLength;
+        if (receivedBytes > maximumRequestBytes) {
+          await reader.cancel();
+          throw new ApiError(413, "request_too_large", "Request exceeds the 16 KiB limit");
+        }
+        body += decoder.decode(chunk, { stream: true });
+      }
+      body += decoder.decode();
+    } finally {
+      reader.releaseLock();
+    }
   }
   try {
     const value: unknown = JSON.parse(body);
