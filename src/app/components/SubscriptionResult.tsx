@@ -74,10 +74,23 @@ export function SubscriptionResult({
             <dd>{countValue(result.nodeStats.output, "由客户端确认")}</dd>
           </div>
           <div>
-            <dt>跳过</dt>
+            <dt>跳过不兼容节点</dt>
             <dd>{countValue(result.nodeStats.skipped, "由客户端确认")}</dd>
           </div>
         </dl>
+        {clientDirect ? (
+          <div className="subscription-result-notes">
+            <p>Worker 无法统计节点，也无法重新排序；节点保持来源顺序。</p>
+            {result.usage.sources.some((source) => source.status === "client-only") ? (
+              <p>
+                机场未向 Worker 返回用量，
+                {format.name === "Clash Party"
+                  ? "Clash Party 会显示“远程”。"
+                  : "生成链接不会显示用量。"}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {result.usage.sources.length > 0 ? (
           <div className="subscription-usage">
             <div className="subscription-usage-total">

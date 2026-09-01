@@ -620,9 +620,23 @@ summary:focus-visible {
 .client-picker legend {
   width: 100%;
   margin-bottom: 10px;
+}
+
+.client-picker legend strong,
+.client-picker legend small {
+  display: block;
+}
+
+.client-picker legend strong {
+  color: var(--ink);
+  font-size: 0.76rem;
+}
+
+.client-picker legend small {
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 650;
+  font-size: 0.66rem;
+  font-weight: 500;
 }
 
 .client-picker button {
@@ -667,23 +681,9 @@ summary:focus-visible {
   font-weight: 700;
 }
 
-.subscription-more-formats {
+.subscription-format-group + .subscription-format-group {
+  padding-top: 4px;
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.subscription-more-formats summary {
-  width: max-content;
-  padding-block: 12px;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 650;
-}
-
-.subscription-more-formats > .client-picker {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  padding-bottom: 14px;
 }
 
 .subscription-more-settings,
@@ -726,6 +726,25 @@ summary:focus-visible {
   padding-bottom: 16px;
 }
 
+.field-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.field-label strong {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.field-label small {
+  color: var(--faint);
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-align: right;
+}
+
 .subscription-sort,
 .subscription-option-list {
   grid-column: 1 / -1;
@@ -743,12 +762,29 @@ summary:focus-visible {
 }
 
 .subscription-option-list label {
-  display: inline-flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr);
+  align-items: start;
   gap: 7px;
   color: var(--muted);
   cursor: pointer;
   font-size: 0.72rem;
+}
+
+.subscription-option-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.subscription-option-copy strong {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.subscription-option-copy small {
+  color: var(--faint);
+  font-size: 0.65rem;
+  font-weight: 500;
 }
 
 .subscription-option-list input {
@@ -827,6 +863,19 @@ summary:focus-visible {
 .subscription-result-meta dd {
   margin: 0;
   font-size: 0.69rem;
+}
+
+.subscription-result-notes {
+  display: grid;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.subscription-result-notes p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.69rem;
+  line-height: 1.45;
 }
 
 .subscription-result-meta dt {
@@ -1414,9 +1463,16 @@ summary:focus-visible {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .subscription-more-formats > .client-picker {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .field-label {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
   }
+
+  .field-label small {
+    text-align: left;
+  }
+
 }
 
 @media (max-width: 820px) {
@@ -1574,10 +1630,6 @@ summary:focus-visible {
   }
 
   .client-picker {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .subscription-more-formats > .client-picker {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -1742,7 +1794,7 @@ summary:focus-visible {
 
   .subscription-result-meta {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 7px 12px;
   }
 

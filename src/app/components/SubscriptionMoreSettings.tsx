@@ -55,7 +55,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
       <summary>进阶设置</summary>
       <div className="subscription-settings-grid">
         <label className="field">
-          <span>订阅请求 UA</span>
+          <span className="field-label">
+            <strong>订阅请求 UA</strong>
+            <small>用于请求机场订阅</small>
+          </span>
           <input
             value={sourceUserAgent}
             onChange={(event) => onTextChange("sourceUserAgent", event.target.value)}
@@ -65,7 +68,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           />
         </label>
         <label className="field">
-          <span>更新间隔</span>
+          <span className="field-label">
+            <strong>更新间隔</strong>
+            <small>控制配置和节点源刷新</small>
+          </span>
           <select
             value={updateIntervalHours}
             onChange={(event) => onUpdateIntervalChange(Number(event.target.value))}
@@ -77,7 +83,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           </select>
         </label>
         <label className="field">
-          <span>保留节点</span>
+          <span className="field-label">
+            <strong>保留节点</strong>
+            <small>仅保留名称匹配的节点</small>
+          </span>
           <input
             value={includePattern}
             onChange={(event) => onTextChange("includePattern", event.target.value)}
@@ -87,7 +96,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           />
         </label>
         <label className="field">
-          <span>排除节点</span>
+          <span className="field-label">
+            <strong>排除节点</strong>
+            <small>移除名称匹配的节点</small>
+          </span>
           <input
             value={excludePattern}
             onChange={(event) => onTextChange("excludePattern", event.target.value)}
@@ -97,7 +109,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           />
         </label>
         <label className="field">
-          <span>名称匹配</span>
+          <span className="field-label">
+            <strong>名称匹配</strong>
+            <small>正则匹配节点名称</small>
+          </span>
           <input
             value={renamePattern}
             onChange={(event) => onTextChange("renamePattern", event.target.value)}
@@ -107,7 +122,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           />
         </label>
         <label className="field">
-          <span>替换为</span>
+          <span className="field-label">
+            <strong>替换为</strong>
+            <small>替换匹配到的名称</small>
+          </span>
           <input
             value={renameReplacement}
             onChange={(event) => onTextChange("renameReplacement", event.target.value)}
@@ -117,7 +135,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           />
         </label>
         <label className="field subscription-sort">
-          <span>排序</span>
+          <span className="field-label">
+            <strong>排序</strong>
+            <small>客户端直读时仅支持来源顺序</small>
+          </span>
           <select
             value={sortMode}
             onChange={(event) => onSortChange(event.target.value as NodeSortMode)}
@@ -134,7 +155,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
               checked={addCountryFlag}
               onChange={(event) => onBooleanChange("addCountryFlag", event.target.checked)}
             />
-            <span>添加国家旗帜</span>
+            <span className="subscription-option-copy">
+              <strong>国家旗帜</strong>
+              <small>按节点名称识别国家或地区</small>
+            </span>
           </label>
           <label>
             <input
@@ -142,7 +166,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
               checked={showNodeType}
               onChange={(event) => onBooleanChange("showNodeType", event.target.checked)}
             />
-            <span>显示节点类型</span>
+            <span className="subscription-option-copy">
+              <strong>节点类型</strong>
+              <small>在名称前显示协议类型</small>
+            </span>
           </label>
           <label>
             <input
@@ -150,7 +177,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
               checked={udp}
               onChange={(event) => onBooleanChange("udp", event.target.checked)}
             />
-            <span>启用 UDP</span>
+            <span className="subscription-option-copy">
+              <strong>UDP</strong>
+              <small>用于语音、游戏和 QUIC</small>
+            </span>
           </label>
           <label>
             <input
@@ -158,7 +188,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
               checked={skipCertVerify}
               onChange={(event) => onBooleanChange("skipCertVerify", event.target.checked)}
             />
-            <span>跳过证书验证</span>
+            <span className="subscription-option-copy">
+              <strong>跳过证书验证</strong>
+              <small>仅用于证书异常的 TLS 节点</small>
+            </span>
           </label>
           <label>
             <input
@@ -166,7 +199,10 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
               checked={tfo}
               onChange={(event) => onBooleanChange("tfo", event.target.checked)}
             />
-            <span>TCP Fast Open</span>
+            <span className="subscription-option-copy">
+              <strong>TCP Fast Open</strong>
+              <small>仅对支持 TFO 的连接生效</small>
+            </span>
           </label>
         </div>
       </div>

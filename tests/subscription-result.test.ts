@@ -46,7 +46,7 @@ describe("SubscriptionResult", () => {
     expect(html).toContain("Worker 转换");
     expect(html).toContain("读取</dt><dd>12");
     expect(html).toContain("输出</dt><dd>10");
-    expect(html).toContain("跳过</dt><dd>2");
+    expect(html).toContain("跳过不兼容节点</dt><dd>2");
     expect(html).toContain("合计流量");
     expect(html).toContain("机场 A");
     expect(html).toContain("已读取");
@@ -74,6 +74,9 @@ describe("SubscriptionResult", () => {
     expect(html).toContain("客户端直读");
     expect(html).toContain("由客户端读取");
     expect(html).toContain("Worker 不可见");
+    expect(html).toContain("Worker 无法统计节点，也无法重新排序");
+    expect(html).toContain("机场未向 Worker 返回用量，Clash Party 会显示“远程”");
+    expect(html).toContain("跳过不兼容节点");
     expect(html).not.toContain("读取</dt><dd>0");
   });
 });

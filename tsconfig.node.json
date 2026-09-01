@@ -17,6 +17,8 @@
     "vitest.worker.config.ts",
     "tests/**/*.test.ts",
     "src/app/components/RouteTester.tsx",
+    "src/app/components/SubscriptionFormatPicker.tsx",
+    "src/app/components/SubscriptionMoreSettings.tsx",
     "src/app/components/SubscriptionResult.tsx",
     "src/app/lib",
     "src/app/features/subscriptions",

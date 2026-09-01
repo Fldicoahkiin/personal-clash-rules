@@ -11,7 +11,7 @@ type SubscriptionFormatPickerProps = {
   onChange: (target: OutputTarget) => void;
 };
 
-const additionalFormats = [...nodeResourceFormats, ...secondaryFormats];
+const nodeOnlyFormats = [...nodeResourceFormats, ...secondaryFormats];
 
 function FormatButton({
   active,
@@ -43,8 +43,11 @@ export function SubscriptionFormatPicker({
 }: SubscriptionFormatPickerProps) {
   return (
     <>
-      <fieldset className="client-picker">
-        <legend>选择客户端</legend>
+      <fieldset className="client-picker subscription-format-group">
+        <legend>
+          <strong>完整配置</strong>
+          <small>含策略组、规则和 DNS</small>
+        </legend>
         {completeConfigFormats.map((format) => (
           <FormatButton
             active={target === format.target}
@@ -55,19 +58,20 @@ export function SubscriptionFormatPicker({
         ))}
       </fieldset>
 
-      <details className="subscription-more-formats">
-        <summary>其他输出格式</summary>
-        <div className="client-picker">
-          {additionalFormats.map((format) => (
-            <FormatButton
-              active={target === format.target}
-              format={format}
-              key={format.target}
-              onChange={onChange}
-            />
-          ))}
-        </div>
-      </details>
+      <fieldset className="client-picker subscription-format-group">
+        <legend>
+          <strong>仅节点</strong>
+          <small>不含策略组、规则和 DNS</small>
+        </legend>
+        {nodeOnlyFormats.map((format) => (
+          <FormatButton
+            active={target === format.target}
+            format={format}
+            key={format.target}
+            onChange={onChange}
+          />
+        ))}
+      </fieldset>
     </>
   );
 }
