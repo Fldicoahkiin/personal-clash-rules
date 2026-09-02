@@ -44,6 +44,26 @@ const defaultSourceUserAgent = "clash.meta";
 const defaultUpdateIntervalHours = 6;
 const nodeScheme = /^(?:anytls|socks5(?:\+tls)?|https?|ssr?|vmess|vless|trojan|hysteria2?|hy2|tuic|wireguard):\/\//iu;
 
+async function enforceSubscriptionRateLimit(
+  request: Request,
+  url: URL,
+  env: SubscriptionEnv,
+): Promise<void> {
+  if (
+    request.method !== "POST"
+    || (url.pathname !== "/api/subscriptions" && url.pathname !== "/api/subscriptions/resolve")
+  ) {
+    return;
+  }
+  const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+  const { success } = await env.SUBSCRIPTION_RATE_LIMITER.limit({
+    key: `${url.pathname.slice(1)}:${clientIp}`,
+  });
+  if (!success) {
+    throw new ApiError(429, "rate_limited", "Too many subscription requests");
+  }
+}
+
 type SubscriptionSource = {
   name: string;
   type: "subscription" | "node";
@@ -635,6 +655,7 @@ export async function routeSubscriptionRequest(
   env: SubscriptionEnv,
 ): Promise<Response | null> {
   try {
+    await enforceSubscriptionRateLimit(request, url, env);
     if (url.pathname === "/api/subscriptions") {
       return await createSubscription(request, url, env);
     }
@@ -650,9 +671,13 @@ export async function routeSubscriptionRequest(
     return null;
   } catch (error) {
     if (error instanceof ApiError) {
+      const headers: Record<string, string> = { "Cache-Control": "no-store" };
+      if (error.code === "rate_limited") {
+        headers["Retry-After"] = "60";
+      }
       return json(
         { error: error.code, message: error.message },
-        { status: error.status, headers: { "Cache-Control": "no-store" } },
+        { status: error.status, headers },
       );
     }
     throw error;

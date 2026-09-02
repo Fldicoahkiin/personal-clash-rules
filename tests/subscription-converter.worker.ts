@@ -6,11 +6,29 @@ import {
   normalizeSources,
   produceTarget,
 } from "../src/worker/sub-store";
+import { routeSubscriptionRequest } from "../src/worker/subscriptions";
 import type { SubscriptionEnv } from "../src/worker/types";
 
 const env = {} as SubscriptionEnv;
 
 describe("native subscription converter", () => {
+  it("rate limits subscription creation by client IP", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const response = await routeSubscriptionRequest(
+      new Request("https://rules.flacier.com/api/subscriptions", {
+        method: "POST",
+        headers: { "CF-Connecting-IP": "203.0.113.7" },
+      }),
+      new URL("https://rules.flacier.com/api/subscriptions"),
+      { SUBSCRIPTION_RATE_LIMITER: { limit } } as SubscriptionEnv,
+    );
+
+    expect(limit).toHaveBeenCalledWith({ key: "api/subscriptions:203.0.113.7" });
+    expect(response?.status).toBe(429);
+    expect(response?.headers.get("retry-after")).toBe("60");
+    await expect(response?.json()).resolves.toMatchObject({ error: "rate_limited" });
+  });
+
   it("parses local URI nodes and keeps names unique", async () => {
     const userInfo = btoa("aes-128-gcm:secret");
     const nodes = await normalizeSources(env, {

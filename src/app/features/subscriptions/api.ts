@@ -147,6 +147,7 @@ export function subscriptionErrorText(error: unknown): string {
     source_response_too_large: "订阅源内容超过 1 MiB",
     too_many_sources: "订阅来源数量过多",
     request_too_large: "输入内容超过 16 KiB",
+    rate_limited: "请求太频繁，请稍后重试",
     no_nodes_found: "不兼容：订阅中没有可识别的节点",
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",

@@ -16,6 +16,16 @@
       "binding": "SUBSCRIPTIONS"
     }
   ],
+  "ratelimits": [
+    {
+      "name": "SUBSCRIPTION_RATE_LIMITER",
+      "namespace_id": "83740621",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": {
