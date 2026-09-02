@@ -35,6 +35,20 @@ function formatUsage(usage: SubscriptionUsage): string {
   return `${formatBytes(used)} / ${formatBytes(usage.total)}`;
 }
 
+function formatExpiry(expire?: string): string {
+  if (expire === "0") return "长期有效";
+  if (!expire) return "未返回到期";
+  const date = new Date(Number(expire) * 1000);
+  if (Number.isNaN(date.getTime())) return "到期信息无效";
+  const formatted = new Intl.DateTimeFormat("zh-CN", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+  }).format(date);
+  return `到期 ${formatted}`;
+}
+
 function usageStatus(source: SubscriptionUsageSource): string {
   if (source.status === "available") return "已读取";
   if (source.status === "missing") return "未返回";
@@ -100,6 +114,11 @@ export function SubscriptionResult({
                   ? formatUsage(result.usage.combined)
                   : "未合并"}
               </span>
+              <small>
+                {result.usage.combined
+                  ? formatExpiry(result.usage.combined.expire)
+                  : "未返回到期"}
+              </small>
             </div>
             <ul>
               {result.usage.sources.map((source) => (
@@ -107,6 +126,7 @@ export function SubscriptionResult({
                   <span>{source.name}</span>
                   <span>{usageStatus(source)}</span>
                   <strong>{source.usage ? formatUsage(source.usage) : "—"}</strong>
+                  <small>{source.usage ? formatExpiry(source.usage.expire) : "—"}</small>
                 </li>
               ))}
             </ul>
@@ -120,7 +140,10 @@ export function SubscriptionResult({
         </button>
         {clientAction?.kind === "link" ? (
           <a className="button button-primary" href={clientAction.value}>
-            打开 {format.name}
+            {format.icon ? (
+              <img src={format.icon} alt="" width="20" height="20" />
+            ) : null}
+            一键导入
             <ArrowUpRight aria-hidden="true" />
           </a>
         ) : null}

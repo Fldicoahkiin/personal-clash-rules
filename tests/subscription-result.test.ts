@@ -48,8 +48,12 @@ describe("SubscriptionResult", () => {
     expect(html).toContain("输出</dt><dd>10");
     expect(html).toContain("跳过不兼容节点</dt><dd>2");
     expect(html).toContain("合计流量");
+    expect(html).toContain("到期");
     expect(html).toContain("机场 A");
     expect(html).toContain("已读取");
+    expect(html).toContain("一键导入");
+    expect(html).toContain("/client-icons/clash-party.png");
+    expect(html).not.toContain("打开 Clash Party");
   });
 
   it("does not invent node counts for client-direct sources", () => {

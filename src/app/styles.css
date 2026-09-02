@@ -620,6 +620,58 @@ summary:focus-visible {
   color: var(--faint);
 }
 
+.subscription-format-picker {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.subscription-format-picker > summary {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.subscription-format-current {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.subscription-format-current img {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.subscription-format-current strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subscription-format-current small {
+  color: var(--faint);
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.subscription-format-picker-body {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 18px;
+}
+
 .client-picker {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -736,6 +788,14 @@ summary:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   padding-bottom: 16px;
+}
+
+.subscription-user-agent {
+  align-self: start;
+}
+
+.subscription-user-agent input {
+  margin-top: 7px;
 }
 
 .field-label {
@@ -982,7 +1042,7 @@ summary:focus-visible {
 .subscription-usage-total,
 .subscription-usage li {
   display: grid;
-  grid-template-columns: minmax(90px, 0.65fr) minmax(90px, 0.45fr) minmax(150px, 1fr);
+  grid-template-columns: minmax(90px, 0.65fr) minmax(90px, 0.45fr) minmax(150px, 1fr) minmax(110px, auto);
   align-items: baseline;
   gap: 12px;
 }
@@ -991,10 +1051,17 @@ summary:focus-visible {
   grid-column: 1 / 3;
 }
 
-.subscription-usage-total > span {
+.subscription-usage-total > span,
+.subscription-usage-total > small {
   color: var(--ink);
   font-weight: 680;
   text-align: right;
+}
+
+.subscription-usage-total > small,
+.subscription-usage li > small {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .subscription-usage ul {
@@ -1007,6 +1074,7 @@ summary:focus-visible {
 
 .subscription-usage li > span,
 .subscription-usage li > strong,
+.subscription-usage li > small,
 .subscription-usage-total > strong {
   font-size: 0.69rem;
 }
@@ -1033,6 +1101,13 @@ summary:focus-visible {
 
 .subscription-result-actions .button {
   white-space: nowrap;
+}
+
+.subscription-result-actions .button img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
 }
 
 .field-error {
@@ -1922,7 +1997,13 @@ summary:focus-visible {
     grid-column: auto;
   }
 
-  .subscription-usage li > strong {
+  .subscription-usage li > strong,
+  .subscription-usage li > small {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .subscription-usage-total > small {
     grid-column: 1 / -1;
     text-align: left;
   }

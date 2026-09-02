@@ -16,6 +16,9 @@ describe("subscription controls", () => {
     expect(html).toContain("含策略组、规则和 DNS");
     expect(html).toContain("仅节点");
     expect(html).toContain("不含策略组、规则和 DNS");
+    expect(html).toContain("<details");
+    expect(html).toContain("输出客户端");
+    expect(html).toContain("/client-icons/clash-party.png");
     expect(html).not.toContain("其他输出格式");
   });
 
@@ -64,5 +67,37 @@ describe("subscription controls", () => {
     expect(html).toContain("客户端直读备用");
     expect(html).toContain("添加重命名");
     expect(html).not.toContain("Emoji");
+  });
+
+  it("offers preset and custom subscription user agents", () => {
+    const html = renderToStaticMarkup(createElement(SubscriptionMoreSettings, {
+      addCountryFlag: true,
+      allowClientFallback: false,
+      dnsMode: "doh",
+      excludePattern: "",
+      includePattern: "",
+      renameRules: [{ id: "rename-test", pattern: "", replacement: "" }],
+      showNodeType: false,
+      skipCertVerify: false,
+      sourceUserAgent: "CustomClient/1.0",
+      sortMode: "source",
+      tfo: false,
+      udp: true,
+      updateIntervalHours: 6,
+      xudp: false,
+      onBooleanChange: () => undefined,
+      onDnsModeChange: () => undefined,
+      onRenameRulesChange: () => undefined,
+      onSortChange: () => undefined,
+      onTextChange: () => undefined,
+      onUpdateIntervalChange: () => undefined,
+    }));
+
+    expect(html).toContain("clash.meta（推荐）");
+    expect(html).toContain("Clash Party");
+    expect(html).toContain("Mihomo");
+    expect(html).toContain("Clash");
+    expect(html).toContain("自定义");
+    expect(html).toContain("value=\"CustomClient/1.0\"");
   });
 });

@@ -9,6 +9,13 @@ type RenameRuleDraft = {
   replacement: string;
 };
 
+const sourceUserAgentPresets = [
+  { label: "clash.meta（推荐）", value: "clash.meta" },
+  { label: "Clash Party", value: "ClashParty/2.0" },
+  { label: "Clash", value: "Clash/1.18.0" },
+  { label: "Mihomo", value: "mihomo/1.19" },
+] as const;
+
 type SubscriptionMoreSettingsProps = {
   addCountryFlag: boolean;
   allowClientFallback: boolean;
@@ -63,23 +70,43 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   onTextChange,
   onUpdateIntervalChange,
 }) => {
+  const hasPresetUserAgent = sourceUserAgentPresets.some(
+    (preset) => preset.value === sourceUserAgent,
+  );
+
   return (
     <details className="subscription-more-settings">
       <summary>进阶设置</summary>
       <div className="subscription-settings-grid">
-        <label className="field">
+        <div className="field subscription-user-agent">
           <span className="field-label">
             <strong>订阅请求 UA</strong>
             <small>用于请求机场订阅</small>
           </span>
-          <input
-            value={sourceUserAgent}
-            onChange={(event) => onTextChange("sourceUserAgent", event.target.value)}
-            placeholder="clash.meta"
-            maxLength={128}
-            spellCheck="false"
-          />
-        </label>
+          <select
+            aria-label="订阅请求 UA 预设"
+            value={hasPresetUserAgent ? sourceUserAgent : "custom"}
+            onChange={(event) => onTextChange(
+              "sourceUserAgent",
+              event.target.value === "custom" ? "" : event.target.value,
+            )}
+          >
+            {sourceUserAgentPresets.map((preset) => (
+              <option key={preset.value} value={preset.value}>{preset.label}</option>
+            ))}
+            <option value="custom">自定义</option>
+          </select>
+          {!hasPresetUserAgent ? (
+            <input
+              aria-label="自定义订阅请求 UA"
+              value={sourceUserAgent}
+              onChange={(event) => onTextChange("sourceUserAgent", event.target.value)}
+              placeholder="例如 CustomClient/1.0"
+              maxLength={128}
+              spellCheck="false"
+            />
+          ) : null}
+        </div>
         <label className="field">
           <span className="field-label">
             <strong>更新间隔</strong>
