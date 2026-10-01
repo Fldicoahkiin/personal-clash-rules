@@ -9,6 +9,8 @@ export interface ClientFormat {
 }
 
 export const completeConfigFormats: ClientFormat[] = [
+  { target: "clash-verge-config", name: "Clash Verge", icon: "/client-icons/clash-verge.png", clientId: "clash-verge" },
+  { target: "flclash-config", name: "FlClash", icon: "/client-icons/flclash.png", clientId: "flclash" },
   {
     target: "clash-party-config",
     name: "Clash Party",

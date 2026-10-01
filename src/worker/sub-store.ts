@@ -14,7 +14,7 @@ import type { SubscriptionNode } from "./node-transforms";
 import { createSingBoxProfile } from "./sing-box-profile";
 import { createStashProfile } from "./stash-profile";
 import { createSurgeProfile, createSurfboardProfile } from "./surge-profile";
-import type { OutputTarget, SubscriptionEnv } from "./types";
+import { isMihomoConfigTarget, type OutputTarget, type SubscriptionEnv } from "./types";
 
 // Adapted from realchendahuang/sub-store-cloudflare under AGPL-3.0.
 type ProxyNode = SubscriptionNode & { type: string; server?: string; port?: number };
@@ -535,6 +535,17 @@ function parseProxyUri(line: string, index: number): ProxyNode | undefined {
   }
 }
 
+function parseUriTransport(params: URLSearchParams) {
+  const network = params.get("type") || "tcp";
+  return stripUndefined({
+    network,
+    alpn: commaList(params.get("alpn")),
+    "skip-cert-verify": boolParam(params.get("insecure") || params.get("allowInsecure")),
+    "ws-opts": network === "ws" ? { path: params.get("path") || "/", headers: stripUndefined({ Host: params.get("host") || undefined }) } : undefined,
+    "grpc-opts": network === "grpc" ? { "grpc-service-name": params.get("serviceName") || "" } : undefined,
+  });
+}
+
 function parseVless(line: string, index: number): ProxyNode {
   const url = new URL(line);
   const params = url.searchParams;
@@ -550,12 +561,12 @@ function parseVless(line: string, index: number): ProxyNode {
     uuid: decodeURIComponent(url.username),
     udp: true,
     flow: params.get("flow") || undefined,
-    network: params.get("type") || "tcp",
     tls: security !== "none",
     servername: params.get("sni") || undefined,
     encryption: params.get("encryption") || "none",
     "client-fingerprint": params.get("fp") || "chrome",
     "reality-opts": publicKey ? stripUndefined({ "public-key": publicKey, "short-id": shortId, "spider-x": params.get("spx") || "/" }) : undefined,
+    ...parseUriTransport(params),
   });
 }
 
@@ -619,8 +630,8 @@ function parseTrojan(line: string, index: number): ProxyNode {
     port: Number(url.port || 443),
     password: decodeURIComponent(url.username),
     sni: url.searchParams.get("sni") || url.searchParams.get("peer") || undefined,
-    "skip-cert-verify": boolParam(url.searchParams.get("allowInsecure")),
     udp: true,
+    ...parseUriTransport(url.searchParams),
   });
 }
 
@@ -1327,6 +1338,19 @@ function renderProxyUris(proxies: ProxyNode[]) {
   return proxies.map(toProxyUri).filter(Boolean).join("\n");
 }
 
+function setUriTransport(params: URLSearchParams, proxy: ProxyNode) {
+  params.set("type", String(proxy.network || "tcp"));
+  if (Array.isArray(proxy.alpn)) params.set("alpn", proxy.alpn.join(","));
+  if (proxy["skip-cert-verify"]) params.set("allowInsecure", "1");
+  const ws = proxy["ws-opts"] as { path?: string; headers?: Record<string, string> } | undefined;
+  if (proxy.network === "ws" && ws) {
+    if (ws.path) params.set("path", ws.path);
+    if (ws.headers?.Host || ws.headers?.host) params.set("host", ws.headers.Host || ws.headers.host);
+  }
+  const grpc = proxy["grpc-opts"] as { "grpc-service-name"?: string } | undefined;
+  if (proxy.network === "grpc" && grpc?.["grpc-service-name"]) params.set("serviceName", grpc["grpc-service-name"]);
+}
+
 function toProxyUri(proxy: ProxyNode) {
   if (proxy.type === "vless") {
     const params = new URLSearchParams();
@@ -1340,6 +1364,7 @@ function toProxyUri(proxy: ProxyNode) {
     if (realityOpts?.["public-key"]) params.set("spx", String(realityOpts["spider-x"] || "/"));
     params.set("type", String(proxy.network || "tcp"));
     if (proxy.flow) params.set("flow", String(proxy.flow));
+    setUriTransport(params, proxy);
     return `vless://${encodeURIComponent(String(proxy.uuid))}@${proxy.server}:${proxy.port}?${params.toString()}#${encodeURIComponent(proxy.name)}`;
   }
 
@@ -1387,6 +1412,7 @@ function toProxyUri(proxy: ProxyNode) {
     const params = new URLSearchParams();
     if (proxy.sni) params.set("sni", String(proxy.sni));
     if (proxy["skip-cert-verify"]) params.set("allowInsecure", "1");
+    setUriTransport(params, proxy);
     return `trojan://${encodeURIComponent(String(proxy.password))}@${proxy.server}:${proxy.port}?${params.toString()}#${encodeURIComponent(proxy.name)}`;
   }
 
@@ -1528,6 +1554,7 @@ function encodeBase64UrlText(input: string) {
 }
 
 function isTargetCompatible(proxy: ProxyNode, target: OutputTarget): boolean {
+  if (isMihomoConfigTarget(target)) return true;
   if (["clash-party-config", "mihomo-config", "stash-config", "mihomo", "clash", "stash", "json"].includes(target)) return true;
   if (["uri", "v2ray", "shadowrocket"].includes(target)) return ["ss", "ssr", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
   if (["sing-box", "sing-box-config"].includes(target)) return ["ss", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
@@ -1711,7 +1738,7 @@ export function combineSubscriptionUsage(
     upload: complete.reduce((sum, usage) => sum + BigInt(usage.upload), 0n).toString(),
     download: complete.reduce((sum, usage) => sum + BigInt(usage.download), 0n).toString(),
     total: complete.reduce((sum, usage) => sum + BigInt(usage.total), 0n).toString(),
-    ...(expire ? { expire } : {}),
+    ...(expire ? { expire } : complete.every((usage) => usage.expire === "0") ? { expire: "0" } : {}),
   };
 }
 
@@ -1767,7 +1794,7 @@ async function requestRemoteSource(
   return response;
 }
 
-async function readRemoteSource(
+export async function readRemoteSource(
   value: string,
   sourceUserAgent: string,
 ): Promise<{ content: string; metadata: RemoteSubscriptionMetadata }> {
@@ -1846,6 +1873,7 @@ export async function normalizeSourceBundle(
   profileName?: string;
   remoteMetadata: RemoteSubscriptionMetadata[];
   subscriptionUsage?: SubscriptionUsage;
+  upstreamConfig?: Record<string, unknown>;
 }> {
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
@@ -1863,9 +1891,19 @@ export async function normalizeSourceBundle(
   const subscriptionUsage = combineSubscriptionUsage(
     remote.map((source) => source.metadata.usage),
   );
+  let upstreamConfig: Record<string, unknown> | undefined;
+  if (remote.length === 1) {
+    try {
+      const value: unknown = parseYaml(decodeMaybeBase64(remote[0].content));
+      if (value && typeof value === "object" && !Array.isArray(value) && "proxies" in value) {
+        upstreamConfig = value as Record<string, unknown>;
+      }
+    } catch { /* URI subscriptions have no configuration to inherit. */ }
+  }
   return {
     nodes: prepareNodes(parsed),
     remoteMetadata: remote.map((source) => source.metadata),
+    ...(upstreamConfig ? { upstreamConfig } : {}),
     ...(remote.length === 1 && remote[0].metadata.profileName
       ? { profileName: remote[0].metadata.profileName }
       : {}),
@@ -1880,14 +1918,15 @@ export async function produceTarget(
   rulePreset: MihomoRulePreset = "flacier",
   updateIntervalHours = 6,
   dnsMode: MihomoDnsMode = "doh",
+  upstreamConfig?: Record<string, unknown>,
 ): Promise<string> {
   const supported = (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
     throw new ApiError(422, "target_unsupported", `${target} could not represent the normalized nodes`);
   }
   const mihomoNodes = stringifyYaml({ proxies: supported });
-  if (target === "clash-party-config" || target === "mihomo-config") {
-    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode);
+  if (isMihomoConfigTarget(target)) {
+    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode, upstreamConfig);
   }
   if (target === "stash-config") return createStashProfile(mihomoNodes, updateIntervalHours);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported), updateIntervalHours);

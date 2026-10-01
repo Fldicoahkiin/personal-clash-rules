@@ -13,6 +13,9 @@ const sourceUserAgentPresets = [
   { label: "clash.meta（推荐）", value: "clash.meta" },
   { label: "Clash Party", value: "ClashParty/2.0" },
   { label: "Clash", value: "Clash/1.18.0" },
+  { label: "Clash Verge", value: "clash-verge" },
+  { label: "FlClash", value: "FlClash" },
+  { label: "Shadowrocket", value: "Shadowrocket" },
   { label: "Mihomo", value: "mihomo/1.19" },
 ] as const;
 
@@ -20,6 +23,7 @@ type SubscriptionMoreSettingsProps = {
   addCountryFlag: boolean;
   allowClientFallback: boolean;
   dnsMode: DnsMode;
+  supportsDns?: boolean;
   excludePattern: string;
   includePattern: string;
   renameRules: RenameRuleDraft[];
@@ -52,6 +56,7 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   addCountryFlag,
   allowClientFallback,
   dnsMode,
+  supportsDns = true,
   excludePattern,
   includePattern,
   renameRules,
@@ -215,19 +220,20 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
             添加重命名
           </button>
         </fieldset>
-        <label className="field">
+        {supportsDns ? <label className="field">
           <span className="field-label">
             <strong>Clash DNS</strong>
-            <small>仅影响 Clash Party 与 Mihomo 完整配置</small>
+            <small>适用于 Clash Verge、FlClash、Clash Party 与 Mihomo 完整配置</small>
           </span>
           <select
             value={dnsMode}
             onChange={(event) => onDnsModeChange(event.target.value as DnsMode)}
           >
-            <option value="doh">内置 DoH</option>
+            <option value="upstream">保留原订阅 DNS</option>
+            <option value="doh">代理解析 · 加密 DoH</option>
             <option value="system">使用系统 DNS</option>
           </select>
-        </label>
+        </label> : null}
         <label className="field subscription-sort">
           <span className="field-label">
             <strong>排序</strong>
@@ -251,7 +257,7 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
             />
             <span className="subscription-option-copy">
               <strong>客户端直读备用</strong>
-              <small>机场拒绝 Worker 时，仅供 Clash Party 与 Mihomo 使用</small>
+              <small>Mihomo 系客户端可用；外层订阅可能没有流量信息</small>
             </span>
           </label>
           <label>

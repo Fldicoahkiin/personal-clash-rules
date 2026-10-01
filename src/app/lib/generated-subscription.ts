@@ -5,6 +5,7 @@ import type {
   OutputTarget,
   RulePreset,
 } from "../features/subscriptions/api";
+import { ruleTemplates } from "../../config/rule-templates";
 
 export type LoadedSubscriptionForm = {
   addCountryFlag: boolean;
@@ -15,6 +16,7 @@ export type LoadedSubscriptionForm = {
   name: string;
   renameRules: NodeRenameRule[];
   rulePreset: RulePreset;
+  ruleTemplateUrl: string;
   showNodeType: boolean;
   skipCertVerify: boolean;
   sourceText: string;
@@ -29,6 +31,8 @@ export type LoadedSubscriptionForm = {
 
 const outputTargets = new Set<OutputTarget>([
   "clash-party-config",
+  "clash-verge-config",
+  "flclash-config",
   "mihomo-config",
   "stash-config",
   "surge-config",
@@ -126,7 +130,7 @@ function loadedForm(
     : "clash-party-config";
   const rulePreset = config.rulePreset === "global" || config.rulePreset === "direct"
     ? config.rulePreset
-    : "flacier";
+    : ruleTemplates.find(template => template.id === config.rulePreset)?.id ?? "flacier";
   const sortMode = nodeSettings.sortMode === "name-asc" || nodeSettings.sortMode === "name-desc"
     ? nodeSettings.sortMode
     : "source";
@@ -140,12 +144,13 @@ function loadedForm(
     addCountryFlag: booleanValue(nodeSettings.addCountryFlag, true),
     allowClientFallback: config.fallbackMode === "mihomo-provider"
       || config.sourceMode === "mihomo-provider",
-    dnsMode: config.dnsMode === "system" ? "system" : "doh",
+    dnsMode: config.dnsMode === "system" || config.dnsMode === "upstream" ? config.dnsMode : "doh",
     excludePattern: stringValue(nodeSettings.excludePattern),
     includePattern: stringValue(nodeSettings.includePattern),
     name: stringValue(config.name),
     renameRules,
     rulePreset,
+    ruleTemplateUrl: stringValue(config.ruleTemplateUrl),
     showNodeType: booleanValue(nodeSettings.showNodeType, false),
     skipCertVerify: booleanValue(nodeSettings.skipCertVerify, false),
     sourceText,
@@ -159,7 +164,7 @@ function loadedForm(
   };
 }
 
-export async function loadGeneratedSubscriptionUrl(input: string): Promise<LoadedSubscriptionForm> {
+export async function loadGeneratedSubscriptionUrl(input: string, backend = ""): Promise<LoadedSubscriptionForm> {
   let url: URL;
   try {
     url = new URL(input.trim());
@@ -173,10 +178,11 @@ export async function loadGeneratedSubscriptionUrl(input: string): Promise<Loade
   if (parts[1].startsWith("v1.")) {
     return parseGeneratedSubscriptionUrl(input);
   }
-  const response = await fetch("/api/subscriptions/resolve", {
+  const response = await fetch(`${backend}/api/subscriptions/resolve`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url: url.toString() }),
+    signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) {
     throw new Error(response.status === 404 ? "订阅链接不存在" : "订阅链接无法读取");

@@ -1,4 +1,6 @@
 import { ApiError } from "./api-error";
+import { ruleTemplates } from "../config/rule-templates";
+import { applyRuleTemplate } from "./rule-template";
 import {
   applyNodeTransforms,
   defaultNodeSettings,
@@ -20,6 +22,7 @@ import {
   parseRemoteSubscriptionUrl,
   probeRemoteSubscriptionMetadata,
   produceTarget,
+  readRemoteSource,
   type RemoteSubscriptionMetadata,
   type SubscriptionUsage,
 } from "./sub-store";
@@ -27,6 +30,7 @@ import { managedProfileUrlPlaceholder } from "./surge-profile";
 import { targetForUserAgent } from "./subscription-target";
 import {
   isOutputTarget,
+  isMihomoConfigTarget,
   outputTargets,
   type OutputTarget,
   type SubscriptionEnv,
@@ -80,6 +84,7 @@ type SubscriptionConfig = {
   fallbackMode: FallbackMode;
   nodeSettings: NodeSettings;
   rulePreset: MihomoRulePreset;
+  ruleTemplateUrl: string;
   sourceUserAgent: string;
   sourceMode: SourceMode;
   sources: SubscriptionSource[];
@@ -157,6 +162,8 @@ function readRulePreset(value: unknown): MihomoRulePreset {
   if (value === "global" || value === "direct") {
     return value;
   }
+  const template = ruleTemplates.find(template => template.id === value);
+  if (template) return template.id;
   throw new ApiError(400, "invalid_rule_preset", "Rule preset is invalid");
 }
 
@@ -164,8 +171,8 @@ function readDnsMode(value: unknown): MihomoDnsMode {
   if (value === undefined || value === "doh") {
     return "doh";
   }
-  if (value === "system") {
-    return "system";
+  if (value === "system" || value === "upstream") {
+    return value;
   }
   throw new ApiError(400, "invalid_dns_mode", "DNS mode is invalid");
 }
@@ -289,6 +296,8 @@ function readConfig(
     name: readName(input.name),
     nodeSettings: readSettings(input.nodeSettings),
     rulePreset: readRulePreset(input.rulePreset),
+    ruleTemplateUrl: input.rulePreset === "custom" && typeof input.ruleTemplateUrl === "string"
+      ? parseRemoteSubscriptionUrl(input.ruleTemplateUrl).href : "",
     sourceUserAgent: readSourceUserAgent(input.sourceUserAgent),
     sourceMode: readSourceMode(input.sourceMode),
     sources: readSources(input.sources),
@@ -340,8 +349,7 @@ function contentTypeFor(target: OutputTarget): string {
     return "application/json; charset=utf-8";
   }
   if (
-    target === "clash-party-config"
-    || target === "mihomo-config"
+    isMihomoConfigTarget(target)
     || target === "stash-config"
     || target === "egern-config"
   ) {
@@ -358,10 +366,6 @@ function urlsForToken(origin: string, token: string): Record<OutputTarget, strin
 
 function universalUrlForToken(origin: string, token: string): string {
   return `${origin}/s/${token}`;
-}
-
-function isMihomoConfigTarget(target: OutputTarget): boolean {
-  return target === "clash-party-config" || target === "mihomo-config";
 }
 
 function canUseMihomoProvider(error: unknown): boolean {
@@ -457,7 +461,7 @@ async function generateTarget(
       nodeStats = {
         read: normalized.nodes.length,
         output: outputNodeCount,
-        skipped: normalized.nodes.length - outputNodeCount,
+        skipped: nodes.length - outputNodeCount,
       };
       remoteMetadata = normalized.remoteMetadata;
       if (nodes.length === 0) {
@@ -470,6 +474,7 @@ async function generateTarget(
         config.rulePreset,
         config.updateIntervalHours,
         config.dnsMode,
+        normalized.upstreamConfig,
       );
     } catch (error) {
       const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
@@ -494,6 +499,14 @@ async function generateTarget(
       )));
       inheritedName = remoteSources.length === 1 ? remoteMetadata[0]?.profileName : undefined;
     }
+  }
+  const template = ruleTemplates.find(template => template.id === config.rulePreset);
+  const templateUrl = template?.url || (config.rulePreset === "custom" ? config.ruleTemplateUrl : "");
+  if (config.rulePreset === "custom" && !templateUrl) throw new ApiError(400, "invalid_rule_template", "Remote template URL is required");
+  if (templateUrl) {
+    if (!isMihomoConfigTarget(target)) throw new ApiError(422, "unsupported_rule_template", "Remote rule templates require a Mihomo complete configuration");
+    const remote = await readRemoteSource(templateUrl, "Flacier-Rules/1.0");
+    output = applyRuleTemplate(output, remote.content);
   }
   if (encoder.encode(output).byteLength > maximumOutputBytes) {
     throw new ApiError(413, "output_too_large", `${target} output exceeds the 1.8 MB limit`);

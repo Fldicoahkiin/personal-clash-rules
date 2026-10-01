@@ -10,11 +10,12 @@
 
 - 合并多个订阅和单节点，生成 KV 短链接
 - 客户端刷新时读取上游并转换，链接不用重新生成
-- Clash Party、Mihomo 等客户端；完整配置与节点资源共 21 种输出
+- Clash Verge、FlClash、Clash Party、Mihomo 等完整配置；Shadowrocket 等节点订阅
 - 节点筛选、多重改名、国旗、类型、UDP、XUDP 与排序
-- 单机场订阅透传流量与到期信息
+- 透传、合并上游流量与到期信息
 - 默认 Worker 转换；可选 Clash Party / Mihomo 客户端直读备用
-- Mihomo / Clash Party 的 DoH 或系统 DNS 模板
+- 继承原订阅 DNS，或选择代理 DoH
+- CF、本地及自定义 Flacier 后端；ACL4SSR 和自定义远程规则模板
 - BrowserLeaks、IPv6、Cloudflare 网络检测入口
 - AI、Apple、Steam、Discord、Bilibili、AniGamer 等分流规则
 - 网址规则测试与规则格式转换
@@ -34,6 +35,8 @@ pnpm check
 ```
 
 部署使用 Cloudflare Git 集成，见 [Cloudflare 配置](docs/cloudflare-setup.md)。
+
+本地转换：`pnpm build && pnpm start:local`，打开 `http://127.0.0.1:25500`。用量、DNS 与手机端说明见 [客户端配置](docs/clients-and-dns.md)。
 
 ## License
 

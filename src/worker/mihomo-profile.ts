@@ -1,4 +1,5 @@
 import { stringify as stringifyYaml } from "yaml";
+import { createHash } from "node:crypto";
 
 import {
   countryFlagRules,
@@ -8,9 +9,11 @@ import {
 } from "../config/mihomo-policy";
 import type { NodeSettings } from "./node-transforms";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
+import { ApiError } from "./api-error";
+import type { RuleTemplateId } from "../config/rule-templates";
 
-export type MihomoRulePreset = "flacier" | "global" | "direct";
-export type MihomoDnsMode = "doh" | "system";
+export type MihomoRulePreset = RuleTemplateId | "global" | "direct";
+export type MihomoDnsMode = "doh" | "system" | "upstream";
 
 type MihomoProviderProfile = {
   dnsMode: MihomoDnsMode;
@@ -49,14 +52,14 @@ const globalRules = [
 
 const dns = {
   enable: true,
-  ipv6: true,
+  ipv6: false,
   "enhanced-mode": "fake-ip",
   "fake-ip-range": "198.18.0.1/16",
   "fake-ip-filter": ["*.lan", "*.local", "localhost"],
-  "default-nameserver": ["1.1.1.1", "8.8.8.8"],
+  "default-nameserver": ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"],
   nameserver: [
-    "https://1.1.1.1/dns-query",
-    "https://8.8.8.8/dns-query",
+    "https://1.1.1.1/dns-query#GLOBAL",
+    "https://8.8.8.8/dns-query#GLOBAL",
   ],
   "proxy-server-nameserver": [
     "https://1.1.1.1/dns-query",
@@ -74,8 +77,12 @@ function profileBody(
   providers?: Record<string, Record<string, unknown>>,
   updateIntervalHours = 6,
   dnsMode: MihomoDnsMode = "doh",
+  upstreamConfig?: Record<string, unknown>,
 ) {
-  const flacierRules = rulePreset === "flacier";
+  if (dnsMode === "upstream" && (!upstreamConfig?.dns || typeof upstreamConfig.dns !== "object")) {
+    throw new ApiError(422, "upstream_dns_unavailable", "A single upstream Clash configuration with DNS is required");
+  }
+  const flacierRules = rulePreset !== "global" && rulePreset !== "direct";
   const directRules = rulePreset === "direct";
   const groups = directRules ? [] : flacierRules ? mihomoProxyGroups : globalProxyGroups;
   const providerNames = providers ? Object.keys(providers) : [];
@@ -93,10 +100,12 @@ function profileBody(
     "allow-lan": false,
     mode: "rule",
     "log-level": "info",
-    ipv6: true,
+    ipv6: dnsMode === "upstream" ? upstreamConfig?.ipv6 ?? false : false,
     "unified-delay": true,
     "tcp-concurrent": true,
-    dns: dnsMode === "doh" ? dns : { enable: false },
+    dns: dnsMode === "upstream" ? upstreamConfig?.dns : dnsMode === "doh"
+      ? { ...dns, nameserver: dns.nameserver.map((url) => directRules ? url.replace("#GLOBAL", "#DIRECT") : url) }
+      : { enable: false },
     "profile-update-interval": updateIntervalHours,
     profile: {
       "store-selected": true,
@@ -138,6 +147,7 @@ export function createMihomoProfile(
   rulePreset: MihomoRulePreset = "flacier",
   updateIntervalHours = 6,
   dnsMode: MihomoDnsMode = "doh",
+  upstreamConfig?: Record<string, unknown>,
 ): string {
   return stringifyYaml(profileBody(
     readYamlProxyResource(nodeResource, "Mihomo"),
@@ -145,6 +155,7 @@ export function createMihomoProfile(
     undefined,
     updateIntervalHours,
     dnsMode,
+    upstreamConfig,
   ));
 }
 
@@ -155,7 +166,7 @@ export function createMihomoProviderProfile(input: MihomoProviderProfile): strin
     {
       type: "http",
       url: provider.url,
-      path: `./proxy-providers/flacier-${index + 1}.yaml`,
+      path: `./proxy-providers/flacier-${createHash("sha256").update(provider.url).digest("hex").slice(0, 16)}-${index + 1}.yaml`,
       interval: input.updateIntervalHours * 3600,
       header: { "User-Agent": [input.sourceUserAgent] },
       "health-check": {

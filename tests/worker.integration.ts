@@ -79,6 +79,26 @@ async function createSubscription(
 }
 
 describe("Worker entrypoint", () => {
+  it("allows the first-party UI to use another Flacier backend but rejects unrelated origins", async () => {
+    const allowed = await exports.default.fetch("https://example.com/api/subscriptions", { method: "OPTIONS", headers: { Origin: "https://rules.flacier.com" } });
+    expect(allowed.status).toBe(204);
+    expect(allowed.headers.get("access-control-allow-origin")).toBe("https://rules.flacier.com");
+    const denied = await exports.default.fetch("https://example.com/api/subscriptions", { method: "POST", headers: { Origin: "https://unrelated.example" } });
+    expect(denied.status).toBe(403);
+  });
+
+  it.each(["clash-verge-config", "flclash-config"])("serves complete %s profiles with actual inline nodes", async (target) => {
+    const { response, data } = await createSubscription({ target });
+    expect(response.status).toBe(201);
+    expect(data.nodeStats).toEqual({ read: 1, output: 1, skipped: 0 });
+    const config = await exports.default.fetch(data.url);
+    expect(config.headers.get("content-type")).toContain("yaml");
+    const profile = parse(await config.text());
+    expect(profile.proxies).toHaveLength(1);
+    expect(profile["proxy-providers"]).toBeUndefined();
+    expect(profile.dns.nameserver[0]).toContain("#GLOBAL");
+  });
+
   it("returns a private health response with security headers", async () => {
     const response = await exports.default.fetch("https://example.com/health");
 
@@ -242,7 +262,7 @@ describe("KV-backed subscription links", () => {
     const profile = parse(await published.text()) as { proxies: Array<{ name: string }> };
 
     expect(profile.proxies.map((proxy) => proxy.name)).toEqual(["🇺🇸 United States 02"]);
-    expect(data.nodeStats).toEqual({ read: 3, output: 1, skipped: 2 });
+    expect(data.nodeStats).toEqual({ read: 3, output: 1, skipped: 0 });
   });
 
   it("inherits the upstream profile name when the custom name is blank", async () => {

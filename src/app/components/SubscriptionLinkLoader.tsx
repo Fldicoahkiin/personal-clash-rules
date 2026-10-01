@@ -7,10 +7,11 @@ import {
 } from "../lib/generated-subscription";
 
 type SubscriptionLinkLoaderProps = {
+  backend?: string;
   onLoad: (form: LoadedSubscriptionForm) => void;
 };
 
-export function SubscriptionLinkLoader({ onLoad }: SubscriptionLinkLoaderProps) {
+export function SubscriptionLinkLoader({ onLoad, backend = "" }: SubscriptionLinkLoaderProps) {
   const [link, setLink] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -18,7 +19,7 @@ export function SubscriptionLinkLoader({ onLoad }: SubscriptionLinkLoaderProps) 
   async function load() {
     setPending(true);
     try {
-      onLoad(await loadGeneratedSubscriptionUrl(link));
+      onLoad(await loadGeneratedSubscriptionUrl(link, backend));
       setError("");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "订阅链接无法读取");

@@ -31,8 +31,8 @@ proxies:
       "enhanced-mode": "fake-ip",
       "fake-ip-range": "198.18.0.1/16",
       nameserver: [
-        "https://1.1.1.1/dns-query",
-        "https://8.8.8.8/dns-query",
+        "https://1.1.1.1/dns-query#GLOBAL",
+        "https://8.8.8.8/dns-query#GLOBAL",
       ],
       "proxy-server-nameserver": [
         "https://1.1.1.1/dns-query",
@@ -72,6 +72,18 @@ proxies:
     expect(() => createMihomoProfile("Surge generated output")).toThrow(
       "Mihomo node resource is invalid",
     );
+  });
+
+  it("retains the source DNS without adding a second resolver policy", () => {
+    const upstream = { ipv6: false, dns: { enable: true, nameserver: ["https://dns.example/dns-query"], "proxy-server-nameserver": ["https://bootstrap.example/dns-query"], "nameserver-policy": { "+.private.example": "system" } } };
+    const output = parse(createMihomoProfile("proxies: [{name: US, type: ss, server: proxy.example, port: 443, password: test, cipher: aes-128-gcm}]", "flacier", 6, "upstream", upstream));
+    expect(output.dns).toEqual(upstream.dns);
+    expect(output.ipv6).toBe(false);
+    expect(output.tun).toBeUndefined();
+  });
+
+  it("does not silently invent upstream DNS for client-direct mode", () => {
+    expect(() => createMihomoProfile("proxies: [{name: US, type: ss}]", "flacier", 6, "upstream")).toThrow("single upstream");
   });
 
   it("can leave DNS resolution to the operating system", () => {
@@ -120,6 +132,13 @@ proxies:
     expect(config.proxies).toEqual([]);
     expect(config["profile-update-interval"]).toBe(12);
     const provider = config["proxy-providers"]["订阅 1"];
+    expect(provider.path).toMatch(/^\.\/proxy-providers\/flacier-[a-f0-9]{16}-1\.yaml$/u);
+    const differentSource = parse(createMihomoProviderProfile({
+      dnsMode: "doh", nodeResource: "proxies: []", providers: [{ name: "订阅 1", url: "https://other.example/sub" }],
+      nodeSettings: { addCountryFlag: false, excludePattern: "", includePattern: "", renameRules: [], showNodeType: false, skipCertVerify: false, sortMode: "source", tfo: false, udp: true, xudp: false },
+      sourceUserAgent: "clash.meta", rulePreset: "flacier", updateIntervalHours: 6,
+    }));
+    expect(differentSource["proxy-providers"]["订阅 1"].path).not.toBe(provider.path);
     expect(provider).toMatchObject({
       type: "http",
       url: "https://provider.example/sub",

@@ -22,8 +22,11 @@ import { SubscriptionFormatPicker } from "./SubscriptionFormatPicker";
 import { SubscriptionLinkLoader } from "./SubscriptionLinkLoader";
 import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
+import { ruleTemplates } from "../../config/rule-templates";
 
 type FormState = {
+  backend: string;
+  backendMode: "current" | "local" | "custom";
   addCountryFlag: boolean;
   allowClientFallback: boolean;
   copied: boolean;
@@ -35,6 +38,7 @@ type FormState = {
   renameRules: RenameRuleDraft[];
   result: ConvertedSubscription | null;
   rulePreset: RulePreset;
+  ruleTemplateUrl: string;
   pending: boolean;
   showNodeType: boolean;
   skipCertVerify: boolean;
@@ -56,6 +60,8 @@ type FieldAction = {
 type FormAction = FieldAction | { key: "load"; value: LoadedSubscriptionForm };
 
 const initialState: FormState = {
+  backend: "",
+  backendMode: "current",
   addCountryFlag: true,
   allowClientFallback: false,
   copied: false,
@@ -67,13 +73,14 @@ const initialState: FormState = {
   renameRules: [{ id: "rename-initial", pattern: "", replacement: "" }],
   result: null,
   rulePreset: "flacier",
+  ruleTemplateUrl: "",
   pending: false,
   showNodeType: false,
   skipCertVerify: false,
   sourceUserAgent: "clash.meta",
   sourceText: "",
   sortMode: "source",
-  target: "clash-party-config",
+  target: "clash-verge-config",
   tfo: false,
   udp: true,
   updateIntervalHours: 6,
@@ -118,7 +125,8 @@ const allFormats = [
 export function SubscriptionImport() {
   const [form, dispatch] = useReducer(reducer, initialState);
   const selectedFormat = allFormats.find((format) => format.target === form.target) ?? completeConfigFormats[0];
-  const supportsRulePreset = form.target === "clash-party-config" || form.target === "mihomo-config";
+  const supportsRulePreset = ["clash-party-config", "clash-verge-config", "flclash-config", "mihomo-config"].includes(form.target);
+  const backend = form.backendMode === "local" ? "http://127.0.0.1:25500" : form.backendMode === "custom" ? form.backend.replace(/\/+$/u, "") : "";
 
   function validateInput(): boolean {
     if (!form.sourceText.trim()) {
@@ -159,6 +167,14 @@ export function SubscriptionImport() {
     }
     dispatch({ key: "pending", value: true });
     try {
+      if (backend) {
+        const url = new URL(backend);
+        if (url.username || url.password || url.search || url.hash || url.pathname !== "/"
+          || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)))) {
+          dispatch({ key: "error", value: "后端请使用 HTTPS 地址，或本机 HTTP 地址" });
+          return;
+        }
+      }
       const result = await createConvertedSubscription({
         dnsMode: form.dnsMode,
         fallbackMode: form.allowClientFallback ? "mihomo-provider" : "error",
@@ -177,12 +193,13 @@ export function SubscriptionImport() {
           udp: form.udp,
           xudp: form.xudp,
         },
-        rulePreset: form.rulePreset,
+        rulePreset: supportsRulePreset ? form.rulePreset : "flacier",
+        ruleTemplateUrl: form.ruleTemplateUrl,
         sourceUserAgent: form.sourceUserAgent,
         sources: parseSubscriptionInput(form.sourceText),
         target: form.target,
         updateIntervalHours: form.updateIntervalHours,
-      });
+      }, backend);
       dispatch({ key: "result", value: result });
       dispatch({ key: "error", value: "" });
     } catch (error) {
@@ -249,6 +266,20 @@ export function SubscriptionImport() {
           }}
         />
 
+        <div className="subscription-settings-grid">
+          <label className="field">
+            <span>转换后端</span>
+            <select value={form.backendMode} onChange={(event) => dispatch({ key: "backendMode", value: event.target.value as FormState["backendMode"] })}>
+              <option value="current">当前站点后端</option>
+              <option value="local">本地后端 · 127.0.0.1:25500</option>
+              <option value="custom">自定义 Flacier 后端</option>
+            </select>
+          </label>
+          {form.backendMode === "custom" ? <label className="field"><span>后端地址</span><input type="url" value={form.backend} onChange={(event) => dispatch({ key: "backend", value: event.target.value })} placeholder="https://your-converter.example" required /></label> : null}
+        </div>
+        {form.backendMode === "local" ? <p className="subscription-result-notes">先运行 <code>pnpm start:local</code>。本机链接只供这台电脑使用；浏览器拒绝连接时，<a href="http://127.0.0.1:25500/" target="_blank" rel="noreferrer">打开本地页面</a>。</p> : null}
+        {form.backendMode === "custom" ? <p className="subscription-result-notes">订阅凭据将发送给此后端。此处使用 Flacier API，不是 Subconverter 的 /sub 接口。</p> : null}
+
         {supportsRulePreset ? (
           <label className="field subscription-rule-preset">
             <span>规则方案</span>
@@ -259,14 +290,16 @@ export function SubscriptionImport() {
                 value: event.target.value as RulePreset,
               })}
             >
-              <option value="flacier">Flacier 分流</option>
-              <option value="global">全局代理</option>
-              <option value="direct">全局直连</option>
+              {ruleTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
+              {["global", "direct"].includes(form.rulePreset) ? <option value={form.rulePreset}>旧链接 · {form.rulePreset === "global" ? "全局代理" : "全局直连"}</option> : null}
             </select>
           </label>
         ) : null}
 
+        {supportsRulePreset && form.rulePreset === "custom" ? <label className="field"><span>远程规则地址</span><input type="url" value={form.ruleTemplateUrl} onChange={event => dispatch({ key: "ruleTemplateUrl", value: event.target.value })} required placeholder="https://example.com/rules.ini" /><small>支持 ruleset 和 custom_proxy_group；不执行脚本或导入本地文件。</small></label> : null}
+
         <SubscriptionMoreSettings
+          supportsDns={supportsRulePreset}
           addCountryFlag={form.addCountryFlag}
           allowClientFallback={form.allowClientFallback}
           dnsMode={form.dnsMode}
@@ -289,7 +322,9 @@ export function SubscriptionImport() {
           onSortChange={(value) => dispatch({ key: "sortMode", value })}
         />
 
-        <SubscriptionLinkLoader onLoad={(value) => dispatch({ key: "load", value })} />
+        {form.target === "shadowrocket" ? <p className="subscription-result-notes">Shadowrocket 此处导入节点与用量。分流和 DNS 使用客户端的「配置」，不会包含在节点订阅中。</p> : null}
+
+        <SubscriptionLinkLoader backend={backend} onLoad={(value) => dispatch({ key: "load", value })} />
 
         <div className="subscription-action-row">
           <span>{selectedFormat.name}</span>

@@ -4,6 +4,7 @@ import { parse } from "yaml";
 import {
   normalizeSourceBundle,
   normalizeSources,
+  combineSubscriptionUsage,
   produceTarget,
 } from "../src/worker/sub-store";
 import { routeSubscriptionRequest } from "../src/worker/subscriptions";
@@ -12,6 +13,40 @@ import type { SubscriptionEnv } from "../src/worker/types";
 const env = {} as SubscriptionEnv;
 
 describe("native subscription converter", () => {
+  it("round-trips WebSocket and gRPC transport options through Shadowrocket URIs", async () => {
+    const proxies = [
+      { name: "vless-ws", type: "vless", server: "node.example", port: 443, uuid: "00000000-0000-4000-8000-000000000000", tls: true, network: "ws", servername: "sni.example", "skip-cert-verify": true, alpn: ["h2", "http/1.1"], "ws-opts": { path: "/socket?ed=2048", headers: { Host: "host.example" } } },
+      { name: "trojan-grpc", type: "trojan", server: "node.example", port: 443, password: "dummy", sni: "sni.example", network: "grpc", "grpc-opts": { "grpc-service-name": "service-name" } },
+    ];
+    const output = await produceTarget(env, proxies, "shadowrocket");
+    const nodes = await normalizeSources(env, { profileName: "", subscriptionUrls: [], nodes: output.trim().split("\n") });
+    expect(nodes[0]).toMatchObject(proxies[0]);
+    expect(nodes[1]).toMatchObject(proxies[1]);
+  });
+
+  it("preserves explicit unlimited expiry but never invents missing metadata", () => {
+    const quota = { upload: "10", download: "20", total: "100", expire: "0" };
+    expect(combineSubscriptionUsage([quota, quota])).toEqual({ upload: "20", download: "40", total: "200", expire: "0" });
+    expect(combineSubscriptionUsage([quota, { ...quota, expire: "1800000000" }])?.expire).toBe("1800000000");
+    expect(combineSubscriptionUsage([quota, undefined])).toBeUndefined();
+  });
+
+  it("keeps VLESS and Hysteria2 transport fields when converting for Verge and FlClash", async () => {
+    const proxies = [
+      { name: "JP", type: "vless", server: "node.example", port: 443, uuid: "00000000-0000-4000-8000-000000000000", tls: true, network: "ws", servername: "sni.example", "client-fingerprint": "chrome", "packet-encoding": "xudp", "ws-opts": { path: "/path?ed=2048", headers: { Host: "host.example" } }, "reality-opts": { "public-key": "key", "short-id": "" } },
+      { name: "SG", type: "hysteria2", server: "hy.example", port: 443, password: "dummy", sni: "sni.example", "skip-cert-verify": true, ports: "443,500-600", obfs: "salamander", "obfs-password": "dummy-obfs" },
+    ];
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ proxies, dns: { enable: true, nameserver: ["https://dns.example/dns-query"] }, ipv6: false })));
+    try {
+      const normalized = await normalizeSourceBundle(env, { profileName: "", subscriptionUrls: ["https://provider.example/sub"], nodes: [] });
+      for (const target of ["clash-verge-config", "flclash-config"] as const) {
+        const output = parse(await produceTarget(env, normalized.nodes, target, "flacier", 6, "upstream", normalized.upstreamConfig));
+        expect(output.proxies).toEqual(proxies.map((node) => ({ ...node, name: `${node.name} · 2` })));
+        expect(output.dns.nameserver).toEqual(["https://dns.example/dns-query"]);
+        expect(output["proxy-providers"]).toBeUndefined();
+      }
+    } finally { fetchSpy.mockRestore(); }
+  });
   it("rate limits subscription creation by client IP", async () => {
     const limit = vi.fn().mockResolvedValue({ success: false });
     const response = await routeSubscriptionRequest(

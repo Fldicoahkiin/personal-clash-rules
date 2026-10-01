@@ -5,6 +5,14 @@ import { buildClientAction } from "../src/app/lib/client-import";
 const subscription = "https://example.com/sub?id=1&token=a b";
 
 describe("buildClientAction", () => {
+  it("uses the registered Verge and FlClash import schemes", () => {
+    const verge = new URL(buildClientAction("clash-verge", subscription, "Flacier").value);
+    const flclash = new URL(buildClientAction("flclash", subscription, "Flacier").value);
+    expect(verge.protocol).toBe("clash:");
+    expect(flclash.protocol).toBe("flclash:");
+    expect(verge.searchParams.get("url")).toBe(subscription);
+    expect(flclash.searchParams.get("url")).toBe(subscription);
+  });
   it("does not use config-install schemes for node-only formats", () => {
     expect(buildClientAction("stash", subscription, "Flacier")).toEqual({
       kind: "copy",

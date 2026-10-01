@@ -65,6 +65,7 @@ export function SubscriptionResult({
     ? buildClientAction(format.clientId, result.url, result.profileName)
     : null;
   const clientDirect = result.sourceMode === "mihomo-provider";
+  const localBackend = ["127.0.0.1", "localhost"].includes(new URL(result.url).hostname);
   const countValue = (value: number | null, fallback: string) => (
     value === null ? fallback : String(value)
   );
@@ -77,7 +78,7 @@ export function SubscriptionResult({
         <dl className="subscription-result-meta">
           <div>
             <dt>模式</dt>
-            <dd>{clientDirect ? "客户端直读" : "Worker 转换"}</dd>
+            <dd>{clientDirect ? "客户端直读" : localBackend ? "本地转换" : "Worker 转换"}</dd>
           </div>
           <div>
             <dt>读取</dt>
@@ -92,6 +93,9 @@ export function SubscriptionResult({
             <dd>{countValue(result.nodeStats.skipped, "由客户端确认")}</dd>
           </div>
         </dl>
+        {result.nodeStats.read !== null && result.nodeStats.output !== null && result.nodeStats.skipped !== null
+          && result.nodeStats.read - result.nodeStats.output - result.nodeStats.skipped > 0
+          ? <p>筛选移除 {result.nodeStats.read - result.nodeStats.output - result.nodeStats.skipped} 个节点</p> : null}
         {clientDirect ? (
           <div className="subscription-result-notes">
             <p>Worker 无法统计节点，也无法重新排序；节点保持来源顺序。</p>
@@ -138,6 +142,7 @@ export function SubscriptionResult({
           {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
           {copied ? "已复制" : "复制链接"}
         </button>
+        <a className="button button-secondary" href={result.url} download>下载配置</a>
         {clientAction?.kind === "link" ? (
           <a className="button button-primary" href={clientAction.value}>
             {format.icon ? (

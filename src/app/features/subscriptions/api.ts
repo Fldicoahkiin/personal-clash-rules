@@ -1,5 +1,7 @@
 export type OutputTarget =
   | "clash-party-config"
+  | "clash-verge-config"
+  | "flclash-config"
   | "mihomo-config"
   | "stash-config"
   | "surge-config"
@@ -23,10 +25,10 @@ export type OutputTarget =
 
 export type SourceType = "subscription" | "node";
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
-export type RulePreset = "flacier" | "global" | "direct";
+export type RulePreset = import("../../../config/rule-templates").RuleTemplateId | "global" | "direct";
 export type SourceMode = "convert" | "mihomo-provider";
 export type FallbackMode = "error" | "mihomo-provider";
-export type DnsMode = "doh" | "system";
+export type DnsMode = "doh" | "system" | "upstream";
 
 export interface NodeRenameRule {
   pattern: string;
@@ -114,15 +116,17 @@ export async function createConvertedSubscription(input: {
   name: string;
   nodeSettings: NodeSettings;
   rulePreset: RulePreset;
+  ruleTemplateUrl?: string;
   sourceUserAgent: string;
   sources: Array<{ name: string; type: SourceType; value: string }>;
   target: OutputTarget;
   updateIntervalHours: number;
-}): Promise<ConvertedSubscription> {
-  const response = await fetch("/api/subscriptions", {
+}, backend = ""): Promise<ConvertedSubscription> {
+  const response = await fetch(`${backend}/api/subscriptions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
+    signal: AbortSignal.timeout(60000),
   });
   if (!response.ok) {
     throw await apiError(response);
@@ -132,10 +136,10 @@ export async function createConvertedSubscription(input: {
 
 export function subscriptionErrorText(error: unknown): string {
   if (!(error instanceof SubscriptionApiError)) {
-    return "生成失败，请重试";
+    return "无法连接转换后端；本地版请先运行 pnpm start:local，或打开本地页面";
   }
   if (error.code === "source_failed" && /HTTP (?:403|429)$/u.test(error.message)) {
-    return "机场拒绝 Worker 读取；可在进阶设置开启客户端直读备用";
+    return "机场拒绝当前后端读取；请稍后重试或使用原订阅。客户端直读备用不提供外层用量";
   }
   const messages: Record<string, string> = {
     no_sources: "请添加一个订阅或节点",
@@ -152,7 +156,10 @@ export function subscriptionErrorText(error: unknown): string {
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     invalid_rule_preset: "规则方案无效",
+    invalid_rule_template: "请填写远程规则模板地址",
+    unsupported_rule_template: "此 INI 模板含未支持的指令，请使用 ACL4SSR 默认、多国或无自动测速模板",
     invalid_dns_mode: "DNS 模板无效",
+    upstream_dns_unavailable: "此来源没有可继承的 DNS：请使用单个完整 Clash 订阅，或选择内置 DoH",
     invalid_source_user_agent: "订阅请求 UA 无效",
     invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",
     no_nodes_after_processing: "没有节点符合当前筛选条件",

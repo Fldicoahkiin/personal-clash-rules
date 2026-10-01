@@ -1,9 +1,8 @@
 import { routeSubscriptionRequest } from "./worker/subscriptions";
-import type { SubscriptionEnv } from "./worker/types";
 
 const securityHeaders = {
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Content-Type-Options": "nosniff",
@@ -45,10 +44,30 @@ function withResponseHeaders(response: Response, pathname: string): Response {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
+    const origin = request.headers.get("Origin");
+    if (url.pathname.startsWith("/api/") && origin) {
+      if (origin !== url.origin && origin !== "https://rules.flacier.com") {
+        return Response.json({ error: "origin_not_allowed" }, { status: 403, headers: securityHeaders });
+      }
+      if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: {
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          Vary: "Origin",
+          ...securityHeaders,
+        } });
+      }
+    }
 
     const subscriptionResponse = await routeSubscriptionRequest(request, url, env);
     if (subscriptionResponse) {
-      return withResponseHeaders(subscriptionResponse, url.pathname);
+      const response = withResponseHeaders(subscriptionResponse, url.pathname);
+      if (url.pathname.startsWith("/api/") && origin) {
+        response.headers.set("Access-Control-Allow-Origin", origin);
+        response.headers.append("Vary", "Origin");
+      }
+      return response;
     }
 
     if (
@@ -99,4 +118,4 @@ export default {
       );
     }
   },
-} satisfies ExportedHandler<SubscriptionEnv>;
+} satisfies ExportedHandler<Env>;

@@ -1,4 +1,6 @@
 export type ClientId =
+  | "clash-verge"
+  | "flclash"
   | "clash-party"
   | "mihomo"
   | "stash-config"
@@ -37,6 +39,11 @@ export function buildClientAction(
   const source = input.trim();
   const params = new URLSearchParams({ url: source });
   const title = name.trim();
+
+  if (client === "clash-verge" || client === "flclash") {
+    if (title) params.set("name", title);
+    return { kind: "link", value: `${client === "flclash" ? "flclash" : "clash"}://install-config?${params}` };
+  }
 
   if (client === "clash-party" || client === "mihomo") {
     if (title) {

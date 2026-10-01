@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SubscriptionResult } from "../src/app/components/SubscriptionResult";
 import { completeConfigFormats } from "../src/app/features/subscriptions/client-formats";
 
-const format = completeConfigFormats[0];
+const format = completeConfigFormats.find(format => format.target === "clash-party-config")!;
 
 describe("SubscriptionResult", () => {
   it("shows Worker conversion counts", () => {
