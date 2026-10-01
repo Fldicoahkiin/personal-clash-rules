@@ -74,8 +74,13 @@ const server = createServer(async (incoming, outgoing) => {
     const request = new Request(url, { method: incoming.method, headers,
       ...(["GET", "HEAD"].includes(incoming.method) ? {} : { body: Readable.toWeb(incoming), duplex: "half" }),
     });
-    let response = await routeSubscriptionRequest(request, url, env);
+    let response = url.pathname === "/api/version" ? null : await routeSubscriptionRequest(request, url, env);
     if (!response && url.pathname === "/health") response = Response.json({ status: "ok", service: "personal-clash-rules", backend: "local" });
+    if (!response && url.pathname === "/api/version") {
+      response = ["GET", "HEAD"].includes(request.method)
+        ? Response.json({ build: JSON.parse(await readFile(resolve(root, "dist/build-info.json"), "utf8")), deployment: null })
+        : new Response(null, { status: 405, headers: { Allow: "GET, HEAD" } });
+    }
     if (!response) {
       let path = resolve(root, "dist", "." + decodeURIComponent(url.pathname));
       if (!path.startsWith(resolve(root, "dist") + "/")) path = resolve(root, "dist/index.html");

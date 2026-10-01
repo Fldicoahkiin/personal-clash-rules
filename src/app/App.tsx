@@ -7,6 +7,10 @@ import { PolicyMap } from "./components/PolicyMap";
 import { RouteTester } from "./components/RouteTester";
 import { RulesCatalog } from "./components/RulesCatalog";
 import { SubscriptionImport } from "./components/SubscriptionImport";
+import { SiteVersion } from "./components/BuildDetails";
+import type { BuildInfo } from "../config/build-info";
+
+declare const __BUILD_INFO__: BuildInfo;
 
 export function App() {
   return (
@@ -57,6 +61,7 @@ export function App() {
           <img src="/brand/github-mark.svg" alt="" width="16" height="16" />
           GitHub
         </a>
+        <SiteVersion build={__BUILD_INFO__} />
       </footer>
     </div>
   );

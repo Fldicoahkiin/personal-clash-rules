@@ -1,6 +1,7 @@
 import { exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
+import { isVersionInfo } from "../src/config/build-info";
 
 type CreatedSubscription = {
   nodeStats: {
@@ -109,6 +110,24 @@ describe("Worker entrypoint", () => {
       status: "ok",
       service: "personal-clash-rules",
     });
+  });
+
+  it("serves this build's version metadata without caching and supports HEAD", async () => {
+    const response = await exports.default.fetch("https://example.com/api/version");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    const version: unknown = await response.json();
+    expect(isVersionInfo(version)).toBe(true);
+    if (!isVersionInfo(version)) throw new Error("Invalid version metadata");
+    const asset = await exports.default.fetch("https://example.com/build-info.json");
+    expect(version.build).toEqual(await asset.json());
+    expect(version.deployment?.id).toEqual(expect.any(String));
+    const head = await exports.default.fetch("https://example.com/api/version", { method: "HEAD" });
+    expect(head.status).toBe(200);
+    expect(await head.text()).toBe("");
+    const post = await exports.default.fetch("https://example.com/api/version", { method: "POST" });
+    expect(post.status).toBe(405);
   });
 
   it("removes the management page and management API", async () => {

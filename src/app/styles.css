@@ -1582,6 +1582,9 @@ summary:focus-visible {
 
 .site-footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-block: 20px;
   min-height: 72px;
   align-items: center;
   justify-content: space-between;
@@ -1604,6 +1607,66 @@ summary:focus-visible {
 .site-footer img {
   width: 16px;
   height: 16px;
+}
+
+.build-details {
+  display: flex;
+  flex: 0 0 100%;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  min-width: 0;
+  line-height: 1.7;
+}
+
+.build-details-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin: 0;
+}
+
+.build-details-list > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+
+.build-details dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.build-details dd a,
+.build-details button {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.build-details button {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.build-version-notice {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink);
+}
+
+@media (max-width: 600px) {
+  .build-details-list {
+    flex-direction: column;
+  }
+
+  .build-details-list dt {
+    min-width: 7em;
+  }
 }
 
 @media (max-width: 1100px) {

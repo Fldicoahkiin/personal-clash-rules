@@ -1,4 +1,5 @@
 import { routeSubscriptionRequest } from "./worker/subscriptions";
+import { isBuildInfo, type VersionInfo } from "./config/build-info";
 
 const securityHeaders = {
   "Content-Security-Policy":
@@ -52,7 +53,7 @@ export default {
       if (request.method === "OPTIONS") {
         return new Response(null, { status: 204, headers: {
           "Access-Control-Allow-Origin": origin,
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
           Vary: "Origin",
           ...securityHeaders,
@@ -60,7 +61,8 @@ export default {
       }
     }
 
-    const subscriptionResponse = await routeSubscriptionRequest(request, url, env);
+    const subscriptionResponse = url.pathname === "/api/version"
+      ? null : await routeSubscriptionRequest(request, url, env);
     if (subscriptionResponse) {
       const response = withResponseHeaders(subscriptionResponse, url.pathname);
       if (url.pathname.startsWith("/api/") && origin) {
@@ -102,6 +104,26 @@ export default {
     }
 
     try {
+      if (url.pathname === "/api/version") {
+        const asset = await env.ASSETS.fetch(new Request(new URL("/build-info.json", url)));
+        const build: unknown = asset.ok ? await asset.json() : null;
+        if (!isBuildInfo(build)) throw new Error("Build metadata unavailable");
+        const metadata = env.CF_VERSION_METADATA;
+        const version: VersionInfo = {
+          build,
+          deployment: {
+            createdAt: metadata.timestamp || null,
+            id: metadata.id,
+          },
+        };
+        const response = withResponseHeaders(Response.json(version), url.pathname);
+        if (origin) {
+          response.headers.set("Access-Control-Allow-Origin", origin);
+          response.headers.append("Vary", "Origin");
+        }
+        return request.method === "HEAD"
+          ? new Response(null, { headers: response.headers }) : response;
+      }
       const asset = await env.ASSETS.fetch(request);
       return withResponseHeaders(asset, url.pathname);
     } catch (error) {

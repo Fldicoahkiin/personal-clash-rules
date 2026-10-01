@@ -18,5 +18,5 @@
     "jsx": "react-jsx",
     "types": ["vite/client"]
   },
-  "include": ["src/app", "src/main.tsx", "src/config/rule-templates.ts"]
+  "include": ["src/app", "src/main.tsx", "src/config/rule-templates.ts", "src/config/build-info.ts"]
 }
