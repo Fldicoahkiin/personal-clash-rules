@@ -1,6 +1,8 @@
 import { ApiError } from "./api-error";
+import { parseDnsSettings, type DnsSettings } from "../config/dns-settings";
 import { ruleTemplates } from "../config/rule-templates";
 import { applyRuleTemplate } from "./rule-template";
+import { createRulePreview } from "./rule-preview";
 import {
   applyNodeTransforms,
   defaultNodeSettings,
@@ -55,7 +57,7 @@ async function enforceSubscriptionRateLimit(
 ): Promise<void> {
   if (
     request.method !== "POST"
-    || (url.pathname !== "/api/subscriptions" && url.pathname !== "/api/subscriptions/resolve")
+    || !["/api/subscriptions", "/api/subscriptions/resolve", "/api/rules/preview"].includes(url.pathname)
   ) {
     return;
   }
@@ -79,6 +81,7 @@ type FallbackMode = "error" | "mihomo-provider";
 
 type SubscriptionConfig = {
   version: 1;
+  dnsSettings: DnsSettings;
   dnsMode: MihomoDnsMode;
   name: string;
   fallbackMode: FallbackMode;
@@ -175,6 +178,11 @@ function readDnsMode(value: unknown): MihomoDnsMode {
     return value;
   }
   throw new ApiError(400, "invalid_dns_mode", "DNS mode is invalid");
+}
+
+function readDnsSettings(value: unknown): DnsSettings {
+  try { return parseDnsSettings(value); }
+  catch { throw new ApiError(400, "invalid_dns_settings", "DNS settings are invalid"); }
 }
 
 function readSourceUserAgent(value: unknown): string {
@@ -291,6 +299,7 @@ function readConfig(
   }
   return {
     version: 1,
+    dnsSettings: readDnsSettings(input.dnsSettings),
     dnsMode: readDnsMode(input.dnsMode),
     fallbackMode: readFallbackMode(input.fallbackMode, fallbackMode),
     name: readName(input.name),
@@ -408,6 +417,7 @@ async function generateMihomoProviderTarget(
     nodeResource = await produceTarget(env, nodes, "mihomo");
   }
   return createMihomoProviderProfile({
+    dnsSettings: config.dnsSettings,
     dnsMode: config.dnsMode,
     nodeResource,
     nodeSettings: config.nodeSettings,
@@ -475,6 +485,7 @@ async function generateTarget(
         config.updateIntervalHours,
         config.dnsMode,
         normalized.upstreamConfig,
+        config.dnsSettings,
       );
     } catch (error) {
       const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
@@ -669,6 +680,15 @@ export async function routeSubscriptionRequest(
 ): Promise<Response | null> {
   try {
     await enforceSubscriptionRateLimit(request, url, env);
+    if (url.pathname === "/api/rules/preview") {
+      if (request.method !== "POST") throw new ApiError(405, "method_not_allowed", "Method not allowed");
+      const body = await readRequestObject(request);
+      const preset = readRulePreset(body.rulePreset);
+      if (preset === "global" || preset === "direct") throw new ApiError(400, "invalid_rule_preset", "Select a supported rule template");
+      const customUrl = preset === "custom" && typeof body.ruleTemplateUrl === "string" ? parseRemoteSubscriptionUrl(body.ruleTemplateUrl).href : "";
+      if (preset === "custom" && !customUrl) throw new ApiError(400, "invalid_rule_template", "Remote template URL is required");
+      return json(await createRulePreview(preset, customUrl, env.ASSETS));
+    }
     if (url.pathname === "/api/subscriptions") {
       return await createSubscription(request, url, env);
     }

@@ -1,4 +1,5 @@
-import { parse } from "yaml";
+import type { RulePreview } from "../../config/rule-preview";
+import type { RuleTemplateId } from "../../config/rule-templates";
 
 export interface RuleSetDefinition {
   id: string;
@@ -7,10 +8,8 @@ export interface RuleSetDefinition {
   policy: string;
 }
 
-type RuleType = "DOMAIN" | "DOMAIN-SUFFIX" | "IP-CIDR";
-
 interface RuleEntry {
-  type: RuleType;
+  type: string;
   value: string;
   source: string;
 }
@@ -20,6 +19,8 @@ export interface LoadedRuleSet extends RuleSetDefinition {
 }
 
 export interface RouteMatch {
+  uncertain?: string;
+  destination?: { mode: string; route: string };
   hostname: string;
   matched: boolean;
   rule: string;
@@ -32,21 +33,13 @@ function parseRules(content: string): RuleEntry[] {
   return content
     .split(/\r?\n/u)
     .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith("#"))
+    .filter((line) => line.length > 0 && !/^[#;]/u.test(line))
     .flatMap((source) => {
       const [type, value] = source.split(",", 2);
-      if (
-        (type !== "DOMAIN" &&
-          type !== "DOMAIN-SUFFIX" &&
-          type !== "IP-CIDR") ||
-        !value
-      ) {
-        return [];
-      }
       return [
         {
           type,
-          value: value.toLowerCase(),
+          value: (value ?? "").toLowerCase(),
           source,
         },
       ];
@@ -60,25 +53,11 @@ export function createRuleSet(
   return { ...definition, rules: parseRules(content) };
 }
 
-export async function loadPublishedRuleSets(
-  signal?: AbortSignal,
-): Promise<LoadedRuleSet[]> {
-  const manifestResponse = await fetch("/rules/manifest.yaml", { signal });
-  if (!manifestResponse.ok) {
-    throw new Error("规则目录加载失败");
-  }
-  const manifest = parse(await manifestResponse.text()) as {
-    ruleSets: RuleSetDefinition[];
-  };
-  return Promise.all(
-    manifest.ruleSets.map(async (definition) => {
-      const response = await fetch(`/${definition.path}`, { signal });
-      if (!response.ok) {
-        throw new Error(`${definition.label} 加载失败`);
-      }
-      return createRuleSet(definition, await response.text());
-    }),
-  );
+export async function loadRulePreview(rulePreset: RuleTemplateId, ruleTemplateUrl: string, signal?: AbortSignal): Promise<RulePreview> {
+  const response = await fetch("/api/rules/preview", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rulePreset, ruleTemplateUrl }), signal });
+  if (!response.ok) throw new Error(`规则方案加载失败（HTTP ${response.status}），请检查模板地址或稍后重试`);
+  return await response.json() as RulePreview;
 }
 
 function ipv4ToNumber(address: string): number | null {
@@ -89,7 +68,7 @@ function ipv4ToNumber(address: string): number | null {
   let value = 0;
   for (const part of parts) {
     const octet = Number(part);
-    if (!Number.isInteger(octet) || octet < 0 || octet > 255) {
+    if (!/^\d{1,3}$/u.test(part) || octet > 255) {
       return null;
     }
     value = (value << 8) | octet;
@@ -105,6 +84,7 @@ function matchesCidr(hostname: string, cidr: string): boolean {
   if (
     addressNumber === null ||
     networkNumber === null ||
+    !/^\d{1,2}$/u.test(prefixText ?? "") ||
     !Number.isInteger(prefix) ||
     prefix < 0 ||
     prefix > 32
@@ -115,14 +95,30 @@ function matchesCidr(hostname: string, cidr: string): boolean {
   return (addressNumber & mask) >>> 0 === (networkNumber & mask) >>> 0;
 }
 
-function matches(hostname: string, rule: RuleEntry): boolean {
+function matches(hostname: string, rule: RuleEntry, context: { ip?: string; processName?: string }): boolean | string {
   if (rule.type === "DOMAIN") {
     return hostname === rule.value;
   }
   if (rule.type === "DOMAIN-SUFFIX") {
     return hostname === rule.value || hostname.endsWith(`.${rule.value}`);
   }
-  return matchesCidr(hostname, rule.value);
+  if (rule.type === "DOMAIN-KEYWORD") return hostname.includes(rule.value);
+  if (rule.type === "MATCH" || rule.type === "FINAL") return true;
+  if (rule.type === "IP-CIDR" || rule.type === "IP-CIDR6") {
+    const ip = context.ip || (ipv4ToNumber(hostname) !== null || hostname.includes(":") ? hostname : "");
+    if (!ip) return rule.source.endsWith(",no-resolve") ? false : "此规则需要目标 IP；网页不会替你解析域名";
+    if (rule.type === "IP-CIDR6") return ip.includes(":") ? "IPv6 网段匹配需在客户端验证" : false;
+    return matchesCidr(ip, rule.value);
+  }
+  if (rule.type === "PROCESS-NAME" || rule.type === "PROCESS-NAME-REGEX") {
+    if (!context.processName) return "此规则需要进程名，请补充后重试";
+    if (rule.type === "PROCESS-NAME") return context.processName.toLowerCase() === rule.value;
+    // Only the built-in patterns are evaluated here; arbitrary remote regexes can block the UI thread.
+    if (["(?i)^codex(\\.exe)?$", "(?i)^claude(\\.exe)?$"].includes(rule.value)) {
+      return context.processName.toLowerCase().replace(/\.exe$/u, "") === rule.value.slice(5).split("(")[0];
+    }
+  }
+  return `${rule.type} 需要客户端规则数据或上下文，网页无法确定`;
 }
 
 function readHostname(input: string): string {
@@ -137,19 +133,24 @@ function readHostname(input: string): string {
 export function matchUrl(
   input: string,
   ruleSets: LoadedRuleSet[],
+  context: { ip?: string; processName?: string; groups?: RulePreview["groups"] } = {},
 ): RouteMatch {
   const hostname = readHostname(input);
+  if (context.ip && ipv4ToNumber(context.ip) === null) throw new Error("目标 IPv4 格式有误");
 
   for (const ruleSet of ruleSets) {
-    const rule = ruleSet.rules.find((entry) => matches(hostname, entry));
-    if (rule) {
+    for (const rule of ruleSet.rules) {
+      const matched = matches(hostname, rule, context);
+      if (matched === false) continue;
       return {
         hostname,
-        matched: true,
+        matched: matched === true && !["MATCH", "FINAL"].includes(rule.type),
         rule: rule.source,
         ruleSetId: ruleSet.id,
         ruleSetLabel: ruleSet.label,
         policy: ruleSet.policy,
+        ...(typeof matched === "string" ? { uncertain: matched } : {}),
+        ...(context.groups ? { destination: previewDestination(ruleSet.policy, context.groups) } : {}),
       };
     }
   }
@@ -162,4 +163,22 @@ export function matchUrl(
     ruleSetLabel: "默认规则",
     policy: "DEFAULT",
   };
+}
+
+function previewDestination(policy: string, groups: RulePreview["groups"]): { mode: string; route: string } {
+  const path = [policy];
+  let current = policy;
+  const seen = new Set<string>();
+  while (!seen.has(current)) {
+    seen.add(current);
+    if (["DIRECT", "COMPATIBLE", "REJECT", "REJECT-DROP"].includes(current)) {
+      return { mode: ["DIRECT", "COMPATIBLE"].includes(current) ? "直连" : "拒绝", route: path.join(" → ") };
+    }
+    const group = groups.find(group => group.name === current);
+    if (!group) return { mode: "无法确定", route: path.join(" → ") };
+    if (group.type !== "select" || !group.proxies?.length) return { mode: "代理", route: path.join(" → ") };
+    current = group.proxies[0];
+    path.push(current);
+  }
+  return { mode: "无法确定", route: "策略组存在循环引用" };
 }

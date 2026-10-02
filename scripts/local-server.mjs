@@ -25,6 +25,14 @@ function keyPath(key) {
   return resolve(data, key.replace(":", "-") + ".json");
 }
 const env = {
+  ASSETS: {
+    async fetch(request) {
+      const path = new URL(request.url).pathname;
+      if (!/^\/rules\/[\w/.-]+\.list$/.test(path) || path.includes("..")) return new Response(null, { status: 404 });
+      try { return new Response(await readFile(resolve(root, "dist", "." + path))); }
+      catch (error) { if (error.code === "ENOENT") return new Response(null, { status: 404 }); throw error; }
+    },
+  },
   SUBSCRIPTIONS: {
     async get(key) {
       try { return await readFile(keyPath(key), "utf8"); }

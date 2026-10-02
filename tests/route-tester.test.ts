@@ -71,7 +71,7 @@ describe("createRouteSteps", () => {
     ]);
   });
 
-  it("shows direct routing without making the policy name the final result", () => {
+  it("shows the proxy-first Apple default without claiming a live client selection", () => {
     const result = {
       hostname: "gsa.apple.com",
       matched: true,
@@ -92,8 +92,8 @@ describe("createRouteSteps", () => {
       }),
       expect.objectContaining({
         label: "处理结果",
-        value: "直连",
-        detail: "APPLE → DIRECT",
+        value: "代理",
+        detail: "APPLE → GLOBAL",
       }),
     ]);
   });

@@ -17,12 +17,18 @@ dns:
 `;
 
 describe("remote rule templates", () => {
+  it("does not route business DNS through an arbitrary first template group", () => {
+    const reordered = ini.replace("custom_proxy_group=Select", "custom_proxy_group=FirstDirect`select`[]DIRECT\ncustom_proxy_group=Select");
+    const output = parse(applyRuleTemplate(profile, reordered));
+    expect(output.dns.nameserver[0]).not.toContain("#FirstDirect");
+    expect(output["proxy-groups"].every((group: Record<string, unknown>) => group["empty-fallback"] === "REJECT")).toBe(true);
+  });
   it("preserves nodes and rule order while applying real groups", () => {
     const output = parse(applyRuleTemplate(profile, ini));
     expect(output.proxies).toEqual([{ name: "JP", type: "ss" }]);
     expect(output.rules).toEqual(["RULE-SET,template-1,Direct", "GEOIP,CN,Direct,no-resolve", "MATCH,Select"]);
     expect(output["proxy-groups"][1]).toMatchObject({ name: "Auto", type: "url-test", interval: 300, tolerance: 50, "include-all": true });
-    expect(output.dns.nameserver).toEqual(["https://1.1.1.1/dns-query#Select"]);
+    expect(output.dns.nameserver).toEqual(["https://1.1.1.1/dns-query#DNS-PROXY"]);
   });
   it("rejects unimplemented directives instead of dropping them", () => {
     expect(() => applyRuleTemplate(profile, ini + "\nscript=malicious.js")).toThrow();

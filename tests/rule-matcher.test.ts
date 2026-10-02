@@ -59,7 +59,7 @@ const definitions: RuleSetDefinition[] = [
 
 const ruleSets = [
   createRuleSet(definitions[0], "DOMAIN-SUFFIX,local\n"),
-  createRuleSet(definitions[1], "IP-CIDR,192.168.0.0/16\n"),
+  createRuleSet(definitions[1], "IP-CIDR,192.168.0.0/16,no-resolve\n"),
   createRuleSet(definitions[2], "DOMAIN-SUFFIX,openai.com\n"),
   createRuleSet(definitions[3], "DOMAIN-SUFFIX,steamcontent.com\n"),
   createRuleSet(
@@ -72,6 +72,30 @@ const ruleSets = [
 ];
 
 describe("matchUrl", () => {
+  it("does not silently skip an earlier rule that needs client data", () => {
+    const rules = [createRuleSet(definitions[0], "GEOIP,CN\nDOMAIN-SUFFIX,openai.com")];
+    expect(matchUrl("api.openai.com", rules)).toMatchObject({ rule: "GEOIP,CN", matched: false, uncertain: expect.stringContaining("GEOIP") });
+  });
+  it("uses supplied target IP without performing DNS resolution", () => {
+    const rules = [createRuleSet(definitions[1], "IP-CIDR,192.168.0.0/16")];
+    expect(matchUrl("nas.example", rules).uncertain).toContain("目标 IP");
+    expect(matchUrl("nas.example", rules, { ip: "192.168.1.2" })).toMatchObject({ matched: true, policy: "DIRECT" });
+  });
+  it("respects the built-in process rule before a domain match", () => {
+    const rules = [createRuleSet(definitions[2], "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$\nDOMAIN-SUFFIX,openai.com")];
+    expect(matchUrl("api.openai.com", rules).uncertain).toContain("进程名");
+    expect(matchUrl("api.openai.com", rules, { processName: "Codex.exe" }).rule).toContain("PROCESS-NAME-REGEX");
+    expect(matchUrl("api.openai.com", rules, { processName: "Firefox" }).rule).toBe("DOMAIN-SUFFIX,openai.com");
+  });
+  it.each(["1..2.3", "1.2.3. 4", "1.2.3.-1", "1.2.3.256"])("rejects malformed supplied IPv4: %s", ip => {
+    expect(() => matchUrl("example.com", ruleSets, { ip })).toThrow("目标 IPv4 格式有误");
+  });
+  it("evaluates the selected template's default, not Flacier's policy table", () => {
+    const rules = [createRuleSet({ ...definitions[0], policy: "Custom" }, "MATCH")];
+    expect(matchUrl("example.com", rules, { groups: [{ name: "Custom", type: "select", proxies: ["DIRECT"] }] })).toMatchObject({
+      matched: false, destination: { mode: "直连", route: "Custom → DIRECT" },
+    });
+  });
   it("matches a scheme-less OpenAI URL", () => {
     expect(matchUrl("api.openai.com/v1/models", ruleSets)).toMatchObject({
       hostname: "api.openai.com",

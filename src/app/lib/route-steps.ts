@@ -2,7 +2,7 @@ import type { RouteMatch } from "./rule-matcher";
 import { describePolicyRoute } from "./policy-groups";
 
 type RouteStepKind = "input" | "rule" | "result";
-type RouteStepState = "matched" | "default" | null;
+type RouteStepState = "matched" | "default" | "uncertain" | null;
 
 export interface RouteStep {
   label: string;
@@ -15,7 +15,8 @@ export interface RouteStep {
 }
 
 export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
-  const policyRoute = result ? describePolicyRoute(result.policy) : null;
+  const policyRoute = result?.uncertain ? { mode: "无法确定", route: result.uncertain }
+    : result?.destination ?? (result ? describePolicyRoute(result.policy) : null);
   return [
     {
       label: "输入网址",
@@ -30,9 +31,9 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
       label: "命中规则",
       value: result?.rule || "—",
       detail: result?.ruleSetLabel || "",
-      status: result ? (result.matched ? "命中" : "默认") : "",
+      status: result?.uncertain ? "待确认" : result ? (result.matched ? "命中" : "默认") : "",
       machine: true,
-      state: result ? (result.matched ? "matched" : "default") : null,
+      state: result?.uncertain ? "uncertain" : result ? (result.matched ? "matched" : "default") : null,
       kind: "rule",
     },
     {

@@ -27,6 +27,7 @@ export const outputTargets = [
 export type OutputTarget = (typeof outputTargets)[number];
 
 export type SubscriptionEnv = {
+  ASSETS?: Pick<Env["ASSETS"], "fetch">;
   SUBSCRIPTIONS: {
     get(key: string): Promise<string | null>;
     put(key: string, value: string): Promise<void>;

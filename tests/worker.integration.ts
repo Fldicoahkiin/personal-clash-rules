@@ -80,6 +80,27 @@ async function createSubscription(
 }
 
 describe("Worker entrypoint", () => {
+  it("previews the same ordered Flacier rules without a subscription or KV write", async () => {
+    const response = await exports.default.fetch("https://example.com/api/rules/preview", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rulePreset: "flacier" }),
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const preview = await response.json<{ fingerprint: string; ruleSets: Array<{ content: string; policy: string }> }>();
+    expect(preview.fingerprint).toMatch(/^[A-Za-z0-9_-]{43}$/u);
+    expect(preview.ruleSets.at(-1)).toMatchObject({ content: "MATCH", policy: "DEFAULT" });
+    expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
+    expect(preview.ruleSets[1].content).toContain(",no-resolve");
+    expect(preview.ruleSets[2].policy).toBe("APPLE");
+  });
+
+  it("rejects a private custom preview URL and unsupported HTTP methods", async () => {
+    const request = await exports.default.fetch("https://example.com/api/rules/preview", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rulePreset: "custom", ruleTemplateUrl: "https://127.0.0.1/private" }),
+    });
+    expect(request.status).toBe(400);
+    expect((await exports.default.fetch("https://example.com/api/rules/preview")).status).toBe(405);
+  });
   it("allows the first-party UI to use another Flacier backend but rejects unrelated origins", async () => {
     const allowed = await exports.default.fetch("https://example.com/api/subscriptions", { method: "OPTIONS", headers: { Origin: "https://rules.flacier.com" } });
     expect(allowed.status).toBe(204);
@@ -97,7 +118,7 @@ describe("Worker entrypoint", () => {
     const profile = parse(await config.text());
     expect(profile.proxies).toHaveLength(1);
     expect(profile["proxy-providers"]).toBeUndefined();
-    expect(profile.dns.nameserver[0]).toContain("#GLOBAL");
+    expect(profile.dns.nameserver[0]).toContain("#DNS-PROXY");
   });
 
   it("returns a private health response with security headers", async () => {
@@ -180,6 +201,19 @@ describe("Worker entrypoint", () => {
 });
 
 describe("KV-backed subscription links", () => {
+  it("round-trips explicit DNS and IPv6 settings through creation, rendering and loading", async () => {
+    const dnsSettings = { bootstrapMode: "custom", bootstrap: ["https://9.9.9.9/dns-query"], nameservers: ["https://1.1.1.1/dns-query"], ipv6: false };
+    const { data, response } = await createSubscription({ dnsSettings });
+    expect(response.status).toBe(201);
+    const profile = parse(await (await exports.default.fetch(data.url)).text());
+    expect(profile.dns["proxy-server-nameserver"]).toEqual(dnsSettings.bootstrap);
+    expect(profile.dns.nameserver).toEqual(["https://1.1.1.1/dns-query#DNS-PROXY"]);
+    expect(profile.dns.ipv6).toBe(false);
+    const resolved = await exports.default.fetch("https://example.com/api/subscriptions/resolve", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: data.url }),
+    });
+    expect(await resolved.json()).toMatchObject({ config: { dnsSettings } });
+  });
   it("stores the configuration behind a short link and renders it on demand", async () => {
     const { data, response } = await createSubscription();
     const responseText = JSON.stringify(data);

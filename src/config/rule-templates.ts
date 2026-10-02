@@ -6,3 +6,4 @@ export const ruleTemplates = [
   { id: "custom", name: "自定义远程规则 · INI", url: "" },
 ] as const;
 export type RuleTemplateId = (typeof ruleTemplates)[number]["id"];
+export type RuleSelection = { preset: RuleTemplateId; url: string };

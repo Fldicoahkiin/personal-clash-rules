@@ -2,6 +2,8 @@ import { Plus, X } from "@phosphor-icons/react";
 import type { FC } from "react";
 
 import type { DnsMode, NodeSortMode } from "../features/subscriptions/api";
+import type { DnsSettings } from "../../config/dns-settings";
+import { MihomoDnsSettings } from "./MihomoDnsSettings";
 
 type RenameRuleDraft = {
   id: string;
@@ -20,6 +22,8 @@ const sourceUserAgentPresets = [
 ] as const;
 
 type SubscriptionMoreSettingsProps = {
+  dnsSettings?: DnsSettings;
+  onDnsSettingsChange?: (value: DnsSettings) => void;
   addCountryFlag: boolean;
   allowClientFallback: boolean;
   dnsMode: DnsMode;
@@ -53,6 +57,8 @@ type SubscriptionMoreSettingsProps = {
 };
 
 export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
+  dnsSettings,
+  onDnsSettingsChange,
   addCountryFlag,
   allowClientFallback,
   dnsMode,
@@ -234,6 +240,8 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
             <option value="system">使用系统 DNS</option>
           </select>
         </label> : null}
+        {supportsDns && dnsSettings && onDnsSettingsChange ? <MihomoDnsSettings settings={dnsSettings} onChange={onDnsSettingsChange} proxyDns={dnsMode === "doh"} /> : null}
+        {supportsDns && dnsMode !== "doh" ? <p>此模式沿用系统或机场的解析出口，不保证 DNS 经代理。上游 DNS 依赖原策略组时会停止转换并提示。</p> : null}
         <label className="field subscription-sort">
           <span className="field-label">
             <strong>排序</strong>

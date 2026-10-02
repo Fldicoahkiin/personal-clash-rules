@@ -19,7 +19,7 @@ ruleSets:
     path: rules/local/private-ip.list
   - id: apple-system
     label: Apple 系统
-    policy: DIRECT
+    policy: APPLE
     path: rules/apple/system.list
   - id: apple-services
     label: Apple 服务

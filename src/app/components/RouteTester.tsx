@@ -1,14 +1,18 @@
 import { ArrowRight, Check } from "@phosphor-icons/react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useReducer } from "react";
 
 import {
-  loadPublishedRuleSets,
+  loadRulePreview,
+  createRuleSet,
   matchUrl,
   type LoadedRuleSet,
   type RouteMatch,
 } from "../lib/rule-matcher";
 import { describePolicyRoute } from "../lib/policy-groups";
 import { createRouteSteps } from "../lib/route-steps";
+import { ruleTemplates, type RuleTemplateId, type RuleSelection } from "../../config/rule-templates";
+import type { RulePreview } from "../../config/rule-preview";
+import styles from "./RouteTester.module.css";
 
 const sampleUrl = "https://api.openai.com/v1/models";
 
@@ -21,38 +25,41 @@ const featuredRules = [
   { name: "AniGamer", policy: "ANIGAMER" },
 ];
 
-export function RouteTester() {
-  const [input, setInput] = useState(sampleUrl);
-  const [ruleSets, setRuleSets] = useState<LoadedRuleSet[]>([]);
-  const [result, setResult] = useState<RouteMatch | null>(null);
-  const [message, setMessage] = useState("规则加载中");
-  const [resultVersion, setResultVersion] = useState(0);
+export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
+  const [state, update] = useReducer((state: TesterState, patch: Partial<TesterState>) => ({ ...state, ...patch }), {
+    input: sampleUrl, ip: "", processName: "", preset: "flacier", customUrl: "",
+    request: selection ? null : { preset: "flacier", url: "" }, preview: null, ruleSets: [], result: null,
+    message: "规则加载中", resultVersion: 0,
+  });
+  const { input, ruleSets, result, message, resultVersion } = state;
+  useEffect(() => {
+    if (selection) update({ preset: selection.preset, customUrl: selection.url, result: null, ruleSets: [], preview: null,
+      message: selection.preset === "custom" ? "填写远程规则地址后加载" : "规则加载中",
+      request: selection.preset === "custom" ? null : { preset: selection.preset, url: selection.url } });
+  }, [selection]);
 
   useEffect(() => {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 8000);
-
-    void loadPublishedRuleSets(controller.signal)
+    if (!state.request) return;
+    let disposed = false;
+    const timeout = window.setTimeout(() => controller.abort(), 60000);
+    update({ message: "规则加载中", result: null, ruleSets: [], preview: null });
+    void loadRulePreview(state.request.preset, state.request.url, controller.signal)
       .then((loaded) => {
-        setRuleSets(loaded);
-        setResult(matchUrl(sampleUrl, loaded));
-        setResultVersion(1);
-        setMessage("");
+        if (!disposed) update({ preview: loaded, ruleSets: loaded.ruleSets.map(rule => createRuleSet(rule, rule.content)), message: "" });
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          setMessage("规则加载超时");
-          return;
-        }
-        setMessage(error instanceof Error ? error.message : "规则加载失败");
+        if (!disposed) update({ message: error instanceof DOMException && error.name === "AbortError"
+          ? "规则加载超时，请重新加载" : error instanceof Error ? error.message : "规则加载失败" });
       })
       .finally(() => window.clearTimeout(timeout));
 
     return () => {
+      disposed = true;
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, []);
+  }, [state.request]);
 
   function testRoute(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,11 +67,9 @@ export function RouteTester() {
       return;
     }
     try {
-      setResult(matchUrl(input, ruleSets));
-      setResultVersion((current) => current + 1);
-      setMessage("");
-    } catch {
-      setMessage("请输入网址或域名");
+      update({ result: matchUrl(input, ruleSets, { ip: state.ip.trim(), processName: state.processName.trim(), groups: state.preview?.groups }), resultVersion: resultVersion + 1, message: "" });
+    } catch (error) {
+      update({ result: null, message: error instanceof Error ? error.message : "请输入网址或域名" });
     }
   }
 
@@ -75,16 +80,33 @@ export function RouteTester() {
       <div className="route-main">
         <div className="route-intro">
           <h2 id="tester-title">规则测试</h2>
-          <p>输入网址，查看命中的规则和最终去向。</p>
+          <p>按所选方案的规则顺序模拟，不读取客户端的实时出口。</p>
         </div>
 
+        <div className={styles.controls}>
+          <label className="field"><span>测试规则方案</span>
+            <select value={state.preset} onChange={event => {
+              const preset = event.target.value as RuleTemplateId;
+              update({ preset, result: null, preview: null, ruleSets: [], message: preset === "custom" ? "填写远程规则地址后加载" : "规则加载中", request: preset === "custom" ? null : { preset, url: "" } });
+            }}>
+              {ruleTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
+            </select>
+          </label>
+          {state.preset === "custom" ? <label className="field"><span>测试用远程规则地址</span>
+            <input type="url" value={state.customUrl} placeholder="https://example.com/rules.ini" onChange={event => update({ customUrl: event.target.value, request: null, ruleSets: [], result: null, preview: null })} />
+          </label> : null}
+          <button type="button" className="button button-secondary" onClick={() => update({ request: { preset: state.preset, url: state.customUrl } })}>重新加载规则</button>
+          <label className="field"><span>目标 IPv4（可选）</span><input value={state.ip} onChange={event => update({ ip: event.target.value, result: null })} placeholder="仅供模拟，不会发起 DNS 查询" /></label>
+          <label className="field"><span>进程名（可选）</span><input value={state.processName} onChange={event => update({ processName: event.target.value, result: null })} placeholder="例如 Firefox 或 Codex" /></label>
+        </div>
+        {state.preview ? <p className={styles.note}>{state.preview.name} · 规则快照 {state.preview.fingerprint.slice(0, 12)}。缺少上下文时显示“无法确定”，不会略过规则后宣称默认代理。</p> : null}
         <form className="route-form" onSubmit={testRoute}>
           <label htmlFor="route-url">测试网址</label>
           <input
             id="route-url"
             type="text"
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={(event) => update({ input: event.target.value, result: null })}
             spellCheck="false"
             autoComplete="off"
           />
@@ -176,7 +198,8 @@ export function RouteTester() {
 
       <aside className="route-index" aria-label="规则索引">
         <div className="index-block">
-          <h2>常用规则</h2>
+          <h2>{state.preset === "flacier" ? "Flacier 默认策略" : "方案说明"}</h2>
+          {state.preset !== "flacier" ? <p>远程方案保留原有分流意图，可能包含中国站点直连。测试结果显示配置的默认策略，不代表你的客户端当前选择。</p> : <>
           <div className="index-head" aria-hidden="true">
             <span>规则</span>
             <span>默认</span>
@@ -192,8 +215,16 @@ export function RouteTester() {
               );
             })}
           </ul>
+          </>}
         </div>
       </aside>
     </section>
   );
 }
+
+type TesterState = {
+  input: string; ip: string; processName: string; preset: RuleTemplateId; customUrl: string;
+  request: { preset: RuleTemplateId; url: string } | null;
+  preview: RulePreview | null; ruleSets: LoadedRuleSet[]; result: RouteMatch | null;
+  message: string; resultVersion: number;
+};

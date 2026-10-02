@@ -5,6 +5,7 @@ import { mihomoProxyGroups } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
+import type { DnsSettings } from "../config/dns-settings";
 import {
   createMihomoProfile,
   type MihomoDnsMode,
@@ -1919,6 +1920,7 @@ export async function produceTarget(
   updateIntervalHours = 6,
   dnsMode: MihomoDnsMode = "doh",
   upstreamConfig?: Record<string, unknown>,
+  dnsSettings?: DnsSettings,
 ): Promise<string> {
   const supported = (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
@@ -1926,7 +1928,7 @@ export async function produceTarget(
   }
   const mihomoNodes = stringifyYaml({ proxies: supported });
   if (isMihomoConfigTarget(target)) {
-    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode, upstreamConfig);
+    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings);
   }
   if (target === "stash-config") return createStashProfile(mihomoNodes, updateIntervalHours);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported), updateIntervalHours);

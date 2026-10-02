@@ -1,6 +1,7 @@
 import { parse, stringify } from "yaml";
 import { ApiError } from "./api-error";
 import { parseRemoteSubscriptionUrl } from "./sub-store";
+import { dnsProxyGroup, dnsProxyGroupName } from "./mihomo-dns";
 
 function invalid(): never {
   throw new ApiError(422, "unsupported_rule_template", "Template requires supported ruleset and custom_proxy_group directives");
@@ -43,6 +44,7 @@ export function applyRuleTemplate(profile: string, ini: string): string {
     } else if (key === "custom_proxy_group") {
       const [name, type, ...selectors] = value.split("`");
       if (!name || !["select", "url-test", "fallback", "load-balance"].includes(type) || groups.some(g => g.name === name)) invalid();
+      if (name === dnsProxyGroupName) invalid();
       let testUrl: string | undefined;
       let interval = 300;
       let tolerance = 50;
@@ -57,7 +59,7 @@ export function applyRuleTemplate(profile: string, ini: string): string {
       const patterns = selectors.filter(s => !s.startsWith("[]"));
       if (patterns.some(p => p.startsWith("!!"))) invalid();
       const filter = patterns.map(p => `(${p})`).join("|");
-      groups.push({ name, type, ...(proxies.length ? { proxies } : {}),
+      groups.push({ name, type, "empty-fallback": "REJECT", ...(proxies.length ? { proxies } : {}),
         ...(filter ? { "include-all": true, filter, ...(providerNames.length ? { use: providerNames } : {}) } : {}),
         ...(testUrl ? { url: testUrl, interval, ...(type === "url-test" ? { tolerance } : {}) } : {}),
         icon: `https://rules.flacier.com/policy-icons/${type === "url-test" ? "auto" : "globe"}.svg`,
@@ -74,6 +76,9 @@ export function applyRuleTemplate(profile: string, ini: string): string {
     if (!names.has(policy)) invalid();
   }
   const dns = config.dns as { nameserver?: string[] } | undefined;
-  if (dns?.nameserver) dns.nameserver = dns.nameserver.map(url => url.replace("#GLOBAL", `#${groups[0].name}`));
+  if (dns?.nameserver?.some(url => url.endsWith("#GLOBAL") || url.endsWith(`#${dnsProxyGroupName}`))) {
+    dns.nameserver = dns.nameserver.map(url => url.replace(/#GLOBAL$/u, `#${dnsProxyGroupName}`));
+    groups.push(dnsProxyGroup(providerNames));
+  }
   return stringify({ ...config, "proxy-groups": groups, "rule-providers": providers, rules });
 }

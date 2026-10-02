@@ -14,11 +14,12 @@
 - 节点筛选、多重改名、国旗、类型、UDP、XUDP 与排序
 - 透传、合并上游流量与到期信息
 - 默认 Worker 转换；可选 Clash Party / Mihomo 客户端直读备用
-- 继承原订阅 DNS，或选择代理 DoH
+- 继承独立的原订阅 DNS，或配置节点引导 DNS 与代理 DoH；Mihomo IPv6 默认关闭
 - CF、本地及自定义 Flacier 后端；ACL4SSR 和自定义远程规则模板
 - BrowserLeaks、IPv6、Cloudflare 网络检测入口
 - AI、Apple、Steam、Discord、Bilibili、AniGamer 等分流规则
-- 网址规则测试与规则格式转换
+- 按 Flacier、ACL4SSR 或自定义模板测试规则；缺少 IP、进程或地理规则数据时明确提示无法确定
+- 规则格式转换；页脚构建时间、版本时间与提交 hash
 
 规则文件位于 [`public/rules`](public/rules)，Mihomo 覆写单独导入：
 

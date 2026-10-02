@@ -10,14 +10,14 @@ describe("home page flow", () => {
   it("puts subscription conversion before secondary tools", () => {
     const app = projectFile("src/app/App.tsx");
 
-    expect(app.indexOf("<SubscriptionImport />")).toBeGreaterThan(-1);
-    expect(app.indexOf("<SubscriptionImport />")).toBeLessThan(
-      app.indexOf("<RouteTester />"),
+    expect(app.indexOf("<SubscriptionImport ")).toBeGreaterThan(-1);
+    expect(app.indexOf("<SubscriptionImport ")).toBeLessThan(
+      app.indexOf("<RouteTester "),
     );
     expect(app.indexOf("<NetworkChecks />")).toBeLessThan(
-      app.indexOf("<RouteTester />"),
+      app.indexOf("<RouteTester "),
     );
-    expect(app.indexOf("<RouteTester />")).toBeLessThan(
+    expect(app.indexOf("<RouteTester ")).toBeLessThan(
       app.indexOf("<ConverterWorkspace />"),
     );
   });

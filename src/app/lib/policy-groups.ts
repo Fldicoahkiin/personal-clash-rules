@@ -6,28 +6,28 @@ export const displayedPolicyGroups = [
   },
   {
     name: "APPLE",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "US", "JP", "SG"],
+    initial: "GLOBAL",
+    options: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
   },
   {
     name: "STEAM",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "JP", "US", "SG"],
+    initial: "GLOBAL",
+    options: ["GLOBAL", "DIRECT", "JP", "US", "SG"],
   },
   {
     name: "STEAM-DOWNLOAD",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+    initial: "GLOBAL",
+    options: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
   },
   {
     name: "STEAM-ONLINE",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+    initial: "GLOBAL",
+    options: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
   },
   {
     name: "BILIBILI",
-    initial: "DIRECT",
-    options: ["DIRECT", "GLOBAL", "HK", "TW", "SG"],
+    initial: "GLOBAL",
+    options: ["GLOBAL", "DIRECT", "HK", "TW", "SG"],
   },
   {
     name: "ANIGAMER",
@@ -75,10 +75,9 @@ export function describePolicyRoute(policy: string): {
     return { mode: "代理", route: policy, target: "PROXY" };
   }
 
-  const target = group.initial === "DIRECT" ? "DIRECT" : "PROXY";
   return {
-    mode: target === "DIRECT" ? "直连" : "代理",
+    mode: "代理",
     route: `${group.name} → ${group.initial}`,
-    target,
+    target: "PROXY",
   };
 }

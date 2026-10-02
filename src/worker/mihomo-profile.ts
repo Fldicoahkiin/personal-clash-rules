@@ -11,11 +11,14 @@ import type { NodeSettings } from "./node-transforms";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
 import { ApiError } from "./api-error";
 import type { RuleTemplateId } from "../config/rule-templates";
+import { defaultDnsSettings, type DnsSettings } from "../config/dns-settings";
+import { createProxyDns, dnsProxyGroup, readUpstreamDns, validateIndependentDns } from "./mihomo-dns";
 
 export type MihomoRulePreset = RuleTemplateId | "global" | "direct";
 export type MihomoDnsMode = "doh" | "system" | "upstream";
 
 type MihomoProviderProfile = {
+  dnsSettings?: DnsSettings;
   dnsMode: MihomoDnsMode;
   nodeResource: string;
   nodeSettings: NodeSettings;
@@ -50,27 +53,6 @@ const globalRules = [
   "MATCH,GLOBAL",
 ] as const;
 
-const dns = {
-  enable: true,
-  ipv6: false,
-  "enhanced-mode": "fake-ip",
-  "fake-ip-range": "198.18.0.1/16",
-  "fake-ip-filter": ["*.lan", "*.local", "localhost"],
-  "default-nameserver": ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"],
-  nameserver: [
-    "https://1.1.1.1/dns-query#GLOBAL",
-    "https://8.8.8.8/dns-query#GLOBAL",
-  ],
-  "proxy-server-nameserver": [
-    "https://1.1.1.1/dns-query",
-    "https://8.8.8.8/dns-query",
-  ],
-  "direct-nameserver": [
-    "https://1.1.1.1/dns-query",
-    "https://8.8.8.8/dns-query",
-  ],
-} as const;
-
 function profileBody(
   proxies: Array<Record<string, unknown>>,
   rulePreset: MihomoRulePreset,
@@ -78,15 +60,15 @@ function profileBody(
   updateIntervalHours = 6,
   dnsMode: MihomoDnsMode = "doh",
   upstreamConfig?: Record<string, unknown>,
+  dnsSettings: DnsSettings = defaultDnsSettings,
 ) {
-  if (dnsMode === "upstream" && (!upstreamConfig?.dns || typeof upstreamConfig.dns !== "object")) {
-    throw new ApiError(422, "upstream_dns_unavailable", "A single upstream Clash configuration with DNS is required");
-  }
+  const inheritedDns = dnsMode === "upstream" ? readUpstreamDns(upstreamConfig) : undefined;
+  if (inheritedDns) validateIndependentDns(inheritedDns);
   const flacierRules = rulePreset !== "global" && rulePreset !== "direct";
   const directRules = rulePreset === "direct";
   const groups = directRules ? [] : flacierRules ? mihomoProxyGroups : globalProxyGroups;
   const providerNames = providers ? Object.keys(providers) : [];
-  const proxyGroups = groups.map((group) => (
+  const proxyGroups: Array<Record<string, unknown>> = groups.map((group) => ({ ...(
     providerNames.length > 0 && "include-all" in group && group["include-all"]
       ? {
           ...group,
@@ -94,18 +76,23 @@ function profileBody(
           "include-all-providers": true,
         }
       : group
-  ));
+  ), "empty-fallback": "REJECT" }));
+  const dns = inheritedDns ? { ...inheritedDns, ipv6: dnsSettings.ipv6 }
+    : dnsMode === "doh" ? createProxyDns(dnsSettings, upstreamConfig) : { enable: false };
+  if (dnsMode === "doh" && !directRules) proxyGroups.push(dnsProxyGroup(providerNames));
+  if (dnsMode === "doh" && directRules) {
+    throw new ApiError(422, "dns_requires_proxy", "Proxy DNS cannot be combined with the direct-only preset; choose system or upstream DNS explicitly");
+  }
   return {
     "mixed-port": 7890,
     "allow-lan": false,
     mode: "rule",
     "log-level": "info",
-    ipv6: dnsMode === "upstream" ? upstreamConfig?.ipv6 ?? false : false,
+    ipv6: dnsSettings.ipv6,
     "unified-delay": true,
     "tcp-concurrent": true,
-    dns: dnsMode === "upstream" ? upstreamConfig?.dns : dnsMode === "doh"
-      ? { ...dns, nameserver: dns.nameserver.map((url) => directRules ? url.replace("#GLOBAL", "#DIRECT") : url) }
-      : { enable: false },
+    dns,
+    ...(upstreamConfig?.hosts && (inheritedDns || dnsSettings.bootstrapMode === "upstream") ? { hosts: upstreamConfig.hosts } : {}),
     "profile-update-interval": updateIntervalHours,
     profile: {
       "store-selected": true,
@@ -148,6 +135,7 @@ export function createMihomoProfile(
   updateIntervalHours = 6,
   dnsMode: MihomoDnsMode = "doh",
   upstreamConfig?: Record<string, unknown>,
+  dnsSettings: DnsSettings = defaultDnsSettings,
 ): string {
   return stringifyYaml(profileBody(
     readYamlProxyResource(nodeResource, "Mihomo"),
@@ -156,6 +144,7 @@ export function createMihomoProfile(
     updateIntervalHours,
     dnsMode,
     upstreamConfig,
+    dnsSettings,
   ));
 }
 
@@ -190,5 +179,7 @@ export function createMihomoProviderProfile(input: MihomoProviderProfile): strin
     providers,
     input.updateIntervalHours,
     input.dnsMode,
+    undefined,
+    input.dnsSettings,
   ));
 }

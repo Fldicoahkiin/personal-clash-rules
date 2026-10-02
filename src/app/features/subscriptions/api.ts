@@ -111,6 +111,7 @@ async function apiError(response: Response): Promise<SubscriptionApiError> {
 }
 
 export async function createConvertedSubscription(input: {
+  dnsSettings?: import("../../../config/dns-settings").DnsSettings;
   dnsMode: DnsMode;
   fallbackMode: FallbackMode;
   name: string;
@@ -159,6 +160,11 @@ export function subscriptionErrorText(error: unknown): string {
     invalid_rule_template: "请填写远程规则模板地址",
     unsupported_rule_template: "此 INI 模板含未支持的指令，请使用 ACL4SSR 默认、多国或无自动测速模板",
     invalid_dns_mode: "DNS 模板无效",
+    invalid_dns_settings: "DNS 设置有误；请使用最多 4 个不带路由后缀的 HTTPS DoH 地址",
+    invalid_dns_bootstrap: "自定义引导 DNS 必须使用 IP 地址的 DoH，避免先解析 DNS 自身造成循环",
+    upstream_dns_dependency: "上游 DNS 依赖原策略组、接口或规则，不能单独继承；请选代理解析并配置独立引导 DNS",
+    upstream_bootstrap_unavailable: "上游没有独立的节点 DNS 和引导 DNS；请选择系统或自定义引导",
+    dns_requires_proxy: "纯直连方案不能使用代理 DNS；请明确选择系统或上游 DNS",
     upstream_dns_unavailable: "此来源没有可继承的 DNS：请使用单个完整 Clash 订阅，或选择内置 DoH",
     invalid_source_user_agent: "订阅请求 UA 无效",
     invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",

@@ -8,7 +8,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node", "vitest/globals"],
+    "types": ["node", "vitest/globals", "vite/client"],
     "jsx": "react-jsx"
   },
   "include": [
@@ -22,6 +22,7 @@
     "src/app/components/BuildDetails.tsx",
     "src/app/components/SubscriptionFormatPicker.tsx",
     "src/app/components/SubscriptionMoreSettings.tsx",
+    "src/app/components/MihomoDnsSettings.tsx",
     "src/app/components/SubscriptionResult.tsx",
     "src/app/lib",
     "src/app/features/subscriptions",

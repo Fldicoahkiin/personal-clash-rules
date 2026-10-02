@@ -1,4 +1,6 @@
 import { ArrowUpRight } from "@phosphor-icons/react";
+import { useState } from "react";
+import type { RuleSelection } from "../config/rule-templates";
 
 import { AppHeader } from "./components/AppHeader";
 import { ConverterWorkspace } from "./components/ConverterWorkspace";
@@ -13,13 +15,14 @@ import type { BuildInfo } from "../config/build-info";
 declare const __BUILD_INFO__: BuildInfo;
 
 export function App() {
+  const [ruleSelection, setRuleSelection] = useState<RuleSelection>({ preset: "flacier", url: "" });
   return (
     <div className="app-shell" id="top">
       <AppHeader />
       <main>
-        <SubscriptionImport />
+        <SubscriptionImport onRuleSelectionChange={setRuleSelection} />
         <NetworkChecks />
-        <RouteTester />
+        <RouteTester selection={ruleSelection} />
         <RulesCatalog />
         <ConverterWorkspace />
         <PolicyMap />

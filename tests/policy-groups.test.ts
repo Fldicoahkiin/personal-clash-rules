@@ -19,11 +19,11 @@ describe("describePolicyRoute", () => {
     });
   });
 
-  it("does not call direct-first groups proxy routes", () => {
+  it("keeps Steam proxy-first while allowing manual direct selection", () => {
     expect(describePolicyRoute("STEAM")).toEqual({
-      mode: "直连",
-      route: "STEAM → DIRECT",
-      target: "DIRECT",
+      mode: "代理",
+      route: "STEAM → GLOBAL",
+      target: "PROXY",
     });
   });
 });

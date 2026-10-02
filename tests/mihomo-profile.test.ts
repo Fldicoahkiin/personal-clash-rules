@@ -7,6 +7,20 @@ import {
 } from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
+  it("rejects inherited DNS whose original policy group is removed", () => {
+    expect(() => createMihomoProfile("proxies: [{name: US, type: ss}]", "flacier", 6, "upstream", {
+      dns: { enable: true, nameserver: ["https://1.1.1.1/dns-query#OriginalProxy"] },
+    })).toThrow("DNS dependency");
+  });
+
+  it("keeps empty groups closed and makes built-in service groups proxy-first", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: US, type: ss}]"));
+    for (const group of profile["proxy-groups"]) {
+      expect(group["empty-fallback"]).toBe("REJECT");
+      expect(group.proxies?.[0]).not.toBe("DIRECT");
+    }
+    expect(profile.rules).not.toContain("RULE-SET,apple-system,DIRECT");
+  });
   it("turns a Mihomo node resource into an installable rule profile", () => {
     const output = createMihomoProfile(`
 proxies:
@@ -31,12 +45,11 @@ proxies:
       "enhanced-mode": "fake-ip",
       "fake-ip-range": "198.18.0.1/16",
       nameserver: [
-        "https://1.1.1.1/dns-query#GLOBAL",
-        "https://8.8.8.8/dns-query#GLOBAL",
+        "https://1.1.1.1/dns-query#DNS-PROXY",
+        "https://8.8.8.8/dns-query#DNS-PROXY",
       ],
       "proxy-server-nameserver": [
-        "https://1.1.1.1/dns-query",
-        "https://8.8.8.8/dns-query",
+        "system",
       ],
     });
     expect(config.proxies).toHaveLength(2);
@@ -77,7 +90,7 @@ proxies:
   it("retains the source DNS without adding a second resolver policy", () => {
     const upstream = { ipv6: false, dns: { enable: true, nameserver: ["https://dns.example/dns-query"], "proxy-server-nameserver": ["https://bootstrap.example/dns-query"], "nameserver-policy": { "+.private.example": "system" } } };
     const output = parse(createMihomoProfile("proxies: [{name: US, type: ss, server: proxy.example, port: 443, password: test, cipher: aes-128-gcm}]", "flacier", 6, "upstream", upstream));
-    expect(output.dns).toEqual(upstream.dns);
+    expect(output.dns).toEqual({ ...upstream.dns, ipv6: false });
     expect(output.ipv6).toBe(false);
     expect(output.tun).toBeUndefined();
   });
@@ -168,8 +181,8 @@ proxies:
       }),
       expect.objectContaining({ name: "AI", proxies: expect.arrayContaining(["GLOBAL"]) }),
     ]));
-    expect(config["proxy-groups"].find((group) => group.name === "US")).not.toHaveProperty(
-      "empty-fallback",
+    expect(config["proxy-groups"].find((group) => group.name === "US")).toHaveProperty(
+      "empty-fallback", "REJECT",
     );
   });
 
@@ -202,7 +215,7 @@ proxies:
     port: 443
     cipher: aes-128-gcm
     password: test
-`, "direct");
+`, "direct", 6, "system");
     const config = parse(output) as Record<string, unknown>;
 
     expect(config).not.toHaveProperty("rule-providers");

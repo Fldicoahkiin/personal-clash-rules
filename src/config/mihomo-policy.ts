@@ -158,25 +158,25 @@ export const mihomoProxyGroups = [
   {
     name: "APPLE",
     type: "select",
-    proxies: ["DIRECT", "GLOBAL", "US", "JP", "SG"],
+    proxies: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
     icon: `${policyIconBase}/apple.svg`,
   },
   {
     name: "STEAM",
     type: "select",
-    proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG"],
+    proxies: ["GLOBAL", "DIRECT", "JP", "US", "SG"],
     icon: `${policyIconBase}/steam.svg`,
   },
   {
     name: "STEAM-DOWNLOAD",
     type: "select",
-    proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+    proxies: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
     icon: `${policyIconBase}/download.svg`,
   },
   {
     name: "STEAM-ONLINE",
     type: "select",
-    proxies: ["DIRECT", "GLOBAL", "JP", "US", "SG", "HK", "TW"],
+    proxies: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
     icon: `${policyIconBase}/game.svg`,
   },
   {
@@ -200,7 +200,7 @@ export const mihomoProxyGroups = [
   {
     name: "BILIBILI",
     type: "select",
-    proxies: ["DIRECT", "GLOBAL", "HK", "TW", "SG"],
+    proxies: ["GLOBAL", "DIRECT", "HK", "TW", "SG"],
     icon: `${policyIconBase}/play.svg`,
   },
   {
@@ -221,12 +221,12 @@ export const mihomoProxyGroups = [
     proxies: ["GLOBAL", "DIRECT", "AUTO"],
     icon: `${policyIconBase}/route.svg`,
   },
-] as const;
+].map(group => ({ ...group, "empty-fallback": "REJECT" as const }));
 
 export const mihomoRules = [
   "RULE-SET,private-domain,DIRECT",
   "RULE-SET,private-ip,DIRECT,no-resolve",
-  "RULE-SET,apple-system,DIRECT",
+  "RULE-SET,apple-system,APPLE",
   "RULE-SET,apple-services,APPLE",
   "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,AI",
   "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,AI",

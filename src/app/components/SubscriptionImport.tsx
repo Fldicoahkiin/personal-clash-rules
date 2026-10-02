@@ -22,9 +22,11 @@ import { SubscriptionFormatPicker } from "./SubscriptionFormatPicker";
 import { SubscriptionLinkLoader } from "./SubscriptionLinkLoader";
 import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
-import { ruleTemplates } from "../../config/rule-templates";
+import { ruleTemplates, type RuleSelection } from "../../config/rule-templates";
+import { defaultDnsSettings, parseDnsSettings, type DnsSettings } from "../../config/dns-settings";
 
 type FormState = {
+  dnsSettings: DnsSettings;
   backend: string;
   backendMode: "current" | "local" | "custom";
   addCountryFlag: boolean;
@@ -60,6 +62,7 @@ type FieldAction = {
 type FormAction = FieldAction | { key: "load"; value: LoadedSubscriptionForm };
 
 const initialState: FormState = {
+  dnsSettings: defaultDnsSettings,
   backend: "",
   backendMode: "current",
   addCountryFlag: true,
@@ -122,8 +125,14 @@ const allFormats = [
   ...secondaryFormats,
 ];
 
-export function SubscriptionImport() {
-  const [form, dispatch] = useReducer(reducer, initialState);
+export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionChange?: (selection: RuleSelection) => void } = {}) {
+  const [form, updateForm] = useReducer(reducer, initialState);
+  function dispatch(action: FormAction) {
+    updateForm(action);
+    const preset = action.key === "load" ? action.value.rulePreset : action.key === "rulePreset" ? action.value : form.rulePreset;
+    const url = action.key === "load" ? action.value.ruleTemplateUrl : action.key === "ruleTemplateUrl" ? action.value : form.ruleTemplateUrl;
+    if (["load", "rulePreset", "ruleTemplateUrl"].includes(action.key) && preset !== "global" && preset !== "direct") onRuleSelectionChange?.({ preset, url });
+  }
   const selectedFormat = allFormats.find((format) => format.target === form.target) ?? completeConfigFormats[0];
   const supportsRulePreset = ["clash-party-config", "clash-verge-config", "flclash-config", "mihomo-config"].includes(form.target);
   const backend = form.backendMode === "local" ? "http://127.0.0.1:25500" : form.backendMode === "custom" ? form.backend.replace(/\/+$/u, "") : "";
@@ -175,7 +184,15 @@ export function SubscriptionImport() {
           return;
         }
       }
+      let dnsSettings = defaultDnsSettings;
+      try {
+        if (supportsRulePreset) dnsSettings = parseDnsSettings({ ...form.dnsSettings, bootstrap: form.dnsSettings.bootstrap.map(value => value.trim()).filter(Boolean), nameservers: form.dnsSettings.nameservers.map(value => value.trim()).filter(Boolean) });
+      } catch {
+        dispatch({ key: "error", value: "请检查 DNS 设置：每项填写 1–4 个 HTTPS DoH 地址，不带路由后缀" });
+        return;
+      }
       const result = await createConvertedSubscription({
+        dnsSettings,
         dnsMode: form.dnsMode,
         fallbackMode: form.allowClientFallback ? "mihomo-provider" : "error",
         name: form.name.trim(),
@@ -299,6 +316,8 @@ export function SubscriptionImport() {
         {supportsRulePreset && form.rulePreset === "custom" ? <label className="field"><span>远程规则地址</span><input type="url" value={form.ruleTemplateUrl} onChange={event => dispatch({ key: "ruleTemplateUrl", value: event.target.value })} required placeholder="https://example.com/rules.ini" /><small>支持 ruleset 和 custom_proxy_group；不执行脚本或导入本地文件。</small></label> : null}
 
         <SubscriptionMoreSettings
+          dnsSettings={form.dnsSettings}
+          onDnsSettingsChange={value => dispatch({ key: "dnsSettings", value })}
           supportsDns={supportsRulePreset}
           addCountryFlag={form.addCountryFlag}
           allowClientFallback={form.allowClientFallback}
