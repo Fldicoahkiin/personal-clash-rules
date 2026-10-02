@@ -51,6 +51,14 @@ describe("build and deployment metadata", () => {
     }));
     expect(html).toContain("页面与后端版本不同，请刷新页面");
   });
+  it("keeps known local metadata and reports a failed refresh only once", () => {
+    const html = renderToStaticMarkup(createElement(BuildDetails, {
+      build, version: { build, deployment: null }, failed: true, failureText: "网络连接失败",
+    }));
+    expect(html).toContain("未部署");
+    expect(html.match(/网络连接失败/gu)).toHaveLength(1);
+    expect(html).toContain("显示上次读取的版本");
+  });
 
   it("marks uncommitted local work and development previews", () => {
     const html = renderToStaticMarkup(createElement(BuildDetails, {
