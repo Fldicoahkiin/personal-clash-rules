@@ -3,10 +3,10 @@ import { ArrowUpRight } from "@phosphor-icons/react";
 const catalog = [
   {
     category: "AI",
-    coverage: "OpenAI · Claude · Grok · Gemini · Coding · General",
+    coverage: "OpenAI · Claude（含 API IP）· Grok · Gemini · Coding · General",
     strategy: "AI",
     href: "/rules/ai/openai.list",
-    count: "6 个",
+    count: "7 个",
   },
   {
     category: "Apple",

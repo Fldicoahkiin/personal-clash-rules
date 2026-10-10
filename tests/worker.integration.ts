@@ -2,6 +2,8 @@ import { exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 import { isVersionInfo } from "../src/config/build-info";
+import type { RulePreview } from "../src/config/rule-preview";
+import { createRuleSet, matchUrl } from "../src/app/lib/rule-matcher";
 
 type CreatedSubscription = {
   nodeStats: {
@@ -92,6 +94,37 @@ describe("Worker entrypoint", () => {
     expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
     expect(preview.ruleSets[1].content).toContain(",no-resolve");
     expect(preview.ruleSets[2].policy).toBe("APPLE");
+  });
+
+  it("uses Anthropic inbound IPs only as a no-resolve fallback after domain policies", async () => {
+    const response = await exports.default.fetch("https://example.com/api/rules/preview", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rulePreset: "flacier" }),
+    });
+    expect(response.status).toBe(200);
+    const preview = await response.json<RulePreview>();
+    const rules = preview.ruleSets.map(item => createRuleSet(item, item.content));
+    const context = { processName: "Firefox", groups: preview.groups };
+
+    for (const ip of ["160.79.104.0", "160.79.105.255"]) {
+      expect(matchUrl(`https://${ip}`, rules, context), ip).toMatchObject({
+        matched: true, policy: "AI", rule: "IP-CIDR,160.79.104.0/23,no-resolve",
+      });
+    }
+    for (const ip of ["160.79.103.255", "160.79.106.0", "160.79.111.255"]) {
+      expect(matchUrl(`https://${ip}`, rules, context), ip).toMatchObject({
+        matched: false, policy: "DEFAULT", destination: { mode: "代理" },
+      });
+    }
+    expect(matchUrl("unclassified.example", rules, context)).toMatchObject({
+      matched: false, rule: "MATCH", policy: "DEFAULT", destination: { mode: "代理" },
+    });
+    expect(matchUrl("account.apple.com", rules, { ...context, ip: "160.79.104.1" })).toMatchObject({
+      matched: true, policy: "APPLE", rule: "DOMAIN,account.apple.com",
+    });
+    expect(preview.ruleSets.at(-2)).toMatchObject({
+      label: "ai-anthropic-ip", policy: "AI",
+      content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
+    });
   });
 
   it("rejects a private custom preview URL and unsupported HTTP methods", async () => {

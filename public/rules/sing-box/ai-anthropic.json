@@ -12,7 +12,13 @@
         "claudeusercontent.com"
       ],
       "domain": [
-        "servd-anthropic-website.b-cdn.net"
+        "servd-anthropic-website.b-cdn.net",
+        "anthropic.com.cdn.cloudflare.net",
+        "anthropic.auth0.com",
+        "anthropic-com.ghost.io",
+        "cdn.usefathom.com",
+        "http-intake.logs.us5.datadoghq.com",
+        "browser-intake-us5-datadoghq.com"
       ]
     }
   ]

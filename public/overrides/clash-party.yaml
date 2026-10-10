@@ -44,6 +44,13 @@ rule-providers:
     url: https://rules.flacier.com/rules/ai/anthropic.list
     path: ./ruleset/personal/ai-anthropic.list
     interval: 86400
+  ai-anthropic-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/ai/anthropic-ip.list
+    path: ./ruleset/personal/ai-anthropic-ip.list
+    interval: 86400
   ai-xai:
     type: http
     behavior: classical
@@ -293,4 +300,5 @@ rule-providers:
   - RULE-SET,anigamer,ANIGAMER
   - RULE-SET,media,MEDIA
   - RULE-SET,social,SOCIAL
+  - RULE-SET,ai-anthropic-ip,AI,no-resolve
   - MATCH,DEFAULT

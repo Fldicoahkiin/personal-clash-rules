@@ -34,13 +34,29 @@ DNS 服务器所在国家不一定等于出口国家。检查是否出现本地�
 
 ## 出口与连接检查
 
-AI 登录会话需要稳定出口时，在 `AI` 策略组中选择固定节点；自动测速组会随测速结果换节点。规则负责选策略组，策略组再选出口。延迟测试成功只表示测试地址可达，不代表每个网站都能访问。
+购买节点即可使用，不要求自建 VPS。机场订阅和单独节点链接都沿用现有导入流程；没有额度响应头的单独节点不会凭空生成用量。
+
+AI 登录会话需要稳定出口时，可以把 `AI` 设为 `US`，再在 `US` 中手动选择具体节点；或通过 `GLOBAL` 选择具体节点。不要把这条路径留在 `AUTO`，自动测速会随结果换节点。使用代理 DoH 时，可在 `DNS-PROXY` 中选择同一个节点。规则负责选策略组，策略组再选出口。延迟测试成功只表示测试地址可达，不代表每个网站都能访问。
+
+节点名称固定不代表公网出口 IP 固定。购买前确认是否共用出口、出口 IP 是否会变化、目标服务是否可访问，以及服务商允许哪些协议和用途。分流和 DNS 可以在本地管理；服务商节点的出口、防火墙和 IP 信誉不由转换器控制，也无法替服务商添加服务器端 `GEOIP,CN,REJECT`。
 
 只有另有落地代理、确实需要两跳时才配置 `dialer-proxy`：设备 → 机场节点 → 落地代理 → 目标。第一跳组不能包含落地节点本身，否则会形成循环。当前页面合并节点不会自动创建代理链；Shadowrocket 的节点订阅也不携带 Mihomo 的链式配置。
 
 命令行程序不一定读取系统代理。Claude Code 支持 `HTTP_PROXY` / `HTTPS_PROXY`，不支持直接设置 SOCKS 代理；使用本机客户端提供的 HTTP / mixed 端口。不要为排查连接失败关闭证书校验，也不要把带账号密码的订阅或代理 URL 提交到公开仓库。
 
 参考：[Mihomo dialer-proxy](https://wiki.metacubex.one/config/proxies/dialer-proxy/)、[Claude Code 网络配置](https://code.claude.com/docs/en/network-config)。
+
+### Claude 规则范围
+
+2026-10-10 核对官方网络文档后，Claude 主域名及内容域名继续交给 `AI`，包括认证、下载、浏览器桥接和 MCP 内容。补充用户提供的精确 CDN / 认证 / 内容地址，并加入官方列出的两个可选 Datadog 上报地址。Datadog 和 Fathom 地址属于共享服务；同一地址上的其他应用请求也会使用 `AI`，规则无法区分 HTTPS 请求中的租户。
+
+不使用 `sentry.io`、`intercom.io`、`intercomcdn.com`、`statsigapi.net` 的整站规则，也不使用 `datadog` / `sift` 关键词。未命中的配套请求仍经 `DEFAULT` 默认代理，不会因此直连；可以按实际连接日志再补具体地址。当前官方 CLI 网络列表没有列出 Statsig，不把旧示例当作当前必需依赖。
+
+API IP 兜底独立发布为 `ai-anthropic-ip`，放在域名策略后、默认规则前；Mihomo / Surge 使用 `no-resolve`，不为了检查这条规则额外解析未知域名。使用官方入站范围 `160.79.104.0/23` 和 `2607:6bc0::/48`，不是示例中 Anthropic 对外请求的 `/21`，也不扩成整个 IPv6 `/32`。不启用 `IP-ASN,399358`，避免引入 ASN 数据库依赖以及不同客户端支持差异。Mihomo 的 IPv6 保持默认关闭，包含 IPv6 规则不代表启用 IPv6。
+
+这些变更适用于 Flacier 分流及对应覆写，不改写 ACL4SSR 或自定义模板。Shadowrocket 的「仅节点」输出不包含这些规则，需在其「配置」中另设分流。不会导入示例的 `CLAUDE0409 = direct` 或 `FINAL,DIRECT`，也不会操作设备上的 DNS 覆写或代理开关。
+
+来源：[Claude Code 网络要求](https://code.claude.com/docs/en/network-config)、[Anthropic API IP 地址](https://platform.claude.com/docs/en/api/ip-addresses)。
 
 ## 后端与用量
 

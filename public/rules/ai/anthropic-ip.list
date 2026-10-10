@@ -1,0 +1,5 @@
+# Anthropic API inbound ranges, checked 2026-10-10.
+# https://platform.claude.com/docs/en/api/ip-addresses
+# Apply as a no-resolve fallback after domain policies, not as an outbound-server allowlist.
+IP-CIDR,160.79.104.0/23
+IP-CIDR6,2607:6bc0::/48

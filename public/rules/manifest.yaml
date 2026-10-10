@@ -8,6 +8,12 @@ sources:
   - name: Apple network endpoints
     url: https://support.apple.com/101555
     license: reference
+  - name: Claude Code network requirements
+    url: https://code.claude.com/docs/en/network-config
+    license: reference
+  - name: Anthropic API inbound IP addresses
+    url: https://platform.claude.com/docs/en/api/ip-addresses
+    license: reference
 ruleSets:
   - id: private-domain
     label: 本地网络
@@ -33,6 +39,10 @@ ruleSets:
     label: Claude
     policy: AI
     path: rules/ai/anthropic.list
+  - id: ai-anthropic-ip
+    label: Claude API 地址
+    policy: AI
+    path: rules/ai/anthropic-ip.list
   - id: ai-xai
     label: Grok
     policy: AI

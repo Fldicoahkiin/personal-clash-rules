@@ -5,6 +5,7 @@ const publishedRuleFiles = {
   "apple-services": "apple/services.list",
   "ai-openai": "ai/openai.list",
   "ai-anthropic": "ai/anthropic.list",
+  "ai-anthropic-ip": "ai/anthropic-ip.list",
   "ai-xai": "ai/xai.list",
   "ai-google": "ai/google.list",
   "ai-coding": "ai/coding.list",
@@ -245,5 +246,6 @@ export const mihomoRules = [
   "RULE-SET,anigamer,ANIGAMER",
   "RULE-SET,media,MEDIA",
   "RULE-SET,social,SOCIAL",
+  "RULE-SET,ai-anthropic-ip,AI,no-resolve",
   "MATCH,DEFAULT",
 ] as const;

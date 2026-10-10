@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
+import { createRuleSet, matchUrl } from "../src/app/lib/rule-matcher";
+
 const root = resolve(import.meta.dirname, "..");
 
 async function read(relativePath: string): Promise<string> {
@@ -11,6 +13,47 @@ async function read(relativePath: string): Promise<string> {
 }
 
 describe("published rule sets", () => {
+  it("keeps Claude authentication, content and specific intake hosts on the AI policy", async () => {
+    const rules = [createRuleSet({
+      id: "ai-anthropic", label: "Claude", policy: "AI", path: "rules/ai/anthropic.list",
+    }, await read("public/rules/ai/anthropic.list"))];
+
+    for (const hostname of [
+      "api.anthropic.com",
+      "downloads.claude.ai",
+      "bridge.claudeusercontent.com",
+      "widget.claudemcpcontent.com",
+      "servd-anthropic-website.b-cdn.net",
+      "anthropic.com.cdn.cloudflare.net",
+      "anthropic.auth0.com",
+      "anthropic-com.ghost.io",
+      "http-intake.logs.us5.datadoghq.com",
+      "browser-intake-us5-datadoghq.com",
+      "cdn.usefathom.com",
+    ]) {
+      expect(matchUrl(hostname, rules), hostname).toMatchObject({ matched: true, policy: "AI" });
+    }
+  });
+
+  it("does not assign unrelated shared-service traffic to the Claude policy", async () => {
+    const rules = [createRuleSet({
+      id: "ai-anthropic", label: "Claude", policy: "AI", path: "rules/ai/anthropic.list",
+    }, await read("public/rules/ai/anthropic.list"))];
+
+    for (const hostname of [
+      "api.datadoghq.com",
+      "browser-intake-us3-datadoghq.com",
+      "cdn.sift.com",
+      "events.sentry.io",
+      "api.intercom.io",
+      "events.statsigapi.net",
+      "another.auth0.com",
+      "anthropic.auth0.com.example.org",
+    ]) {
+      expect(matchUrl(hostname, rules), hostname).toMatchObject({ matched: false, policy: "DEFAULT" });
+    }
+  });
+
   it("contains the requested AI, gaming, media and Discord coverage", async () => {
     const [
       openai,

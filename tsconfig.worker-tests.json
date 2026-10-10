@@ -17,6 +17,7 @@
     "worker-configuration.d.ts",
     "src/worker.ts",
     "src/worker/**/*.ts",
+    "src/app/lib/rule-matcher.ts",
     "src/config/**/*.ts"
   ]
 }
