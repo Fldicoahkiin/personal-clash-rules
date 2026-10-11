@@ -18,6 +18,7 @@
     "tests/**/*.test.ts",
     "worker-configuration.d.ts",
     "src/worker/**/*.ts",
+    "src/local/**/*.ts",
     "src/app/components/RouteTester.tsx",
     "src/app/components/BuildDetails.tsx",
     "src/app/components/SubscriptionFormatPicker.tsx",

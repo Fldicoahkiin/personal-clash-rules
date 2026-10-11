@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start:local": "node scripts/local-server.mjs",
+    "rola": "node scripts/rola.mjs",
     "build": "pnpm cf-typegen && tsc -b && vite build",
     "sync:rules": "node scripts/sync-rules.mjs && pnpm sync:formats",
     "sync:formats": "node scripts/build-rule-formats.mjs",
