@@ -3,7 +3,21 @@ import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Readable } from "node:stream";
+import { parseArgs } from "node:util";
+import { ProxyAgent, setGlobalDispatcher } from "undici";
 import { build } from "esbuild";
+
+const { values } = parseArgs({ options: { proxy: { type: "string" } } });
+if (values.proxy) {
+  const proxy = new URL(values.proxy);
+  if (proxy.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(proxy.hostname)
+    || proxy.username || proxy.password || proxy.pathname !== "/" || proxy.search || proxy.hash) {
+    throw new Error("--proxy must be the HTTP/mixed loopback endpoint of your local proxy client");
+  }
+  // This dispatcher affects only this server process, never the OS or another application.
+  setGlobalDispatcher(new ProxyAgent({ uri: proxy.href, connectTimeout: 8000 }));
+  console.log(`Upstream requests use local proxy: ${proxy.origin}`);
+}
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const data = resolve(root, ".local/subscriptions");
