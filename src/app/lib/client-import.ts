@@ -14,6 +14,7 @@ export type ClientId =
   | "quantumult-x"
   | "sing-box"
   | "shadowrocket"
+  | "shadowrocket-config"
   | "egern"
   | "surfboard";
 
@@ -39,6 +40,10 @@ export function buildClientAction(
   const source = input.trim();
   const params = new URLSearchParams({ url: source });
   const title = name.trim();
+
+  if (client === "shadowrocket" || client === "shadowrocket-config") {
+    return { kind: "link", value: `shadowrocket://${client === "shadowrocket-config" ? "config/add" : "add"}/${url.href}` };
+  }
 
   if (client === "clash-verge" || client === "flclash") {
     if (title) params.set("name", title);

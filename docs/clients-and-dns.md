@@ -5,7 +5,17 @@
 | Clash Party | 完整配置 | `mihomo://install-config` |
 | Clash Verge / Rev | 完整配置 | `clash://install-config` |
 | FlClash | 完整配置 | `flclash://install-config` |
-| Shadowrocket | 节点订阅与流量 | 复制链接，在订阅中添加；规则和 DNS 在「配置」中设置 |
+| Shadowrocket | 配套节点订阅与原生 `.conf`；也可只输出节点 | 先「添加节点订阅」，再「添加配置」；两者使用同一组来源与节点名称 |
+
+### iOS Shadowrocket
+
+选择「完整配置 → Shadowrocket · 配套配置」会生成两个资源。节点订阅带真实 `Subscription-Userinfo`；`.conf` 负责 Flacier 分组、规则和 DNS，不在配置文件中重复写节点密码。分组使用配套订阅的节点名称，修改来源、筛选或改名后必须同时更新两者；客户端自动更新是否开启，要在手机上另行确认。
+
+此输出共用 Flacier 规则，但不是把 Mihomo YAML 或 DNS 覆写直接复制进 iOS。它省略桌面进程规则，未匹配流量默认走代理，空国家组使用 `REJECT`。不启用 MITM，不安装证书，不自动切换客户端配置。配置与节点 URI 通过生成测试，不等于已在你的 iPhone 上完成连通性或 DNS 检测。
+
+原生导入分别使用 `shadowrocket://add/…` 和 `shadowrocket://config/add/…`。电脑本地链接不能在手机访问；页面会隐藏这类链接的一键导入，只提供下载。传入手机的离线文件不能自动刷新节点或用量。不要为了手机访问而把带凭据的本地转换服务直接开放到公网。
+
+格式参考：[Shadowrocket 社区手册作者的配置说明](https://github.com/LOWERTOP/Shadowrocket/wiki)、[Sub-Store URI 输出实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/producers/uri.js)。
 
 ## DNS
 
@@ -23,6 +33,8 @@
 “允许 IPv6”默认关闭，同时写入 Mihomo 顶层与 DNS 设置，包括继承机场 DNS 时。不修改操作系统 IPv6、TUN 或嗅探设置。旧链接没有保存这些字段时使用新默认值；需要固定引导策略的链接，应重新生成并保存选择。
 
 完整配置已经包含 DNS，无需再导入一份 DNS 覆写。客户端的 DNS 覆写、全局脚本可能替换订阅设置，检查「运行配置」才能确定最终生效内容。
+
+Shadowrocket 的代理 DoH 使用 `#proxy`，经过**首页选中的节点**，不是 Mihomo 的 `DNS-PROXY` 组。节点域名另用 `proxy-dns-server` 引导解析；业务、直连规则和备用解析均保持代理 DoH，不留空后退回系统 DNS。iOS 不支持继承本项目的 Mihomo 上游 DNS；需要系统或自定义引导。代理不能建立时，这套设置可能无法解析网站，不能在失联后自动改为直连来宣称可用。
 
 防泄漏还需要设备端验证。先保留当前可用配置和回退方法，一次只改一项；出现所有节点超时时立即恢复，不继续叠加覆写：
 
@@ -42,6 +54,8 @@ AI 登录会话需要稳定出口时，可以把 `AI` 设为 `US`，再在 `US` 
 
 只有另有落地代理、确实需要两跳时才配置 `dialer-proxy`：设备 → 机场节点 → 落地代理 → 目标。第一跳组不能包含落地节点本身，否则会形成循环。当前页面合并节点不会自动创建代理链；Shadowrocket 的节点订阅也不携带 Mihomo 的链式配置。
 
+家宽服务需要提供协议、主机、端口及认证方式，单独一个公网 IP 不足以建立代理。输入支持 `socks5://用户:密码@主机:端口#名称` 和带账号密码的 `http://` / `https://` 根路径节点；用户名、密码中的 `@`、`:` 等字符要做 URL 编码。HTTPS 默认端口是 443，HTTP 是 80。HTTP/SOCKS5 本身不加密设备到代理这一段，不能只因出口是家宽就认定链路安全。先验证新节点，再将所需业务手动指向它，不自动替换当前可用出口。
+
 命令行程序不一定读取系统代理。Claude Code 支持 `HTTP_PROXY` / `HTTPS_PROXY`，不支持直接设置 SOCKS 代理；使用本机客户端提供的 HTTP / mixed 端口。不要为排查连接失败关闭证书校验，也不要把带账号密码的订阅或代理 URL 提交到公开仓库。
 
 参考：[Mihomo dialer-proxy](https://wiki.metacubex.one/config/proxies/dialer-proxy/)、[Claude Code 网络配置](https://code.claude.com/docs/en/network-config)。
@@ -54,7 +68,7 @@ AI 登录会话需要稳定出口时，可以把 `AI` 设为 `US`，再在 `US` 
 
 API IP 兜底独立发布为 `ai-anthropic-ip`，放在域名策略后、默认规则前；Mihomo / Surge 使用 `no-resolve`，不为了检查这条规则额外解析未知域名。使用官方入站范围 `160.79.104.0/23` 和 `2607:6bc0::/48`，不是示例中 Anthropic 对外请求的 `/21`，也不扩成整个 IPv6 `/32`。不启用 `IP-ASN,399358`，避免引入 ASN 数据库依赖以及不同客户端支持差异。Mihomo 的 IPv6 保持默认关闭，包含 IPv6 规则不代表启用 IPv6。
 
-这些变更适用于 Flacier 分流及对应覆写，不改写 ACL4SSR 或自定义模板。Shadowrocket 的「仅节点」输出不包含这些规则，需在其「配置」中另设分流。不会导入示例的 `CLAUDE0409 = direct` 或 `FINAL,DIRECT`，也不会操作设备上的 DNS 覆写或代理开关。
+这些变更适用于 Flacier 分流及对应覆写，不改写 ACL4SSR 或自定义模板。Shadowrocket 的「仅节点」输出不包含这些规则；配套 `.conf` 才包含分流。不会导入示例的 `CLAUDE0409 = direct` 或 `FINAL,DIRECT`，也不会操作设备上的 DNS 覆写或代理开关。
 
 来源：[Claude Code 网络要求](https://code.claude.com/docs/en/network-config)、[Anthropic API IP 地址](https://platform.claude.com/docs/en/api/ip-addresses)。
 
@@ -62,7 +76,11 @@ API IP 兜底独立发布为 `ai-anthropic-ip`，放在域名策略后、默认�
 
 CF 和本地版使用同一套转换器。流量来自上游 `Subscription-Userinfo` 响应头：上传、下载、总额相加，到期取最早的有效日期；单独节点不附带机场额度。缺失来源不会被算成零额度。
 
+相同订阅 URL 重复输入只计一次；不同 URL 是否属于同一个账户，转换器不能推断，需避免手动重复添加同一账户的不同格式链接。上游明确返回 `expire=0` 才显示长期有效；空 `expire=` 代表未返回到期，不能伪造成 0。订阅文件未改变但用量改变时，也会更新响应的 ETag。
+
 机场拒绝 Cloudflare 请求时，CF 不能读取其节点和用量。客户端直读备用能生成 `proxy-providers`，但外层订阅拿不到客户端稍后读取的流量头。需要用量时换本地后端，或保留原机场订阅并在客户端追加规则。
+
+新链接只要已经成功读取并转换过节点，保存时就关闭客户端直读备用。之后上游超时、403 或其他错误会让刷新明确失败，不再返回 HTTP 200 的空节点配置。旧链接可能还保存旧的备用策略，应重新生成；已有客户端直读配置仍标为待验证，不把 `COMPATIBLE` 当成可用代理。
 
 ```bash
 pnpm install --frozen-lockfile
@@ -71,6 +89,8 @@ pnpm start:local
 ```
 
 打开 `http://127.0.0.1:25500`。本地链接只在这台电脑可用，服务停止后不能刷新；手机不能把 `127.0.0.1` 当作电脑地址。订阅存于 `.local/subscriptions`，不提交到 Git。
+
+若当前网络需要通过已运行的代理软件访问机场，在启动命令后加 `--proxy http://127.0.0.1:实际混合端口`。该参数仅接受本机 HTTP/mixed 端口，只影响本地转换进程的请求，不设置全局代理变量，不启动或切换代理软件。原客户端不可用时，本地刷新也可能失败；这不是独立的公网高可用服务。Cloudflare 返回 403 时，发布前端或重试刷新并不能证明机场限制已解决。
 
 网站“自定义后端”使用本项目的 `/api/subscriptions`，不是传统 Subconverter 的 `/sub`。不内置第三方公共转换服务。
 

@@ -9,6 +9,7 @@ export const outputTargets = [
   "loon-config",
   "egern-config",
   "sing-box-config",
+  "shadowrocket-config",
   "mihomo",
   "clash",
   "stash",

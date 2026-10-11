@@ -10,7 +10,7 @@
 
 - 合并多个订阅和单节点，生成 KV 短链接
 - 客户端刷新时读取上游并转换，链接不用重新生成
-- Clash Verge、FlClash、Clash Party、Mihomo 等完整配置；Shadowrocket 等节点订阅
+- Clash Verge、FlClash、Clash Party、Mihomo 等完整配置；Shadowrocket 配套的节点订阅与原生 `.conf`
 - 节点筛选、多重改名、国旗、类型、UDP、XUDP 与排序
 - 透传、合并上游流量与到期信息
 - 默认 Worker 转换；可选 Clash Party / Mihomo 客户端直读备用
@@ -37,7 +37,7 @@ pnpm check
 
 部署使用 Cloudflare Git 集成，见 [Cloudflare 配置](docs/cloudflare-setup.md)。
 
-本地转换：`pnpm build && pnpm start:local`，打开 `http://127.0.0.1:25500`。用量、DNS 与手机端说明见 [客户端配置](docs/clients-and-dns.md)。
+本地转换：`pnpm build && pnpm start:local`，打开 `http://127.0.0.1:25500`。如需通过已运行的代理客户端下载上游，可给本地服务传入 `--proxy http://127.0.0.1:混合端口`；只影响该进程，不修改系统代理。用量、DNS 与手机端说明见 [客户端配置](docs/clients-and-dns.md)。
 
 ## License
 

@@ -8,6 +8,44 @@ import { completeConfigFormats } from "../src/app/features/subscriptions/client-
 const format = completeConfigFormats.find(format => format.target === "clash-party-config")!;
 
 describe("SubscriptionResult", () => {
+  it("does not count duplicate nodes as filters or incompatible nodes", () => {
+    const html = renderToStaticMarkup(createElement(SubscriptionResult, {
+      copied: false, format, onCopy: () => undefined,
+      result: {
+        target: "clash-party-config", sourceMode: "convert", profileName: "Flacier",
+        nodeStats: { read: 5, output: 2, skipped: 0, deduplicated: 2 }, usage: { combined: null, sources: [] },
+        url: "https://rules.flacier.com/s/abcdefghijklmnop/clash-party-config", universalUrl: "https://rules.flacier.com/s/abcdefghijklmnop",
+      },
+    }));
+    expect(html).toContain("重复节点</dt><dd>2");
+    expect(html).toContain("筛选移除 1 个节点");
+    expect(html).toContain("跳过不兼容节点</dt><dd>0");
+  });
+  it.each([false, true])("shows both Shadowrocket resources and prevents phone import of loopback links (%s)", (local) => {
+    const origin = local ? "http://127.0.0.1:25500" : "https://rules.flacier.com";
+    const html = renderToStaticMarkup(createElement(SubscriptionResult, {
+      copied: false,
+      format: completeConfigFormats.find(item => item.target === "shadowrocket-config")!,
+      onCopy: () => undefined,
+      result: {
+        target: "shadowrocket-config", sourceMode: "convert", profileName: "Flacier",
+        nodeStats: { read: 2, output: 2, skipped: 0 }, usage: { combined: null, sources: [] },
+        url: `${origin}/s/abcdefghijklmnop/shadowrocket-config`,
+        nodeUrl: `${origin}/s/abcdefghijklmnop/shadowrocket`,
+        universalUrl: `${origin}/s/abcdefghijklmnop`,
+      },
+    }));
+    expect(html).toContain("下载节点文件");
+    expect(html).toContain("下载配置");
+    if (local) {
+      expect(html).toContain("iPhone 无法访问");
+      expect(html).not.toContain("shadowrocket://");
+    } else {
+      expect(html).toContain("1. 添加节点订阅");
+      expect(html).toContain("2. 添加配置");
+      expect(html).toContain("shadowrocket://config/add/");
+    }
+  });
   it("shows Worker conversion counts", () => {
     const html = renderToStaticMarkup(createElement(SubscriptionResult, {
       copied: false,

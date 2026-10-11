@@ -34,6 +34,7 @@ type CreatedSubscription = {
   };
   url: string;
   universalUrl: string;
+  nodeUrl?: string;
 };
 
 function nodeUri(name: string, host: string, password: string): string {
@@ -82,6 +83,66 @@ async function createSubscription(
 }
 
 describe("Worker entrypoint", () => {
+  it("reports deduplication separately from filtering and incompatible nodes", async () => {
+    const { data } = await createSubscription({
+      nodeSettings: { includePattern: "US", excludePattern: "", renameRules: [], sortMode: "source" },
+      sources: [
+        { type: "node", name: "one", value: nodeUri("US-01", "us.example", "secret") },
+        { type: "node", name: "duplicate", value: nodeUri("US-02", "us.example", "secret") },
+        { type: "node", name: "filtered", value: nodeUri("JP-01", "jp.example", "secret") },
+      ],
+    });
+    expect(data.nodeStats).toEqual({ read: 3, output: 1, skipped: 0, deduplicated: 1 });
+  });
+  it("publishes a paired Shadowrocket configuration and node subscription with real quota headers", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => (
+      new Response(nodeUri("US-01", "us.example.com", "secret"), {
+        headers: { "Subscription-Userinfo": "upload=10; download=20; total=100; expire=0" },
+      })
+    ));
+    try {
+      const { data, response } = await createSubscription({
+        target: "shadowrocket-config",
+        sources: [{ type: "subscription", name: "机场", value: "https://provider.example/sub" }],
+      });
+      expect(response.status).toBe(201);
+      expect(data.nodeStats.output).toBe(1);
+      expect(data.nodeUrl).toBe(`${data.universalUrl}/shadowrocket`);
+      const config = await exports.default.fetch(data.url);
+      expect(config.headers.get("content-disposition")).toContain(".conf");
+      expect(await config.text()).toContain("🇺🇸 美国 = select, 🇺🇸 US-01");
+      const nodes = await exports.default.fetch(data.nodeUrl!);
+      expect(nodes.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100; expire=0");
+      expect(nodes.headers.get("content-disposition")).toContain(".txt");
+      expect(await nodes.text()).toMatch(/^ss:\/\//u);
+    } finally { fetchSpy.mockRestore(); }
+  });
+
+  it("counts repeated subscription URLs once and refreshes quota even when nodes do not change", async () => {
+    let upload = 10;
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => (
+      new Response(nodeUri("US-01", "us.example.com", "secret"), {
+        headers: { "Subscription-Userinfo": `upload=${upload}; download=20; total=100` },
+      })
+    ));
+    try {
+      const { data, response } = await createSubscription({ sources: [
+        { type: "subscription", name: "机场", value: "https://provider.example/sub" },
+        { type: "subscription", name: "同一机场", value: "https://provider.example/sub" },
+        { type: "node", name: "家宽", value: "socks5://home:pass@home.example:1080#home" },
+      ] });
+      expect(response.status).toBe(201);
+      expect(data.usage.combined?.total).toBe("100");
+      expect(data.nodeStats.output).toBe(2);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const first = await exports.default.fetch(data.url);
+      upload = 15;
+      const next = await exports.default.fetch(data.url, { headers: { "If-None-Match": first.headers.get("etag")! } });
+      expect(next.status).toBe(200);
+      expect(next.headers.get("subscription-userinfo")).toBe("upload=15; download=20; total=100");
+      expect(next.headers.get("etag")).not.toBe(first.headers.get("etag"));
+    } finally { fetchSpy.mockRestore(); }
+  });
   it("previews the same ordered Flacier rules without a subscription or KV write", async () => {
     const response = await exports.default.fetch("https://example.com/api/rules/preview", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rulePreset: "flacier" }),
@@ -664,6 +725,28 @@ describe("KV-backed subscription links", () => {
     } finally {
       fetchSpy.mockRestore();
     }
+  });
+
+  it("never replaces a verified subscription with an empty provider profile on refresh", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => (
+      new Response(nodeUri("US-01", "us.example.com", "secret"), {
+        headers: { "Subscription-Userinfo": "upload=10; download=20; total=100; expire=0" },
+      })
+    ));
+    try {
+      const { data, response } = await createSubscription({
+        fallbackMode: "mihomo-provider",
+        sources: [{ name: "机场", type: "subscription", value: "https://provider.example/sub" }],
+        target: "clash-party-config",
+      });
+      expect(response.status).toBe(201);
+      expect(data.nodeStats.output).toBe(1);
+      fetchSpy.mockImplementation(async () => new Response(null, { status: 403 }));
+      const refreshed = await exports.default.fetch(data.url);
+      expect(refreshed.status).toBe(502);
+      expect(refreshed.headers.get("cache-control")).toBe("no-store");
+      expect(await refreshed.json()).toMatchObject({ error: "source_failed" });
+    } finally { fetchSpy.mockRestore(); }
   });
 
   it("retries Worker conversion when an upstream becomes readable again", async () => {

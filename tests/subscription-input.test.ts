@@ -3,6 +3,16 @@ import { describe, expect, it } from "vitest";
 import { parseSubscriptionInput } from "../src/app/lib/subscription-input";
 
 describe("parseSubscriptionInput", () => {
+  it("distinguishes residential HTTP proxy credentials from subscription downloads", () => {
+    const result = parseSubscriptionInput([
+      "https://user:p%40ss@home.example:443#home",
+      "http://home.example:8080#home",
+      "socks5://user:pass@home.example:1080#home",
+      "https://user:pass@provider.example/sub?token=test",
+      "https://provider.example/sub",
+    ].join("\n"));
+    expect(result.map(item => item.type)).toEqual(["node", "node", "node", "subscription", "subscription"]);
+  });
   it("accepts multiple subscriptions and standalone nodes", () => {
     expect(parseSubscriptionInput([
       "https://one.example/sub",

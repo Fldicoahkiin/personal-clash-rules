@@ -17,6 +17,7 @@ export const completeConfigFormats: ClientFormat[] = [
     icon: "/client-icons/clash-party.png",
     clientId: "clash-party",
   },
+  { target: "shadowrocket-config", name: "Shadowrocket · 配套配置", icon: "/client-icons/shadowrocket.png", clientId: "shadowrocket-config" },
   {
     target: "mihomo-config",
     name: "Mihomo",

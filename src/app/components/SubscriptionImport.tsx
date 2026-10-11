@@ -83,7 +83,7 @@ const initialState: FormState = {
   sourceUserAgent: "clash.meta",
   sourceText: "",
   sortMode: "source",
-  target: "clash-verge-config",
+  target: "clash-party-config",
   tfo: false,
   udp: true,
   updateIntervalHours: 6,
@@ -135,6 +135,8 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
   }
   const selectedFormat = allFormats.find((format) => format.target === form.target) ?? completeConfigFormats[0];
   const supportsRulePreset = ["clash-party-config", "clash-verge-config", "flclash-config", "mihomo-config"].includes(form.target);
+  const shadowrocketConfig = form.target === "shadowrocket-config";
+  const supportsDns = supportsRulePreset || shadowrocketConfig;
   const backend = form.backendMode === "local" ? "http://127.0.0.1:25500" : form.backendMode === "custom" ? form.backend.replace(/\/+$/u, "") : "";
 
   function validateInput(): boolean {
@@ -186,7 +188,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
       }
       let dnsSettings = defaultDnsSettings;
       try {
-        if (supportsRulePreset) dnsSettings = parseDnsSettings({ ...form.dnsSettings, bootstrap: form.dnsSettings.bootstrap.map(value => value.trim()).filter(Boolean), nameservers: form.dnsSettings.nameservers.map(value => value.trim()).filter(Boolean) });
+        if (supportsDns) dnsSettings = parseDnsSettings({ ...form.dnsSettings, bootstrap: form.dnsSettings.bootstrap.map(value => value.trim()).filter(Boolean), nameservers: form.dnsSettings.nameservers.map(value => value.trim()).filter(Boolean) });
       } catch {
         dispatch({ key: "error", value: "请检查 DNS 设置：每项填写 1–4 个 HTTPS DoH 地址，不带路由后缀" });
         return;
@@ -261,6 +263,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
               autoComplete="off"
             />
           </label>
+          <small>家宽代理可填 socks5://用户:密码@主机:端口，或带账号密码的 HTTP／HTTPS 节点链接。合并不等于代理链。</small>
           <label className="field subscription-name">
             <span>输出名称</span>
             <input
@@ -294,7 +297,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
           </label>
           {form.backendMode === "custom" ? <label className="field"><span>后端地址</span><input type="url" value={form.backend} onChange={(event) => dispatch({ key: "backend", value: event.target.value })} placeholder="https://your-converter.example" required /></label> : null}
         </div>
-        {form.backendMode === "local" ? <p className="subscription-result-notes">先运行 <code>pnpm start:local</code>。本机链接只供这台电脑使用；浏览器拒绝连接时，<a href="http://127.0.0.1:25500/" target="_blank" rel="noreferrer">打开本地页面</a>。</p> : null}
+        {form.backendMode === "local" ? <p className="subscription-result-notes">先运行 <code>pnpm start:local</code>；需通过代理读取机场时加 <code>--proxy http://127.0.0.1:你的混合端口</code>，仅影响本地转换进程。本机链接只供这台电脑使用；浏览器拒绝连接时，<a href="http://127.0.0.1:25500/" target="_blank" rel="noreferrer">打开本地页面</a>。</p> : null}
         {form.backendMode === "custom" ? <p className="subscription-result-notes">订阅凭据将发送给此后端。此处使用 Flacier API，不是 Subconverter 的 /sub 接口。</p> : null}
 
         {supportsRulePreset ? (
@@ -318,7 +321,8 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         <SubscriptionMoreSettings
           dnsSettings={form.dnsSettings}
           onDnsSettingsChange={value => dispatch({ key: "dnsSettings", value })}
-          supportsDns={supportsRulePreset}
+          supportsDns={supportsDns}
+          shadowrocket={shadowrocketConfig}
           addCountryFlag={form.addCountryFlag}
           allowClientFallback={form.allowClientFallback}
           dnsMode={form.dnsMode}
@@ -342,6 +346,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         />
 
         {form.target === "shadowrocket" ? <p className="subscription-result-notes">Shadowrocket 此处导入节点与用量。分流和 DNS 使用客户端的「配置」，不会包含在节点订阅中。</p> : null}
+        {shadowrocketConfig ? <p className="subscription-result-notes">生成配套的两个链接：先添加节点订阅，再添加规则与 DNS 配置。使用 Flacier 分流；DNS 经首页选中的节点。不要把本机 127.0.0.1 链接导入手机。</p> : null}
 
         <SubscriptionLinkLoader backend={backend} onLoad={(value) => dispatch({ key: "load", value })} />
 

@@ -95,6 +95,7 @@ type SubscriptionConfig = {
 };
 
 type NodeStats = {
+  deduplicated?: number;
   output: number | null;
   read: number | null;
   skipped: number | null;
@@ -283,7 +284,9 @@ function readSources(value: unknown): SubscriptionSource[] {
   if (sources.filter((source) => source.type === "subscription").length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A link supports at most 10 remote subscriptions");
   }
-  return sources;
+  return sources.filter((source, index) => sources.findIndex(candidate => (
+    candidate.type === source.type && candidate.value === source.value
+  )) === index);
 }
 
 function readConfig(
@@ -469,9 +472,10 @@ async function generateTarget(
       const outputNodeCount = countTargetCompatibleNodes(nodes, target);
       inheritedName = normalized.profileName;
       nodeStats = {
-        read: normalized.nodes.length,
+        read: normalized.inputNodeCount,
         output: outputNodeCount,
         skipped: nodes.length - outputNodeCount,
+        ...(normalized.inputNodeCount > normalized.nodes.length ? { deduplicated: normalized.inputNodeCount - normalized.nodes.length } : {}),
       };
       remoteMetadata = normalized.remoteMetadata;
       if (nodes.length === 0) {
@@ -547,7 +551,10 @@ async function createSubscription(
 
   const generated = await generateTarget(env, config, body.target);
   const token = randomSubscriptionId();
-  await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(config));
+  // A refresh failure must not replace verified nodes with an unverified provider shell.
+  const storedConfig = generated.sourceMode === "convert"
+    ? { ...config, fallbackMode: "error" as const } : config;
+  await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(storedConfig));
 
   return json({
     nodeStats: generated.nodeStats,
@@ -557,6 +564,7 @@ async function createSubscription(
     usage: generated.usage,
     url: urlsForToken(url.origin, token)[body.target],
     universalUrl: universalUrlForToken(url.origin, token),
+    ...(body.target === "shadowrocket-config" ? { nodeUrl: urlsForToken(url.origin, token).shadowrocket } : {}),
   }, { status: 201 });
 }
 
@@ -650,10 +658,11 @@ async function renderSubscription(
   const content = target === "surge-config" || target === "surfboard-config"
     ? generated.content.replace(managedProfileUrlPlaceholder, url.toString())
     : generated.content;
-  const etag = `"${await hashText(content)}"`;
+  const etag = `"${await hashText(`${content}\n${subscriptionUserinfo ?? ""}`)}"`;
   const profileName = displayProfileName(config, generated.inheritedName);
+  const extension = target === "shadowrocket-config" ? "conf" : target === "shadowrocket" ? "txt" : "yaml";
   const headers = new Headers({
-    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${profileName}.yaml`)}`,
+    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${profileName}.${extension}`)}`,
     "Content-Type": contentTypeFor(target),
     ETag: etag,
     "Profile-Update-Interval": String(config.updateIntervalHours),

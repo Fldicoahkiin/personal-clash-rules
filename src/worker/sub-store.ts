@@ -5,6 +5,7 @@ import { mihomoProxyGroups } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
+import { createShadowrocketProfile } from "./shadowrocket-profile";
 import type { DnsSettings } from "../config/dns-settings";
 import {
   createMihomoProfile,
@@ -594,11 +595,15 @@ function parseHysteria2(line: string, index: number): ProxyNode {
     type: "hysteria2",
     server: url.hostname,
     port: Number(url.port || 443),
-    password: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password ? `${url.username}:${url.password}` : url.username),
     sni: params.get("sni") || params.get("peer") || undefined,
     "skip-cert-verify": boolParam(params.get("insecure") || params.get("allowInsecure")),
     obfs: params.get("obfs") || undefined,
     "obfs-password": params.get("obfs-password") || params.get("salamander-password") || undefined,
+    ports: params.get("mport") || undefined,
+    fingerprint: params.get("pinSHA256") || undefined,
+    "hop-interval": numberOrUndefined(params.get("hop-interval")),
+    alpn: commaList(params.get("alpn")),
   });
 }
 
@@ -724,12 +729,11 @@ function parseSocks(line: string, index: number): ProxyNode | undefined {
 
 function parseHttpProxy(line: string, index: number): ProxyNode | undefined {
   const url = new URL(line);
-  if (!url.port) return undefined;
   return stripUndefined({
     name: decodeURIComponent(url.hash.slice(1) || `${url.protocol === "https:" ? "https" : "http"}-${index + 1}`),
     type: "http",
     server: url.hostname,
-    port: Number(url.port),
+    port: Number(url.port || (url.protocol === "https:" ? 443 : 80)),
     username: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     tls: url.protocol === "https:",
@@ -1375,6 +1379,10 @@ function toProxyUri(proxy: ProxyNode) {
     if (proxy["skip-cert-verify"]) params.set("insecure", "1");
     if (proxy.obfs) params.set("obfs", String(proxy.obfs));
     if (proxy["obfs-password"]) params.set("obfs-password", String(proxy["obfs-password"]));
+    if (proxy.ports || proxy.mport) params.set("mport", String(proxy.ports || proxy.mport));
+    if (proxy.fingerprint) params.set("pinSHA256", String(proxy.fingerprint));
+    if (proxy["hop-interval"]) params.set("hop-interval", String(proxy["hop-interval"]));
+    if (Array.isArray(proxy.alpn)) params.set("alpn", proxy.alpn.join(","));
     return `hysteria2://${encodeURIComponent(String(proxy.password))}@${proxy.server}:${proxy.port}?${params.toString()}#${encodeURIComponent(proxy.name)}`;
   }
 
@@ -1557,7 +1565,7 @@ function encodeBase64UrlText(input: string) {
 function isTargetCompatible(proxy: ProxyNode, target: OutputTarget): boolean {
   if (isMihomoConfigTarget(target)) return true;
   if (["clash-party-config", "mihomo-config", "stash-config", "mihomo", "clash", "stash", "json"].includes(target)) return true;
-  if (["uri", "v2ray", "shadowrocket"].includes(target)) return ["ss", "ssr", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
+  if (["uri", "v2ray", "shadowrocket", "shadowrocket-config"].includes(target)) return ["ss", "ssr", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
   if (["sing-box", "sing-box-config"].includes(target)) return ["ss", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
   if (["surge", "surge-config"].includes(target)) return ["ss", "vmess", "trojan", "http", "socks5", "hysteria2", "tuic", "anytls", "snell"].includes(proxy.type);
   if (["surfboard", "surfboard-config"].includes(target)) return ["ss", "vmess", "trojan", "http", "socks5"].includes(proxy.type);
@@ -1870,6 +1878,7 @@ export async function normalizeSourceBundle(
     nodes: string[];
   },
 ): Promise<{
+  inputNodeCount: number;
   nodes: SubscriptionNode[];
   profileName?: string;
   remoteMetadata: RemoteSubscriptionMetadata[];
@@ -1902,6 +1911,7 @@ export async function normalizeSourceBundle(
     } catch { /* URI subscriptions have no configuration to inherit. */ }
   }
   return {
+    inputNodeCount: parsed.length,
     nodes: prepareNodes(parsed),
     remoteMetadata: remote.map((source) => source.metadata),
     ...(upstreamConfig ? { upstreamConfig } : {}),
@@ -1930,6 +1940,7 @@ export async function produceTarget(
   if (isMihomoConfigTarget(target)) {
     return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings);
   }
+  if (target === "shadowrocket-config") return createShadowrocketProfile(supported.map(node => node.name), rulePreset, dnsMode, dnsSettings);
   if (target === "stash-config") return createStashProfile(mihomoNodes, updateIntervalHours);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported), updateIntervalHours);
   if (target === "surfboard-config") return createSurfboardProfile(renderSurfboardProxies(supported), updateIntervalHours);

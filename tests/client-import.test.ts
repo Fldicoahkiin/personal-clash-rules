@@ -5,6 +5,10 @@ import { buildClientAction } from "../src/app/lib/client-import";
 const subscription = "https://example.com/sub?id=1&token=a b";
 
 describe("buildClientAction", () => {
+  it("separates Shadowrocket node import from configuration import", () => {
+    expect(buildClientAction("shadowrocket", subscription, "Flacier").value).toBe("shadowrocket://add/https://example.com/sub?id=1&token=a%20b");
+    expect(buildClientAction("shadowrocket-config", subscription, "Flacier").value).toBe("shadowrocket://config/add/https://example.com/sub?id=1&token=a%20b");
+  });
   it("uses the registered Verge and FlClash import schemes", () => {
     const verge = new URL(buildClientAction("clash-verge", subscription, "Flacier").value);
     const flclash = new URL(buildClientAction("flclash", subscription, "Flacier").value);

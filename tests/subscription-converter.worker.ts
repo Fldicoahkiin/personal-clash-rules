@@ -13,6 +13,33 @@ import type { SubscriptionEnv } from "../src/worker/types";
 const env = {} as SubscriptionEnv;
 
 describe("native subscription converter", () => {
+  it("preserves Hysteria2 certificate pinning, hopping ports and userpass authentication in node links", async () => {
+    const proxy = { name: "hy2-pinned", type: "hysteria2", server: "node.example", port: 443,
+      password: "account:secret", ports: "5000-6000,8443", fingerprint: "ab".repeat(32),
+      "hop-interval": 30, alpn: ["h3"], sni: "tls.example", "skip-cert-verify": true,
+      obfs: "salamander", "obfs-password": "obfs-secret" };
+    const output = await produceTarget(env, [proxy], "shadowrocket");
+    const url = new URL(output);
+    expect(url.searchParams.get("pinSHA256")).toBe(proxy.fingerprint);
+    expect(url.searchParams.get("mport")).toBe(proxy.ports);
+    const nodes = await normalizeSources(env, { profileName: "", subscriptionUrls: [], nodes: [output] });
+    expect(nodes[0]).toMatchObject(proxy);
+    const userpass = await normalizeSources(env, { profileName: "", subscriptionUrls: [], nodes: ["hy2://account:secret@node.example:443#auth"] });
+    expect(userpass[0].password).toBe("account:secret");
+  });
+  it("preserves residential HTTP and SOCKS credentials including HTTPS default port", async () => {
+    const source = [
+      "https://home%40user:p%3Aa%40ss@home.example:443#home-https",
+      "http://home%40user:p%3Aa%40ss@home.example:80#home-http",
+      "socks5://home%40user:p%3Aa%40ss@home.example:1080#home-socks",
+    ];
+    const nodes = await normalizeSources(env, { profileName: "", subscriptionUrls: [], nodes: source });
+    expect(nodes).toHaveLength(3);
+    expect(nodes.map(node => node.port)).toEqual([443, 80, 1080]);
+    expect(nodes.every(node => node.username === "home@user" && node.password === "p:a@ss")).toBe(true);
+    const roundtrip = await normalizeSources(env, { profileName: "", subscriptionUrls: [], nodes: (await produceTarget(env, nodes, "shadowrocket")).split("\n") });
+    expect(roundtrip).toEqual(nodes);
+  });
   it("round-trips WebSocket and gRPC transport options through Shadowrocket URIs", async () => {
     const proxies = [
       { name: "vless-ws", type: "vless", server: "node.example", port: 443, uuid: "00000000-0000-4000-8000-000000000000", tls: true, network: "ws", servername: "sni.example", "skip-cert-verify": true, alpn: ["h2", "http/1.1"], "ws-opts": { path: "/socket?ed=2048", headers: { Host: "host.example" } } },

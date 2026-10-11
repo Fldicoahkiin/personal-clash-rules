@@ -9,6 +9,7 @@ export type OutputTarget =
   | "loon-config"
   | "egern-config"
   | "sing-box-config"
+  | "shadowrocket-config"
   | "mihomo"
   | "clash"
   | "stash"
@@ -50,6 +51,7 @@ export interface NodeSettings {
 
 export interface ConvertedSubscription {
   nodeStats: {
+    deduplicated?: number;
     output: number | null;
     read: number | null;
     skipped: number | null;
@@ -63,6 +65,7 @@ export interface ConvertedSubscription {
   };
   url: string;
   universalUrl: string;
+  nodeUrl?: string;
 }
 
 export interface SubscriptionUsage {
@@ -166,6 +169,8 @@ export function subscriptionErrorText(error: unknown): string {
     upstream_bootstrap_unavailable: "上游没有独立的节点 DNS 和引导 DNS；请选择系统或自定义引导",
     dns_requires_proxy: "纯直连方案不能使用代理 DNS；请明确选择系统或上游 DNS",
     upstream_dns_unavailable: "此来源没有可继承的 DNS：请使用单个完整 Clash 订阅，或选择内置 DoH",
+    shadowrocket_dns_mode: "Shadowrocket 不能直接继承 Mihomo DNS；请选择代理 DoH，并使用系统或自定义引导 DNS",
+    shadowrocket_node_name: "节点名称含配置分隔符，请用重命名移除逗号、等号、引号、分号或换行，再生成 Shadowrocket 配置",
     invalid_source_user_agent: "订阅请求 UA 无效",
     invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",
     no_nodes_after_processing: "没有节点符合当前筛选条件",

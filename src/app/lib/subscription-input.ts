@@ -18,6 +18,11 @@ export function parseSubscriptionInput(input: string): ParsedSubscriptionSource[
     .filter(Boolean)
     .map((value, index) => {
       if (/^https?:\/\//iu.test(value)) {
+        const url = new URL(value);
+        if (url.pathname === "/" && !url.search && (url.username || url.password || (url.port && url.hash))) {
+          nodeCount += 1;
+          return { name: `节点 ${nodeCount}`, type: "node" as const, value };
+        }
         subscriptionCount += 1;
         return {
           name: `订阅 ${subscriptionCount}`,

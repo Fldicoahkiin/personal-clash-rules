@@ -28,6 +28,7 @@ type SubscriptionMoreSettingsProps = {
   allowClientFallback: boolean;
   dnsMode: DnsMode;
   supportsDns?: boolean;
+  shadowrocket?: boolean;
   excludePattern: string;
   includePattern: string;
   renameRules: RenameRuleDraft[];
@@ -63,6 +64,7 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   allowClientFallback,
   dnsMode,
   supportsDns = true,
+  shadowrocket = false,
   excludePattern,
   includePattern,
   renameRules,
@@ -228,19 +230,19 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
         </fieldset>
         {supportsDns ? <label className="field">
           <span className="field-label">
-            <strong>Clash DNS</strong>
-            <small>适用于 Clash Verge、FlClash、Clash Party 与 Mihomo 完整配置</small>
+            <strong>{shadowrocket ? "Shadowrocket DNS" : "Clash DNS"}</strong>
+            <small>{shadowrocket ? "写入配套 .conf；不会改变当前设备设置" : "适用于 Clash Verge、FlClash、Clash Party 与 Mihomo 完整配置"}</small>
           </span>
           <select
             value={dnsMode}
             onChange={(event) => onDnsModeChange(event.target.value as DnsMode)}
           >
-            <option value="upstream">保留原订阅 DNS</option>
+            {!shadowrocket || dnsMode === "upstream" ? <option value="upstream">保留原订阅 DNS{shadowrocket ? "（此客户端不支持，请重新选择）" : ""}</option> : null}
             <option value="doh">代理解析 · 加密 DoH</option>
             <option value="system">使用系统 DNS</option>
           </select>
         </label> : null}
-        {supportsDns && dnsSettings && onDnsSettingsChange ? <MihomoDnsSettings settings={dnsSettings} onChange={onDnsSettingsChange} proxyDns={dnsMode === "doh"} /> : null}
+        {supportsDns && dnsSettings && onDnsSettingsChange ? <MihomoDnsSettings settings={dnsSettings} onChange={onDnsSettingsChange} proxyDns={dnsMode === "doh"} shadowrocket={shadowrocket} /> : null}
         {supportsDns && dnsMode !== "doh" ? <p>此模式沿用系统或机场的解析出口，不保证 DNS 经代理。上游 DNS 依赖原策略组时会停止转换并提示。</p> : null}
         <label className="field subscription-sort">
           <span className="field-label">
