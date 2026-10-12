@@ -28,7 +28,7 @@ export async function requestCloudRola<T>(path: "/preview" | "/chains" | "/revok
     });
   } catch { throw new Error("云端没有响应，未改用其他后端，也未改变当前代理。生成结果若未收到，请勿导入未知链接。"); }
   const data = await response.json() as Record<string, unknown>;
-  if (!response.ok) throw new SubscriptionApiError(response.status, String(data.error || "cloud_rola_failed"), typeof data.message === "string" ? data.message : "云端请求失败。");
+  if (!response.ok) throw new SubscriptionApiError(response.status, String(data.error || "cloud_rola_failed"), typeof data.message === "string" ? data.message : "云端请求失败。", data.upstream);
   return data as T;
 }
 
@@ -59,7 +59,7 @@ export async function requestRola<T>(path: "" | "/exits" | "/preview" | "/chains
   } catch { throw new Error("无法连接本地服务。请先启动本地后端；如浏览器阻止本地网络访问，请打开本地页面。不会改用云端。"); }
   if (!response.headers.get("content-type")?.includes("application/json")) throw new Error("本地服务版本不匹配，请更新并重启本地后端。");
   const data = await response.json() as Record<string, unknown>;
-  if (!response.ok) throw new SubscriptionApiError(response.status, typeof data.error === "string" ? data.error : "local_request_failed", typeof data.message === "string" ? data.message : "本地请求失败。");
+  if (!response.ok) throw new SubscriptionApiError(response.status, typeof data.error === "string" ? data.error : "local_request_failed", typeof data.message === "string" ? data.message : "本地请求失败。", data.upstream);
   return data as T;
 }
 
@@ -76,7 +76,7 @@ export async function createRolaCloudBase(input: {
       name: input.name, sourceUserAgent: input.sourceUserAgent, target: input.target,
       rulePreset: "flacier", dnsMode: "doh", dnsSettings: defaultDnsSettings, fallbackMode: "error", updateIntervalHours: 6 }),
   });
-  const data = await response.json() as ConvertedSubscription & { error?: string; message?: string };
-  if (!response.ok) throw new SubscriptionApiError(response.status, typeof data.error === "string" ? data.error : "cloud_base_failed", typeof data.message === "string" ? data.message : "云端基础订阅生成失败；本地配置保持不变。");
+  const data = await response.json() as ConvertedSubscription & { error?: string; message?: string; upstream?: unknown };
+  if (!response.ok) throw new SubscriptionApiError(response.status, typeof data.error === "string" ? data.error : "cloud_base_failed", typeof data.message === "string" ? data.message : "云端基础订阅生成失败；本地配置保持不变。", data.upstream);
   return data;
 }

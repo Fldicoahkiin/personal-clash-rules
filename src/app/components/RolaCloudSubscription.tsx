@@ -22,7 +22,8 @@ const lines = (value: string) => value.split(/\r?\n/u).map(line => line.trim()).
 const targets: Array<[OutputTarget, string]> = [["clash-party-config", "Clash Party"], ["clash-verge-config", "Clash Verge"], ["flclash-config", "FlClash"], ["mihomo-config", "Mihomo"]];
 function failure(error: unknown) {
   if (error instanceof SubscriptionApiError) {
-    if (["source_response_too_large", "request_too_large"].includes(error.code)) return "输入超过云端串联限制：完整配置或单个来源最多 256 KiB，请求最多 512 KiB。";
+    if (error.code === "source_response_too_large") return "机场原始响应超过 1 MiB，请减少来源中的节点或规则。";
+    if (error.code === "request_too_large") return "提交的请求超过 512 KiB；上传快照最多 256 KiB。";
     return subscriptionErrorText(error);
   }
   return error instanceof Error ? error.message : "操作失败，当前代理未改变。";
@@ -85,7 +86,7 @@ export const RolaCloudSubscription: FC = () => {
           <label className="field"><span>未叠加 Rola 的完整 Mihomo 配置</span><input type="file" accept=".yaml,.yml" onChange={event => void upload(event.target.files?.[0])} /></label><p className={styles.note}>{state.filename || "尚未选择文件"} · 最多 256 KiB。仅保存上传时的节点、DNS 和规则；不会刷新机场节点或用量，也不会伪造流量响应头。节点变动后需上传新快照。</p>
         </>}
         <div className={styles.grid}><label className="field"><span>输出客户端</span><select value={state.target} onChange={event => sourceChange({ target: event.target.value as OutputTarget })}>{targets.map(([target, label]) => <option key={target} value={target}>{label}</option>)}</select></label><label className="field"><span>订阅名称</span><input value={state.name} onChange={event => sourceChange({ name: event.target.value })} maxLength={64} /></label></div>
-        <details className={styles.help}><summary>请求 UA 与资源限制</summary><label className="field"><span>订阅请求 UA</span><input value={state.userAgent} onChange={event => sourceChange({ userAgent: event.target.value })} list="cloud-rola-ua" /><datalist id="cloud-rola-ua"><option value="clash.meta" /><option value="mihomo/1.19" /><option value="ClashForAndroid/2.5.12" /></datalist></label><p>最多 3 个来源、500 个机场节点；单个来源或完整配置最多 256 KiB。每次来源读取限时 20 秒。若机场返回 403，生成会停止，不切换第三方后端或输出空节点。</p></details>
+        <details className={styles.help}><summary>请求 UA 与资源限制</summary><label className="field"><span>订阅请求 UA</span><input value={state.userAgent} onChange={event => sourceChange({ userAgent: event.target.value })} list="cloud-rola-ua" /><datalist id="cloud-rola-ua"><option value="clash.meta" /><option value="mihomo/1.19" /><option value="ClashForAndroid/2.5.12" /></datalist></label><p>最多 3 个来源、500 个机场节点；单个机场原始响应最多 1 MiB，上传快照或转换后的基础配置最多 256 KiB。每次来源读取限时 20 秒。若机场拒绝请求，生成会停止并显示可用的请求编号，不切换第三方后端或输出空节点。</p></details>
         <button className="button" type="button" onClick={() => void readNodes()}>{state.busy === "preview" ? "正在读取" : state.sourceMode === "snapshot" ? "上传并读取节点" : "读取机场节点"}</button>
         {state.preview ? <><label className="field"><span>前置机场节点</span><select value={state.upstream} onChange={event => change({ upstream: event.target.value })}><option value="">请选择一个加密节点</option>{state.preview.nodes.map(node => <option key={node.name} value={node.name} disabled={!node.selectable}>{node.name} · {node.type}{node.selectable ? "" : " · 不可串联"}</option>)}</select></label><p className={styles.note}>读取 {state.preview.result.nodeStats.read} 个 · 输出 {state.preview.result.nodeStats.output} 个 · 跳过不兼容节点 {state.preview.result.nodeStats.skipped} 个。{state.preview.result.usage.combined ? "已读取机场用量，订阅刷新时继续继承；Rola 额度独立计费，不相加。" : "未取得可更新的机场用量，不伪造额度。"}</p></> : null}
       </section>

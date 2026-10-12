@@ -1,3 +1,5 @@
+import type { UpstreamFailure } from "../../../config/upstream-failure";
+
 export type OutputTarget =
   | "clash-party-config"
   | "clash-verge-config"
@@ -84,15 +86,30 @@ export interface SubscriptionUsageSource {
 interface ApiErrorBody {
   error?: string;
   message?: string;
+  upstream?: unknown;
 }
 
 export class SubscriptionApiError extends Error {
+  readonly upstream?: UpstreamFailure;
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
+    upstream?: unknown,
   ) {
     super(message);
+    if (upstream && typeof upstream === "object" && !Array.isArray(upstream)) {
+      const value = upstream as Record<string, unknown>;
+      if (typeof value.status === "number" && Number.isInteger(value.status) && value.status >= 100 && value.status <= 599
+        && typeof value.challenge === "boolean" && typeof value.cloudflare === "boolean"
+        && (value.responseType === "html" || value.responseType === "json" || value.responseType === "other")
+        && typeof value.redirects === "number" && Number.isInteger(value.redirects) && value.redirects >= 0 && value.redirects <= 5
+        && typeof value.checkedAt === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value.checkedAt)) {
+        this.upstream = { status: value.status, challenge: value.challenge, cloudflare: value.cloudflare,
+          responseType: value.responseType, redirects: value.redirects, checkedAt: value.checkedAt,
+          ...(typeof value.rayId === "string" && /^[a-f0-9]{16,32}(?:-[a-z]{3})?$/iu.test(value.rayId) ? { rayId: value.rayId } : {}) };
+      }
+    }
   }
 }
 
@@ -110,6 +127,7 @@ async function apiError(response: Response): Promise<SubscriptionApiError> {
     response.status,
     body.error ?? "request_failed",
     body.message ?? `Request failed with HTTP ${response.status}`,
+    body.upstream,
   );
 }
 
@@ -142,8 +160,13 @@ export function subscriptionErrorText(error: unknown): string {
   if (!(error instanceof SubscriptionApiError)) {
     return "无法连接转换后端；本地版请先运行 pnpm start:local，或打开本地页面";
   }
-  if (error.code === "source_failed" && /HTTP (?:403|429)$/u.test(error.message)) {
-    return "机场拒绝当前后端读取；请稍后重试或使用原订阅。客户端直读备用不提供外层用量";
+  if (error.code === "source_failed") {
+    const upstream = error.upstream;
+    const evidence = upstream ? ` 上游 HTTP ${upstream.status}${upstream.rayId ? ` · 请求编号 ${upstream.rayId}` : ""}。` : "";
+    if (upstream?.challenge) return `机场返回了 Cloudflare 浏览器验证页，不是节点配置。请机场提供供客户端读取的订阅接口，或允许本站 Worker 读取；重复生成和修改本地 DNS 不能完成这个验证。${evidence}`;
+    if (upstream?.status === 429 || /HTTP 429$/u.test(error.message)) return `机场限制了请求频率，请等待后再试；当前订阅和代理未改变。${evidence}`;
+    if (upstream?.status === 401) return `机场要求有效的订阅凭据，请在机场面板确认订阅地址仍有效。${evidence}`;
+    if (upstream?.status === 403 || /HTTP 403$/u.test(error.message)) return `机场拒绝当前后端读取（403），现有证据不能确认具体拦截规则。请机场核对该请求；不会自动切换后端或输出空节点。${evidence}`;
   }
   const messages: Record<string, string> = {
     no_sources: "请添加一个订阅或节点",

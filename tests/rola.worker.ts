@@ -29,6 +29,33 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it("returns safe upstream diagnostics through the preview API", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("private upstream body", {
+      status: 403, headers: { "CF-Mitigated": "challenge", "CF-Ray": "a4942df21d672617-NRT" },
+    }));
+    try {
+      const response = await post("/api/rola/preview", { sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/private-token" }], target: "clash-party-config" });
+      expect(response.status).toBe(502);
+      const data = await response.json();
+      expect(data).toMatchObject({ error: "source_failed", upstream: { status: 403, challenge: true, rayId: "a4942df21d672617-NRT" } });
+      expect(JSON.stringify(data)).not.toMatch(/private-token|private upstream body/);
+    } finally { spy.mockRestore(); }
+  });
+
+  it("accepts a bounded full airport source larger than 256 KiB and still limits the compact profile", async () => {
+    const airport = `proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: airport-secret}]\n# ${"comment".repeat(75_000)}\n`;
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(airport));
+    try {
+      const created = await create({ sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }] });
+      const refreshed = await exports.default.fetch(created.url);
+      expect(refreshed.status).toBe(200);
+      expect(parse(await refreshed.text()).proxies).toHaveLength(2);
+      spy.mockImplementation(async () => new Response("x".repeat(1_048_577)));
+      const tooLarge = await post("/api/rola/preview", { sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }], target: "clash-party-config" });
+      expect(tooLarge.status).toBe(413);
+    } finally { spy.mockRestore(); }
+  });
+
   it("generates an actual credentialed chain without echoing secrets in the creation response, and can revoke it", async () => {
     const created = await create();
     expect(JSON.stringify(created)).not.toMatch(/test-password|test-account|airport-secret/);

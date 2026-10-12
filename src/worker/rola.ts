@@ -9,6 +9,7 @@ import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscriptio
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
 
 const profileBytes = 256 * 1024;
+const sourceBytes = 1024 * 1024;
 const requestBytes = 512 * 1024;
 const nodeLimit = 500;
 const previewTtl = 3600;
@@ -29,7 +30,7 @@ function object(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 function boundedProfile(profile: string) {
-  if (encoder.encode(profile).length > profileBytes) throw new ApiError(413, "rola_profile_too_large", "完整配置或单个来源不能超过 256 KiB，请减少节点或规则。");
+  if (encoder.encode(profile).length > profileBytes) throw new ApiError(413, "rola_profile_too_large", "上传快照或转换后的基础配置不能超过 256 KiB，请减少节点或规则。");
   let nodes;
   try { nodes = rolaUpstreamChoices(profile); }
   catch { throw new ApiError(422, "rola_profile_rejected", "配置中没有有效的内联节点，或 YAML 无效。请上传未叠加 Rola 的完整 Mihomo 配置。"); }
@@ -97,7 +98,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         } else {
           if (!Array.isArray(input.sources) || input.sources.length > 3) throw new ApiError(413, "rola_too_many_sources", "Rola 串联最多支持 3 个机场来源。");
           const built = await buildSubscription(env, { sources: input.sources, target: input.target, name: input.name, sourceUserAgent: input.sourceUserAgent,
-            fallbackMode: "error", dnsMode: "doh", dnsSettings: defaultDnsSettings, rulePreset: "flacier", updateIntervalHours: 6 }, { sourceBytes: profileBytes, nodes: nodeLimit });
+            fallbackMode: "error", dnsMode: "doh", dnsSettings: defaultDnsSettings, rulePreset: "flacier", updateIntervalHours: 6 }, { sourceBytes, nodes: nodeLimit });
           profile = built.generated.content;
           source = { kind: "convert", config: built.config };
           stats = built.generated.nodeStats;
@@ -146,7 +147,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         let userinfo: string | null = null;
         if (chain.source.kind === "snapshot") profile = chain.source.profile;
         else {
-          const built = await buildSubscription(env, { ...chain.source.config, target: chain.target }, { sourceBytes: profileBytes, nodes: nodeLimit });
+          const built = await buildSubscription(env, { ...chain.source.config, target: chain.target }, { sourceBytes, nodes: nodeLimit });
           profile = built.generated.content;
           if (built.generated.usage.combined) userinfo = formatSubscriptionUserinfo(built.generated.usage.combined);
         }
@@ -156,7 +157,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
     }
     throw new ApiError(404, "rola_not_found", "Rola 接口或请求方法不存在。");
   } catch (error) {
-    if (error instanceof ApiError) return result({ error: error.code, message: error.message }, error.status);
+    if (error instanceof ApiError) return result({ error: error.code, message: error.message, ...(error.upstream ? { upstream: error.upstream } : {}) }, error.status);
     // Never include upstream bodies, YAML parsing diagnostics, settings, or bearer links in errors/logs.
     return result({ error: "cloud_rola_failed", message: "云端串联处理失败，请稍后重试；不会改变当前代理或返回直连替代配置。" }, 500);
   }

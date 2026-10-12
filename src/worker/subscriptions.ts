@@ -754,7 +754,7 @@ export async function routeSubscriptionRequest(
         headers["Retry-After"] = "60";
       }
       return json(
-        { error: error.code, message: error.message },
+        { error: error.code, message: error.message, ...(error.upstream ? { upstream: error.upstream } : {}) },
         { status: error.status, headers },
       );
     }

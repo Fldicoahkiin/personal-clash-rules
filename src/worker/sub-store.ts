@@ -1770,8 +1770,9 @@ async function requestRemoteSource(
   let url = parseRemoteSubscriptionUrl(value);
   let response: Response | null = null;
   const signal = AbortSignal.timeout(20_000);
+  let redirectCount = 0;
 
-  for (let redirectCount = 0; redirectCount <= maximumRedirects; redirectCount += 1) {
+  for (; redirectCount <= maximumRedirects; redirectCount += 1) {
     try {
       response = await fetch(url.toString(), {
         headers: { "User-Agent": sourceUserAgent },
@@ -1786,6 +1787,7 @@ async function requestRemoteSource(
     if (!redirectStatuses.has(response.status)) {
       break;
     }
+    await response.body?.cancel();
     if (redirectCount === maximumRedirects) {
       throw new ApiError(502, "source_redirect_limit", "Subscription source redirected too many times");
     }
@@ -1799,8 +1801,19 @@ async function requestRemoteSource(
   if (!response) {
     throw new ApiError(502, "source_unreachable", "Subscription source did not respond");
   }
-  if (!response.ok) {
-    throw new ApiError(502, "source_failed", `Subscription source returned HTTP ${response.status}`);
+  const challenge = response.headers.get("cf-mitigated") === "challenge";
+  if (!response.ok || challenge) {
+    const ray = response.headers.get("cf-ray") ?? "";
+    const rayId = /^[a-f0-9]{16,32}(?:-[a-z]{3})?$/iu.test(ray) ? ray : undefined;
+    const contentType = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+    const error = new ApiError(502, "source_failed", `Subscription source returned HTTP ${response.status}`, {
+      status: response.status, challenge,
+      cloudflare: challenge || !!rayId || response.headers.get("server")?.toLowerCase() === "cloudflare",
+      responseType: contentType === "text/html" ? "html" : contentType === "application/json" ? "json" : "other",
+      ...(rayId ? { rayId } : {}), redirects: redirectCount, checkedAt: new Date().toISOString(),
+    });
+    // Error bodies may echo subscription tokens. Retain only allowlisted header evidence.
+    try { await response.body?.cancel(); } finally { throw error; }
   }
   return response;
 }
