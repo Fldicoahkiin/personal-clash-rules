@@ -1,0 +1,64 @@
+import { spawn } from "node:child_process";
+import { copyFile, mkdir, mkdtemp, symlink } from "node:fs/promises";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { once } from "node:events";
+import { expect, it } from "vitest";
+import { parse } from "yaml";
+import { prepareRolaProfile } from "../src/local/rola";
+
+it("serves the Rola web contract on loopback, rejects foreign origins and runs the actual converter", async () => {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const directory = await mkdtemp(resolve(tmpdir(), "rola-http-"));
+  await mkdir(resolve(directory, "scripts"));
+  await copyFile(resolve(root, "scripts/local-server.mjs"), resolve(directory, "scripts/local-server.mjs"));
+  for (const path of ["src", "public", "node_modules"]) await symlink(resolve(root, path), resolve(directory, path));
+  const probe = createServer();
+  probe.listen(0, "127.0.0.1");
+  await once(probe, "listening");
+  const address = probe.address();
+  if (!address || typeof address === "string") throw new Error("No test port");
+  const port = address.port;
+  await new Promise<void>((done, reject) => probe.close(error => error ? reject(error) : done()));
+  const origin = `http://127.0.0.1:${port}`;
+  const server = spawn(process.execPath, [resolve(directory, "scripts/local-server.mjs")], { cwd: directory, env: { ...process.env, LOCAL_PORT: String(port) }, stdio: "pipe" });
+  const exit = once(server, "exit");
+  const ready = new Promise<void>((done, reject) => {
+    const timer = setTimeout(() => reject(new Error("Local server startup timed out")), 10000);
+    server.once("error", error => { clearTimeout(timer); reject(error); });
+    server.stdout.on("data", data => { if (String(data).includes("Local converter:")) { clearTimeout(timer); done(); } });
+    server.once("exit", () => { clearTimeout(timer); reject(new Error("Local server exited before ready")); });
+  });
+  const request = (path: string, init?: RequestInit) => fetch(origin + path, { ...init, signal: AbortSignal.timeout(10000) });
+  const post = async (path: string, value: unknown) => request(path, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(value) });
+  try {
+    await ready;
+    expect((await request("/api/local/rola", { headers: { Origin: "https://untrusted.example" } })).status).toBe(403);
+    expect((await request("/api/local/rola", { headers: { Origin: "null" } })).status).toBe(403);
+    expect((await request("/api/local/rola", { headers: { "Sec-Fetch-Site": "cross-site" } })).status).toBe(403);
+    const cors = await request("/api/local/rola", { method: "OPTIONS", headers: { Origin: "https://rules.flacier.com", "Access-Control-Request-Private-Network": "true" } });
+    expect(cors.headers.get("access-control-allow-origin")).toBe("https://rules.flacier.com");
+    const setup = await request("/api/local/rola");
+    expect(setup.headers.get("cache-control")).toBe("no-store");
+    const draft = { name: "Demo", protocol: "http", server: "residential.example", port: 1080, account: "demo", password: "fake", country: "us", sessionId: "test", sessionMinutes: 10 };
+    const saved = await (await post("/api/local/rola/exits", draft)).json() as { id: string };
+    const previewResponse = await post("/api/local/rola/preview", { target: "clash-party-config", sources: [{ type: "node", name: "Airport", value: "vless://00000000-0000-4000-8000-000000000000@airport.example:443?security=tls#Airport" }] });
+    expect(previewResponse.status).toBe(200);
+    const preview = await previewResponse.json() as { baseId: string; nodes: { name: string; selectable: boolean }[] };
+    expect(preview.nodes).toEqual([{ name: "Airport", type: "vless", selectable: true }]);
+    const rendered = await (await request(`/s/${preview.baseId}/clash-party-config`)).text();
+    expect(() => prepareRolaProfile(rendered, { ...draft, upstreamNode: "Airport", rules: ["DOMAIN-SUFFIX,claude.ai"], dns: ["https://1.1.1.1/dns-query"] })).not.toThrow();
+    const chainResponse = await post("/api/local/rola/chains", { baseId: preview.baseId, exitId: saved.id, target: "clash-party-config", upstreamNode: "Airport", rules: ["DOMAIN-SUFFIX,claude.ai"], dns: ["https://1.1.1.1/dns-query"] });
+    expect(chainResponse.status).toBe(201);
+    const chain = await chainResponse.json() as { url: string };
+    const profile = parse(await (await request(new URL(chain.url).pathname)).text());
+    expect(profile.proxies.at(-1)).toMatchObject({ "dialer-proxy": "Airport", username: "demo_test-country-us-sessiontime-10" });
+    expect(profile.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,ROLA");
+    expect((await request(new URL(chain.url).pathname, { method: "HEAD" })).status).toBe(200);
+  } finally {
+    server.kill("SIGTERM");
+    await exit;
+  }
+}, 20000);

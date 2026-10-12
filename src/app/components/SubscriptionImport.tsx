@@ -1,5 +1,5 @@
 import { LinkSimple } from "@phosphor-icons/react";
-import { type FormEvent, useReducer } from "react";
+import { type FormEvent, useReducer, useState } from "react";
 
 import {
   createConvertedSubscription,
@@ -22,6 +22,7 @@ import { SubscriptionFormatPicker } from "./SubscriptionFormatPicker";
 import { SubscriptionLinkLoader } from "./SubscriptionLinkLoader";
 import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
+import { RolaSubscription } from "./RolaSubscription";
 import { ruleTemplates, type RuleSelection } from "../../config/rule-templates";
 import { defaultDnsSettings, parseDnsSettings, type DnsSettings } from "../../config/dns-settings";
 
@@ -126,6 +127,7 @@ const allFormats = [
 ];
 
 export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionChange?: (selection: RuleSelection) => void } = {}) {
+  const [rolaMode, setRolaMode] = useState(false);
   const [form, updateForm] = useReducer(reducer, initialState);
   function dispatch(action: FormAction) {
     updateForm(action);
@@ -248,6 +250,14 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         <p>合并订阅 · 选择规则 · 生成链接</p>
       </header>
 
+      <label className="field subscription-rule-preset">
+        <span>转换方式</span>
+        <select value={rolaMode ? "rola" : "standard"} onChange={event => setRolaMode(event.target.value === "rola")}>
+          <option value="standard">普通订阅转换</option>
+          <option value="rola">机场 → Rola · 仅本地</option>
+        </select>
+      </label>
+      {rolaMode ? <RolaSubscription /> : <>
       <form className="subscription-workspace" onSubmit={submit}>
         <div className="subscription-fields">
           <label className="field subscription-source">
@@ -377,6 +387,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
           onCopy={() => void copyResult()}
         />
       ) : null}
+      </>}
     </section>
   );
 }

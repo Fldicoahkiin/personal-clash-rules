@@ -110,6 +110,18 @@ function encryptedUpstream(node: Record<string, unknown>): boolean {
   return ["trojan", "hysteria2", "tuic", "anytls", "snell", "wireguard", "ssh"].includes(String(node.type));
 }
 
+export function rolaUpstreamChoices(source: string) {
+  const document = parseDocument(source, { prettyErrors: false, uniqueKeys: true });
+  if (document.errors.length) throw new Error("Base profile is not valid YAML");
+  const base = record(document.toJS({ maxAliasCount: 100 }), "Invalid base profile");
+  if (!Array.isArray(base.proxies) || !base.proxies.length) throw new Error("Base profile has no inline nodes");
+  return base.proxies.map(value => {
+    const node = record(value, "Invalid proxy");
+    const name = text(node.name, "proxy name");
+    return { name, type: String(node.type), selectable: !["DIRECT", "REJECT", "COMPATIBLE", nodeName, groupName].includes(name) && encryptedUpstream(node) };
+  });
+}
+
 function protectedHost(host: string, rules: string[]) {
   return rules.some(rule => {
     const [kind, target] = rule.split(",");
@@ -146,8 +158,9 @@ export function prepareRolaProfile(source: string, value: unknown) {
   if (protectedHost(settings.server.toLowerCase(), settings.rules) || protectedHost(String(node.server).toLowerCase(), settings.rules)) {
     throw new Error("Proxy gateway names must not overlap protected domains");
   }
-  const bootstrapNode = dns.get("proxy-server-nameserver", true);
-  const bootstrap = isSeq(bootstrapNode) ? bootstrapNode.toJSON() : undefined;
+  // The converter shares bootstrap arrays; YAML may encode the second list as an alias.
+  // Validate the bounded, resolved value while retaining the original document and comments.
+  const bootstrap = record(base.dns, "Invalid base DNS")["proxy-server-nameserver"];
   if (!Array.isArray(bootstrap) || !bootstrap.length || !bootstrap.every(item => item === "system" || ipDoh(item) || (typeof item === "string" && Boolean(isIP(item))))) {
     throw new Error("Base DNS needs independent proxy-server-nameserver entries (system, IP or IP-address DoH); repair bootstrap before adding a chain");
   }

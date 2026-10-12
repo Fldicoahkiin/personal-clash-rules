@@ -39,7 +39,7 @@ pnpm check
 
 本地转换：`pnpm build && pnpm start:local`，打开 `http://127.0.0.1:25500`。如需通过已运行的代理客户端下载上游，可给本地服务传入 `--proxy http://127.0.0.1:混合端口`；只影响该进程，不修改系统代理。用量、DNS 与手机端说明见 [客户端配置](docs/clients-and-dns.md)。
 
-Rola 动态住宅出口：`pnpm rola init` 创建本地私有设置，`pnpm rola prepare --base /路径/原配置.yaml` 离线生成两跳候选配置；不上传凭据、不切换客户端。套餐用量单独查询，不与机场额度相加。见 [Rola 接入与验收](docs/rola-residential.md)。
+Rola 动态住宅出口：网页订阅转换选择「机场 → Rola · 仅本地」，连接本地服务后读取机场节点、保存/选择 Rola 出口、编辑域名分流和 DoH，再生成本机订阅或下载候选 YAML。凭据只在本地私有文件中保存，不写 CF/KV、不回显密码、不切换客户端。CLI 的 `pnpm rola init` / `prepare` 仍可离线使用。套餐用量单独查询，不与机场额度相加。见 [Rola 接入与验收](docs/rola-residential.md)。
 
 ## License
 

@@ -1,0 +1,26 @@
+.workspace { display: grid; gap: 1.5rem; min-width: 0; }
+.privacy { display: flex; align-items: flex-start; gap: .75rem; padding-block: 1.25rem; border-block: 1px solid var(--line); }
+.privacy > svg { flex: 0 0 auto; }
+.workspace p { line-height: 1.65; margin-block: .65rem; }
+.connection, .actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.fields { margin: 0; padding: 0; border: 0; display: grid; gap: 1.5rem; min-width: 0; }
+.fields > button { justify-self: end; }
+.workspace :global(.button:not(.button-primary)) { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.workspace :global(.button:not(.button-primary):hover:not(:disabled)) { border-color: var(--line-strong); }
+.step { display: grid; gap: 1rem; min-width: 0; padding-block: 1.5rem; border-top: 1px solid var(--line); }
+.step h2, .result h2 { margin: 0; font-size: 1.25rem; }
+.step > button { justify-self: start; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.grid input, .grid select, .workspace textarea, .workspace select { width: 100%; min-width: 0; }
+.workspace textarea { resize: vertical; }
+.editor { display: grid; gap: 1rem; padding-block: 1rem; }
+.help summary { cursor: pointer; font-weight: 600; }
+.help > label { margin-top: 1rem; }
+.note, .help p, .connection > span { color: var(--muted); font-size: .875rem; }
+.chain { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
+.chain svg { flex: 0 0 auto; }
+.chain span { overflow-wrap: anywhere; }
+.result { display: grid; gap: 1rem; border-top: 2px solid var(--accent); padding-top: 1.5rem; }
+.workspace code { overflow-wrap: anywhere; }
+.rules { font-family: ui-monospace, monospace; font-size: .9rem; }
+@media (max-width: 640px) { .grid { grid-template-columns: minmax(0, 1fr); } .actions > *, .fields > button { width: 100%; justify-content: center; } }

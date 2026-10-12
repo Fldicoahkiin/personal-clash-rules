@@ -27,6 +27,9 @@ await mkdir(data, { recursive: true, mode: 0o700 });
 const bundle = resolve(root, ".local/subscriptions.mjs");
 await build({ entryPoints: [resolve(root, "src/worker/subscriptions.ts")], outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external" });
 const { routeSubscriptionRequest } = await import(pathToFileURL(bundle).href);
+const rolaBundle = resolve(root, ".local/rola-server.mjs");
+await build({ entryPoints: [resolve(root, "src/local/rola-server.ts")], outfile: rolaBundle, bundle: true, platform: "node", format: "esm", packages: "external" });
+const { createRolaRouter, rolaRulePaths } = await import(pathToFileURL(rolaBundle).href);
 const origin = `http://127.0.0.1:${port}`;
 const allowedOrigins = new Set([origin, `http://localhost:${port}`, "https://rules.flacier.com"]);
 const limits = new Map();
@@ -69,6 +72,11 @@ const env = {
   },
 };
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".yaml": "text/yaml" };
+const routeRola = await createRolaRouter({
+  directory: resolve(root, ".local/rola/web"), origin,
+  ruleLists: await Promise.all(rolaRulePaths.map(path => readFile(resolve(root, "public", path), "utf8"))),
+  convert: request => routeSubscriptionRequest(request, new URL(request.url), env),
+});
 const server = createServer(async (incoming, outgoing) => {
   outgoing.setHeader("Cache-Control", "no-store");
   outgoing.setHeader("X-Content-Type-Options", "nosniff");
@@ -96,7 +104,8 @@ const server = createServer(async (incoming, outgoing) => {
     const request = new Request(url, { method: incoming.method, headers,
       ...(["GET", "HEAD"].includes(incoming.method) ? {} : { body: Readable.toWeb(incoming), duplex: "half" }),
     });
-    let response = url.pathname === "/api/version" ? null : await routeSubscriptionRequest(request, url, env);
+    let response = await routeRola(request);
+    if (!response && url.pathname !== "/api/version") response = await routeSubscriptionRequest(request, url, env);
     if (!response && url.pathname === "/health") response = Response.json({ status: "ok", service: "personal-clash-rules", backend: "local" });
     if (!response && url.pathname === "/api/version") {
       response = ["GET", "HEAD"].includes(request.method)
