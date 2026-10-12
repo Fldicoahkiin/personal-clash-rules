@@ -63,6 +63,11 @@ function ipDoh(value: unknown): value is string {
 
 export function parseRolaSettings(value: unknown) {
   const input = record(value, "Rola settings must be an object");
+  const connectionMode = input.connectionMode ?? "chain";
+  if (connectionMode !== "chain" && connectionMode !== "direct") throw new Error("Choose chain or direct Rola access explicitly");
+  if (connectionMode === "direct" && input.upstreamNode) throw new Error("Direct Rola access must not select an airport first hop");
+  const selectedGroup = input.groupName === undefined || input.groupName === "" ? groupName : text(input.groupName, "Rola group name", 64);
+  if (["DIRECT", "REJECT", "COMPATIBLE"].includes(selectedGroup) || /[,#&]/u.test(selectedGroup)) throw new Error("Invalid Rola group name");
   if (input.protocol !== "http" && input.protocol !== "socks5") throw new Error("Rola protocol must be http or socks5; TLS/UDP support has not been verified");
   const server = text(input.server, "Rola server");
   if (!domain(server) && isIP(server) !== 4) throw new Error("Rola server must be a hostname or IPv4 address, not a URL");
@@ -93,6 +98,8 @@ export function parseRolaSettings(value: unknown) {
     throw new Error("Rola DNS must contain 1–4 IP-address HTTPS resolvers without routing parameters");
   }
   return {
+    connectionMode,
+    groupName: selectedGroup,
     authMode,
     name: input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
     protocol: input.protocol,
@@ -100,7 +107,7 @@ export function parseRolaSettings(value: unknown) {
     port: Number(input.port),
     password: text(input.password, "Rola password"),
     username: authMode === "literal" ? account : `${account}_${sessionId}-country-${country}-sessiontime-${input.sessionMinutes}`,
-    upstreamNode: text(input.upstreamNode, "upstream node"),
+    upstreamNode: connectionMode === "direct" ? "" : text(input.upstreamNode, "upstream node"),
     rules,
     dns: input.dns as string[],
     country,
@@ -137,6 +144,7 @@ function protectedHost(host: string, rules: string[]) {
 export function prepareRolaProfile(source: string, value: unknown) {
   const settings = parseRolaSettings(value);
   const nodeName = settings.name;
+  const groupName = settings.groupName;
   if (["DIRECT", "REJECT", "COMPATIBLE", groupName].includes(nodeName)) throw new Error("Rola node name is reserved");
   const nodePattern = `^${nodeName.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`;
   const document = parseDocument(source, { prettyErrors: false, uniqueKeys: true });
@@ -160,10 +168,10 @@ export function prepareRolaProfile(source: string, value: unknown) {
     names.add(name);
   }
   const node = Array.isArray(base.proxies) ? base.proxies.find(item => item?.name === settings.upstreamNode) : undefined;
-  if (!node || ["DIRECT", "REJECT", "COMPATIBLE", nodeName, groupName].includes(settings.upstreamNode) || !encryptedUpstream(node)) {
+  if (settings.connectionMode === "chain" && (!node || ["DIRECT", "REJECT", "COMPATIBLE", nodeName, groupName].includes(settings.upstreamNode) || !encryptedUpstream(node))) {
     throw new Error("Choose one concrete encrypted upstream node, with certificate verification enabled and no existing dialer-proxy; groups and DIRECT are not allowed");
   }
-  if (protectedHost(settings.server.toLowerCase(), settings.rules) || protectedHost(String(node.server).toLowerCase(), settings.rules)) {
+  if (protectedHost(settings.server.toLowerCase(), settings.rules) || (node && protectedHost(String(node.server).toLowerCase(), settings.rules))) {
     throw new Error("Proxy gateway names must not overlap protected domains");
   }
   // The converter shares bootstrap arrays; YAML may encode the second list as an alias.
@@ -195,7 +203,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
     username: settings.username,
     password: settings.password,
     udp: false,
-    "dialer-proxy": settings.upstreamNode,
+    "dialer-proxy": settings.connectionMode === "direct" ? "DIRECT" : settings.upstreamNode,
   };
   proxies.add(document.createNode(rola));
   // Keep the metered exit out of every include-all group, including automatic health checks.
@@ -224,11 +232,13 @@ export function prepareRolaProfile(source: string, value: unknown) {
   dns.set("ipv6", false);
   document.set("ipv6", false);
   const summary = {
+    connectionMode: settings.connectionMode,
+    groupName,
     country: settings.country ? `${flag} ${settings.country.toUpperCase()}` : "地区未声明",
     sessionMinutes: settings.sessionMinutes,
     protectedRules: settings.rules.length,
     inlineNodes: proxies.items.length,
-    chain: "device -> selected airport node -> Rola -> target",
+    chain: settings.connectionMode === "direct" ? "device -> Rola -> target" : "device -> selected airport node -> Rola -> target",
     quota: "Rola and airport quotas are separate, not additive",
     activation: "not activated; client overrides and device DNS still require review",
   };
@@ -240,6 +250,7 @@ export function createRolaOverride(source: string, value: unknown) {
   const settings = parseRolaSettings(value);
   const output = parseDocument(prepared.profile).toJS({ maxAliasCount: 100 });
   const patch = {
+    connectionMode: settings.connectionMode,
     upstream: settings.upstreamNode, node: output.proxies.at(-1), group: output["proxy-groups"].at(-1),
     rules: output.rules.slice(0, settings.rules.length * 2), domains: settings.rules,
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
@@ -255,7 +266,7 @@ function main(config) {
   const overlaps = ${protectedHost.toString()};
   if (config.mode !== 'rule' || !Array.isArray(config.proxies) || !Array.isArray(config['proxy-groups']) || !Array.isArray(config.rules) || !config.dns?.enable) throw new Error('Rola: complete rule-mode base required');
   const nodes = config.proxies.filter(node => node.name === data.upstream);
-  if (nodes.length !== 1 || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains)) throw new Error('Rola: selected first hop is missing or unsafe');
+  if (data.connectionMode === 'chain' && (nodes.length !== 1 || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains))) throw new Error('Rola: selected first hop is missing or unsafe');
   const names = config.proxies.concat(config['proxy-groups']).map(item => item.name);
   if (new Set(names).size !== names.length || names.includes(data.node.name) || names.includes(data.group.name)) throw new Error('Rola: duplicate names or overlay already applied');
   if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');

@@ -44,6 +44,23 @@ async function fixture() {
 }
 
 describe("local Rola web workflow", () => {
+  it("persists explicit direct access and a private group in both YAML and local override", async () => {
+    const f = await fixture();
+    const saved = await (await f.call("/api/local/rola/exits", exit)).json() as { id: string };
+    const result = await f.call("/api/local/rola/chains", { baseId, target: "clash-party-config", exitId: saved.id,
+      connectionMode: "direct", groupName: "🇺🇸 美国家宽", rules: ["DOMAIN-SUFFIX,claude.ai"], dns: ["https://1.1.1.1/dns-query"] });
+    expect(result.status).toBe(201);
+    const created = await result.json() as { url: string; overrideUrl: string; summary: { connectionMode: string } };
+    expect(created.summary.connectionMode).toBe("direct");
+    f.setBase(base.replace("name: Airport", "name: RenamedAirport"));
+    const refreshed = await f.call(new URL(created.url).pathname);
+    expect(refreshed.headers.get("subscription-userinfo")).toContain("total=1000");
+    const profile = parse(await refreshed.text());
+    expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
+    expect(profile["proxy-groups"].at(-1).name).toBe("🇺🇸 美国家宽");
+    expect(await (await f.call(new URL(created.overrideUrl).pathname)).text()).toContain('"connectionMode":"direct"');
+  });
+
   it("saves private exits without credential echo and preserves credentials on edit", async () => {
     const f = await fixture();
     const saved = await (await f.call("/api/local/rola/exits", exit)).json() as { id: string };

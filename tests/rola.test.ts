@@ -53,6 +53,29 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it.each(["socks5", "http"])("supports explicit direct %s access with a separate named group and no airport fallback", protocol => {
+    const direct = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", protocol };
+    const output = prepareRolaProfile(source, direct);
+    const profile = parse(output.profile);
+    expect(profile.proxies.at(-1)).toMatchObject({ type: protocol, "dialer-proxy": "DIRECT", udp: false });
+    expect(profile["proxy-groups"].at(-1)).toMatchObject({ name: direct.groupName, proxies: ["ROLA-RESIDENTIAL"], "empty-fallback": "REJECT" });
+    expect(profile.rules[1]).toBe(`DOMAIN-SUFFIX,claude.ai,${direct.groupName}`);
+    expect(profile.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#${direct.groupName}`);
+    expect(output.summary.connectionMode).toBe("direct");
+    const config = parse(source);
+    config.proxies[0].name = "RenamedAirport";
+    const actual = runInNewContext(createRolaOverride(source, direct) + '\nmain(config)', { config }, { timeout: 1000 });
+    expect(actual.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
+    expect(actual["proxy-groups"].at(-1).name).toBe(direct.groupName);
+  });
+
+  it("requires a deliberate valid connection mode and safe group name", () => {
+    expect(parseRolaSettings(settings).connectionMode).toBe("chain");
+    for (const change of [{ connectionMode: "automatic" }, { connectionMode: "direct" }, { groupName: "DIRECT" }, { groupName: "AUTO" }, { groupName: "A,REJECT" }, { groupName: "A#DIRECT" }]) {
+      expect(() => prepareRolaProfile(source, { ...settings, ...change })).toThrow();
+    }
+  });
+
   it("uses ready-made proxy credentials verbatim without inventing location or session suffixes", () => {
     const literal = { ...settings, authMode: "literal", account: "ready_user-country-label", country: "", sessionId: undefined, sessionMinutes: undefined };
     const parsed = parseRolaSettings(literal);

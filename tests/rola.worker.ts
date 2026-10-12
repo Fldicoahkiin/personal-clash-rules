@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSourceCache } from "./helpers/source-cache";
 import { parse } from "yaml";
 
-beforeEach(clearSourceCache);
+let testClient = 0;
+beforeEach(async () => {
+  testClient += 1;
+  await clearSourceCache();
+});
 
 const origin = "https://example.com";
 const uri = "trojan://airport-secret@airport.example:443#Airport";
@@ -17,7 +21,7 @@ proxy-groups: [{name: PROXY, type: select, proxies: [Airport]}]
 rules: [MATCH,PROXY]
 `;
 function post(path: string, body: unknown, headers: Record<string, string> = {}) {
-  return exports.default.fetch(`${origin}${path}`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
+  return exports.default.fetch(`${origin}${path}`, { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": `192.0.2.${testClient}`, ...headers }, body: JSON.stringify(body) });
 }
 async function preview(input: Record<string, unknown> = {}) {
   const response = await post("/api/rola/preview", { sources: [{ type: "node", name: "Airport", value: uri }], target: "clash-party-config", name: "Test", ...input });
@@ -32,6 +36,22 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it("requires explicit direct mode and retains a separate named residential group", async () => {
+    const p = await preview();
+    const input = { baseId: p.baseId, exit, rules, dns, connectionMode: "direct", groupName: "🇺🇸 美国家宽" };
+    const created = await post("/api/rola/chains", input);
+    expect(created.status).toBe(201);
+    const data = await created.json<{ url: string; summary: { connectionMode: string } }>();
+    expect(data.summary.connectionMode).toBe("direct");
+    const response = await exports.default.fetch(data.url);
+    expect(response.status).toBe(200);
+    const profile = parse(await response.text());
+    expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
+    expect(profile["proxy-groups"].at(-1)).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
+    expect((await post("/api/rola/chains", { ...input, connectionMode: "automatic" })).status).toBe(422);
+    expect((await post("/api/rola/chains", { ...input, connectionMode: undefined })).status).toBe(422);
+  });
+
   it("reads a synchronized base internally and propagates its quota and overdue status to the chain", async () => {
     const syncId = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
     const syncedAt = new Date(Date.now() - 8 * 3_600_000).toISOString();
@@ -52,6 +72,7 @@ describe("cloud Rola subscriptions", () => {
       const refreshed = await exports.default.fetch(url);
       expect(refreshed.status).toBe(200);
       expect(refreshed.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100");
+      expect(decodeURIComponent(refreshed.headers.get("content-disposition") || "")).toContain("Test.yaml");
       expect(refreshed.headers.get("x-subscription-synced-at")).toBe(syncedAt);
       expect(refreshed.headers.get("x-subscription-refresh-status")).toBe("sync-overdue");
       expect(parse(await refreshed.text()).proxies.at(-1)).toMatchObject({ "dialer-proxy": "Airport", type: "socks5" });

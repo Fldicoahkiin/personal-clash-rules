@@ -20,7 +20,7 @@ export function ProxyEndpointInput({ onAdd }: { onAdd: (uri: string) => void }) 
     } catch (error) { setError(error instanceof Error ? error.message : "节点设置无效"); }
   }
   return <details className="subscription-more"><summary>添加独立 IP／家宽代理</summary>
-    <p>选择供应商实际提供的协议。这里只合并节点；需要前置机场时，请使用「机场 → Rola 家宽出口」。</p>
+    <p>选择供应商实际提供的协议。这里只合并节点；需要独立家宽分组或前置机场时，请使用「Rola 家宽出口」。</p>
     <label className="field"><span>快速粘贴（可选）</span><input type="password" autoComplete="new-password" value={quick} onChange={event => setQuick(event.target.value)} placeholder="主机:端口:账号:密码" /></label>
     <button className="button button-secondary" type="button" onClick={readQuick}>拆分到字段</button>
     <div className="subscription-settings-grid">

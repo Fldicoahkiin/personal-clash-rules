@@ -257,7 +257,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         <span>转换方式</span>
         <select value={rolaMode ? "rola" : "standard"} onChange={event => setRolaMode(event.target.value === "rola")}>
           <option value="standard">普通订阅转换</option>
-          <option value="rola">机场 → Rola 家宽出口</option>
+          <option value="rola">Rola 家宽出口（可选机场前置）</option>
         </select>
       </label>
       {rolaMode ? <RolaSubscription /> : <>

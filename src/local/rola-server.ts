@@ -18,7 +18,7 @@ type Exit = {
   id: string; name: string; protocol: "http" | "socks5"; server: string; port: number;
   account: string; password: string; country: string; sessionId: string; sessionMinutes: number;
 };
-type Chain = { baseId: string; target: string; exit: Exit; upstreamNode: string; rules: string[]; dns: string[] };
+type Chain = { baseId: string; target: string; exit: Exit; connectionMode?: unknown; groupName?: unknown; upstreamNode: string; rules: string[]; dns: string[] };
 const idPattern = /^[A-Za-z0-9_-]{16}$/u;
 const targets = new Set(["clash-party-config", "clash-verge-config", "flclash-config", "mihomo-config"]);
 
@@ -90,7 +90,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
     return convert(new Request(`${origin}/s/${id(baseId)}/${target}`));
   }
   async function candidate(base: Response, chain: Chain) {
-    try { return prepareRolaProfile(await base.text(), { ...chain.exit, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns }); }
+    try { return prepareRolaProfile(await base.text(), { ...chain.exit, connectionMode: chain.connectionMode, groupName: chain.groupName, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns }); }
     catch {
       throw new LocalError(422, "rola_profile_rejected", "无法生成串联配置：请确认所选前置节点仍存在、启用加密和证书验证，域名规则有效且 DNS 不与网关形成循环。不会返回空节点或直连替代配置。");
     }
@@ -144,7 +144,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
       if (url.pathname === "/api/local/rola/chains" && request.method === "POST") {
         const input = await body(request);
         const exit = await read<Exit>("exit", id(input.exitId));
-        const chain: Chain = { baseId: id(input.baseId), target: String(input.target), exit,
+        const chain: Chain = { baseId: id(input.baseId), target: String(input.target), exit, connectionMode: input.connectionMode, groupName: input.groupName,
           upstreamNode: input.upstreamNode as string, rules: input.rules as string[], dns: input.dns as string[] };
         const base = await renderBase(chain.baseId, chain.target);
         if (!base.ok) return base;
@@ -162,7 +162,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         const headers = new Headers(base.headers);
         const scriptSource = match[2] === "js" ? await base.clone().text() : null;
         const generated = await candidate(base, chain);
-        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
+        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, connectionMode: chain.connectionMode, groupName: chain.groupName, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
         headers.delete("ETag");
         headers.set("Cache-Control", "no-store");
         headers.set("Content-Type", script ? "application/javascript; charset=utf-8" : "text/yaml; charset=utf-8");

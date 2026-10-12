@@ -121,7 +121,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           source = syncId ? { kind: "local-sync", id: syncId } : { kind: "convert", config: built.config };
           stats = built.generated.nodeStats;
           usage = built.generated.usage;
-          name = built.profileName;
+          name = typeof input.name === "string" && input.name.trim() ? name : built.profileName;
         }
         const nodes = boundedProfile(profile);
         const userinfo = usage.combined ? formatSubscriptionUserinfo(usage.combined) : null;
@@ -131,7 +131,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       if (url.pathname === "/api/rola/chains") {
         const preview = await read<Preview>(env, "preview", input.baseId);
         const exit = object(input.exit);
-        const settings = { name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
+        const settings = { connectionMode: input.connectionMode, groupName: input.groupName, name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
           country: exit.country, sessionId: exit.sessionId, sessionMinutes: exit.sessionMinutes, upstreamNode: input.upstreamNode, rules: input.rules, dns: input.dns };
         const generated = prepare(preview.profile, settings);
         // Only validated, explicitly selected fields can enter a persistent cloud record.
