@@ -1,72 +1,12 @@
-import { countryGroupNames, mihomoPolicyDisplayNames } from "../../config/mihomo-policy";
+import { businessProxyGroupNames, displayMihomoGroup, mihomoPolicyDisplayNames, mihomoProxyGroups } from "../../config/mihomo-policy";
 
-export const displayedPolicyGroups = [
-  {
-    name: "AI",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "US", "JP", "SG", "TW"],
-  },
-  {
-    name: "APPLE",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
-  },
-  {
-    name: "STEAM",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "JP", "US", "SG"],
-  },
-  {
-    name: "STEAM-DOWNLOAD",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
-  },
-  {
-    name: "STEAM-ONLINE",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
-  },
-  {
-    name: "BILIBILI",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "HK", "TW", "SG"],
-  },
-  {
-    name: "ANIGAMER",
-    initial: "TW",
-    options: ["TW", "GLOBAL", "DIRECT", "AUTO"],
-  },
-  {
-    name: "DISCORD",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-  },
-  {
-    name: "DEV",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
-  },
-  {
-    name: "MEDIA",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-  },
-  {
-    name: "SOCIAL",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-  },
-  {
-    name: "DEFAULT",
-    initial: "GLOBAL",
-    options: ["GLOBAL", "DIRECT", "AUTO"],
-  },
-].map(group => ({
-  ...group,
-  name: mihomoPolicyDisplayNames[group.name] ?? group.name,
-  initial: countryGroupNames[group.initial] ?? mihomoPolicyDisplayNames[group.initial] ?? group.initial,
-  options: group.options.map(name => countryGroupNames[name] ?? mihomoPolicyDisplayNames[name] ?? name),
-}));
+export const displayedPolicyGroups = mihomoProxyGroups
+  .filter(group => businessProxyGroupNames.some(name => name === group.name))
+  .map(group => {
+    const displayed = displayMihomoGroup(group);
+    const options = displayed.proxies ?? [];
+    return { name: displayed.name, initial: options[0], options };
+  });
 
 export function describePolicyRoute(policy: string): {
   mode: string;

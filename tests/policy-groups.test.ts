@@ -1,6 +1,42 @@
 import { describe, expect, it } from "vitest";
 
 import { describePolicyRoute } from "../src/app/lib/policy-groups";
+import { mihomoProxyGroups } from "../src/config/mihomo-policy";
+
+describe("business policy choices", () => {
+  it("offers the same complete exits for every business policy without selector cycles", () => {
+    const business = ["AI", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD", "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "SOCIAL", "DEFAULT"];
+    const eligible = ["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT"];
+    for (const name of business) {
+      const group = mihomoProxyGroups.find(group => group.name === name);
+      expect(group, name).toMatchObject({ "include-all": true });
+      expect(group, name).not.toHaveProperty("exclude-type");
+      expect(new Set(group?.proxies), name).toEqual(new Set(eligible));
+      expect(group?.["exclude-filter"], name).toContain("剩余");
+      expect(group?.proxies?.[0], name).toBe(name === "ANIGAMER" ? "🇹🇼 台湾" : "GLOBAL");
+    }
+    const byName = new Map(mihomoProxyGroups.map(group => [group.name, group]));
+    const visit = (name: string, path: string[] = []) => {
+      expect(path, `circular policy path: ${[...path, name].join(" → ")}`).not.toContain(name);
+      for (const member of byName.get(name)?.proxies ?? []) {
+        if (byName.has(member)) visit(member, [...path, name]);
+      }
+    };
+    for (const name of byName.keys()) visit(name);
+  });
+
+  it("keeps explicit DIRECT selectable without adding direct nodes to automatic or country pools", () => {
+    for (const name of ["🖐 手动选择", "GLOBAL"]) {
+      const group = mihomoProxyGroups.find(group => group.name === name);
+      expect(group?.proxies, name).toContain("DIRECT");
+      expect(group, name).not.toHaveProperty("exclude-type");
+      expect(group?.["exclude-filter"], name).toContain("剩余");
+    }
+    for (const name of ["AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
+      expect(mihomoProxyGroups.find(group => group.name === name), name).toHaveProperty("exclude-type", "direct");
+    }
+  });
+});
 
 describe("describePolicyRoute", () => {
   it("labels fixed direct rules as direct", () => {

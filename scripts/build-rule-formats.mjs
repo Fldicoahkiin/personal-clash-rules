@@ -2,7 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { parse, stringify } from "yaml";
+import { build } from "esbuild";
+import { parse, parseDocument, stringify } from "yaml";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -71,6 +72,20 @@ async function main() {
       await writeFile(destination, content, "utf8");
     }
   }
+  const policyModule = await build({
+    entryPoints: [resolve(repositoryRoot, "src/config/mihomo-policy.ts")],
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    write: false,
+  });
+  const policy = await import(`data:text/javascript;base64,${Buffer.from(policyModule.outputFiles[0].text).toString("base64")}`);
+  const overridePath = resolve(repositoryRoot, "public/overrides/clash-party.yaml");
+  const override = parseDocument(await readFile(overridePath, "utf8"));
+  override.set("rule-providers", override.createNode(policy.mihomoRuleProviders));
+  override.set("+proxy-groups", override.createNode(policy.mihomoProxyGroups.map(policy.displayMihomoGroup)));
+  override.set("+rules", override.createNode(policy.mihomoProfileRules.map(policy.displayMihomoRule)));
+  await writeFile(overridePath, override.toString({ lineWidth: 0 }), "utf8");
 }
 
 if (

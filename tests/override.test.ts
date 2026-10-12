@@ -9,7 +9,7 @@ import {
   displayMihomoRule,
   mihomoProxyGroups,
   mihomoRuleProviders,
-  mihomoRules,
+  mihomoProfileRules,
 } from "../src/config/mihomo-policy";
 import { displayedPolicyGroups } from "../src/app/lib/policy-groups";
 
@@ -28,7 +28,7 @@ describe("Clash Party override", () => {
 
     expect(config["rule-providers"]).toEqual(mihomoRuleProviders);
     expect(config["+proxy-groups"]).toEqual(mihomoProxyGroups.map(displayMihomoGroup));
-    expect(config["+rules"]).toEqual(mihomoRules.map(displayMihomoRule));
+    expect(config["+rules"]).toEqual(mihomoProfileRules.map(displayMihomoRule));
   });
 
   it("publishes Apple rules as remote providers", async () => {
@@ -63,7 +63,13 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 8)).toEqual([
+    expect(config["+rules"].slice(0, 14)).toEqual([
+      "PROCESS-NAME,WeChat,DIRECT",
+      "PROCESS-NAME,WeChatAppEx,DIRECT",
+      "PROCESS-NAME,QQ,DIRECT",
+      "PROCESS-NAME,QQ Helper,DIRECT",
+      "PROCESS-NAME,NeteaseMusic,DIRECT",
+      "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
       "RULE-SET,private-domain,DIRECT",
       "RULE-SET,private-ip,DIRECT,no-resolve",
       "RULE-SET,tencent-messaging,DIRECT",
@@ -118,10 +124,16 @@ describe("Clash Party override", () => {
     }
     expect(groups.get("🤖 AI")?.proxies).toEqual([
       "🌐 全局",
+      "🖐 手动选择",
+      "♻️ 自动选择",
       "🇺🇸 美国",
       "🇯🇵 日本",
       "🇸🇬 新加坡",
+      "🇭🇰 香港",
       "🇹🇼 台湾",
+      "🇰🇷 韩国",
+      "🇪🇺 欧洲",
+      "DIRECT",
     ]);
     expect(groups.get("🎮 Steam")?.proxies).toContain("DIRECT");
     expect(groups.get("🎮 Steam")?.proxies?.[0]).toBe("🌐 全局");
@@ -130,13 +142,7 @@ describe("Clash Party override", () => {
     expect(groups.get("📺 哔哩哔哩")?.proxies?.[0]).toBe("🌐 全局");
     expect(groups.get("📺 巴哈姆特")?.proxies?.[0]).toBe("🇹🇼 台湾");
     expect(groups.get("💬 Discord")?.proxies).toContain("🌐 全局");
-    expect(groups.get("🍎 Apple")?.proxies).toEqual([
-      "🌐 全局",
-      "DIRECT",
-      "🇺🇸 美国",
-      "🇯🇵 日本",
-      "🇸🇬 新加坡",
-    ]);
+    expect(groups.get("🍎 Apple")?.proxies).toEqual(groups.get("🤖 AI")?.proxies);
   });
 
   it("keeps the policy table aligned with the published override", async () => {

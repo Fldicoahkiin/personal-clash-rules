@@ -1,5 +1,6 @@
 import {
   countryGroupNames,
+  metadataFilter,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
@@ -7,6 +8,7 @@ import {
 import { ApiError } from "./api-error";
 
 const regions = new Set(Object.values(countryGroupNames));
+const metadataName = new RegExp(metadataFilter.replace(/^\(\?i\)/u, ""), "iu");
 
 type LoonGroup = {
   name: string;
@@ -41,17 +43,17 @@ function matchingNodes(names: string[], filter: string | undefined): string[] {
   return names.filter((name) => pattern.test(name));
 }
 
-function loonGroupLine(source: (typeof mihomoProxyGroups)[number], names: string[]): string {
+function loonGroupLine(source: (typeof mihomoProxyGroups)[number], names: string[], availableGroups: Set<string>): string {
   const group = source as LoonGroup;
   if (group.name === "AUTO") {
     return `AUTO = url-test, ${names.join(", ")}, url=https://cp.cloudflare.com/generate_204, interval=${group.interval ?? 300}`;
   }
   if (regions.has(group.name)) {
     const members = matchingNodes(names, group.filter);
-    return `${group.name} = select, ${(members.length > 0 ? members : ["DIRECT"]).join(", ")}`;
+    return `${group.name} = select, ${members.join(", ")}`;
   }
-  const members = [...(group.proxies ?? [])];
-  if (group.name === "GLOBAL") {
+  const members = (group.proxies ?? []).filter(name => !regions.has(name) || availableGroups.has(name));
+  if ("include-all" in source && source["include-all"]) {
     members.push(...names);
   }
   return `${group.name} = ${group.type}, ${members.join(", ")}`;
@@ -73,6 +75,10 @@ function loonRemoteRules(updateIntervalSeconds: number): string[] {
 
 export function createLoonProfile(nodeResource: string, updateIntervalHours = 6): string {
   const nodes = readLoonNodes(nodeResource);
+  const selectableNames = nodes.names.filter(name => !metadataName.test(name));
+  if (!selectableNames.length) throw new ApiError(422, "no_nodes_found", "Loon profile has no selectable nodes");
+  const groups = mihomoProxyGroups.filter(group => !regions.has(group.name) || ("filter" in group && matchingNodes(selectableNames, group.filter).length > 0));
+  const availableGroups = new Set(groups.map(group => group.name));
   return [
     "[General]",
     "ipv6 = true",
@@ -84,7 +90,7 @@ export function createLoonProfile(nodeResource: string, updateIntervalHours = 6)
     nodes.content,
     "",
     "[Proxy Group]",
-    ...mihomoProxyGroups.map((group) => loonGroupLine(group, nodes.names)),
+    ...groups.map((group) => loonGroupLine(group, selectableNames, availableGroups)),
     "",
     "[Rule]",
     "FINAL,DEFAULT",

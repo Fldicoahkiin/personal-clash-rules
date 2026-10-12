@@ -7,6 +7,21 @@ import {
 } from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
+  it("prepends exact domestic-app rules for IP-only connections without exempting other processes", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
+    expect(profile.rules.filter((rule: string) => rule.startsWith("PROCESS-NAME,"))).toEqual([
+      "PROCESS-NAME,WeChat,DIRECT",
+      "PROCESS-NAME,WeChatAppEx,DIRECT",
+      "PROCESS-NAME,QQ,DIRECT",
+      "PROCESS-NAME,QQ Helper,DIRECT",
+      "PROCESS-NAME,NeteaseMusic,DIRECT",
+      "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
+    ]);
+    expect(profile.rules.indexOf("PROCESS-NAME,WeChat,DIRECT"))
+      .toBeLessThan(profile.rules.indexOf("RULE-SET,ai-openai,🤖 AI"));
+    expect(profile.rules).not.toContain("PROCESS-NAME,Google Chrome,DIRECT");
+    expect(profile.rules).toContain("PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI");
+  });
   it("puts manual selection before global and excludes quota notices from DNS choices", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}, {name: '剩余流量：1 TB', type: ss}]"));
     expect(profile["proxy-groups"].slice(0, 2).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "🌐 全局"]);
@@ -76,7 +91,7 @@ proxies:
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "🤖 AI", proxies: ["🌐 全局", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"] }),
+      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["🌐 全局", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾", "DIRECT"]), "include-all": true }),
       expect.objectContaining({ name: "📥 Steam 下载", proxies: expect.arrayContaining(["DIRECT"]) }),
       expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
     ]));

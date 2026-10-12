@@ -7,7 +7,7 @@ import {
   displayMihomoRule,
   mihomoProxyGroups,
   mihomoRuleProviders,
-  mihomoRules,
+  mihomoProfileRules,
 } from "../config/mihomo-policy";
 import type { NodeSettings } from "./node-transforms";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
@@ -103,7 +103,7 @@ function profileBody(
     ...(providers ? { "proxy-providers": providers } : {}),
     "proxy-groups": proxyGroups.map(group => displayMihomoGroup(group as { name: string; proxies?: string[]; icon?: string })),
     ...(flacierRules ? { "rule-providers": mihomoRuleProviders } : {}),
-    rules: (directRules ? ["MATCH,DIRECT"] : flacierRules ? mihomoRules : globalRules).map(displayMihomoRule),
+    rules: (directRules ? ["MATCH,DIRECT"] : flacierRules ? mihomoProfileRules : globalRules).map(displayMihomoRule),
   };
 }
 

@@ -54,6 +54,40 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it("makes the residential group selectable in every business policy without adding it to automatic or regional pools", () => {
+    const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
+    const output = parse(prepareRolaProfile(base, input).profile);
+    const businessNames = ["🤖 AI", "🍎 Apple", "🎮 Steam", "📥 Steam 下载", "🕹️ Steam 联机", "💬 Discord", "🛠️ 开发服务", "🎬 流媒体", "📺 哔哩哔哩", "📺 巴哈姆特", "💬 社交", "🐟 未匹配流量"];
+    const eligible = ["🌐 全局", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
+    for (const name of businessNames) {
+      const group = output["proxy-groups"].find((group: { name: string }) => group.name === name);
+      expect(new Set(group.proxies), name).toEqual(new Set(eligible));
+      expect(group["include-all"], name).toBe(true);
+      expect(group["exclude-filter"], name).toContain("ROLA-RESIDENTIAL");
+    }
+    for (const name of ["♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本"]) {
+      const group = output["proxy-groups"].find((group: { name: string }) => group.name === name);
+      expect(group.proxies ?? []).not.toContain(input.groupName);
+      expect(group["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
+    }
+    expect(output["proxy-groups"].slice(0, 3).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "🌐 全局", input.groupName]);
+    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
+  });
+
+  it("migrates stored settings without a policy choice to AI so DNS follows later client exit changes", () => {
+    const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽" };
+    const output = parse(prepareRolaProfile(base, input).profile);
+    expect(output.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🤖 AI`));
+    expect(output.dns.nameserver).toEqual(parse(base).dns.nameserver);
+    expect(JSON.stringify(output.dns["nameserver-policy"])).not.toContain(`#${input.groupName}`);
+    const dedicated = parse(prepareRolaProfile(base, { ...input, policyGroup: "" }).profile);
+    expect(dedicated.rules[1]).toBe(`DOMAIN-SUFFIX,claude.ai,${input.groupName}`);
+    expect(dedicated.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#${input.groupName}`));
+  });
+
   it("exposes residential in manual, global and AI while allowing the AI choice to control protected domains and DNS", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };

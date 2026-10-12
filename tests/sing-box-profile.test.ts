@@ -3,6 +3,23 @@ import { describe, expect, it } from "vitest";
 import { createSingBoxProfile } from "../src/worker/sing-box-profile";
 
 describe("createSingBoxProfile", () => {
+  it("hides unavailable countries and quota notices instead of creating direct fallback exits", () => {
+    const output = JSON.parse(createSingBoxProfile(JSON.stringify({ outbounds: [
+      { type: "shadowsocks", tag: "US-01" }, { type: "shadowsocks", tag: "日本剩余流量" },
+    ] })));
+    const groups: Array<{ tag: string; outbounds: string[] }> = output.outbounds.filter((group: { outbounds?: string[] }) => group.outbounds);
+    for (const group of groups) {
+      expect(group.outbounds).not.toContain("日本剩余流量");
+      expect(group.outbounds).not.toContain("🇯🇵 日本");
+      expect(group.outbounds).not.toContain("🇭🇰 香港");
+      expect(group.outbounds.length).toBeGreaterThan(0);
+    }
+    expect(groups.map(group => group.tag)).not.toContain("🇯🇵 日本");
+    expect(groups.map(group => group.tag)).not.toContain("🇭🇰 香港");
+    expect(groups.find(group => group.tag === "ANIGAMER")?.outbounds[0]).toBe("GLOBAL");
+    expect(() => createSingBoxProfile(JSON.stringify({ outbounds: [{ type: "shadowsocks", tag: "日本剩余流量" }] }))).toThrow("no selectable nodes");
+  });
+
   it("builds a sing-box configuration with selectors and remote rule sets", () => {
     const output = createSingBoxProfile(JSON.stringify({
       outbounds: [
@@ -45,7 +62,12 @@ describe("createSingBoxProfile", () => {
       expect.objectContaining({
         type: "selector",
         tag: "AI",
-        outbounds: ["GLOBAL", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"],
+        outbounds: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "DIRECT", "US-01", "JP-01"]),
+      }),
+      expect.objectContaining({
+        type: "selector",
+        tag: "APPLE",
+        outbounds: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "DIRECT", "US-01", "JP-01"]),
       }),
     ]));
     expect(config.http_clients).toEqual([

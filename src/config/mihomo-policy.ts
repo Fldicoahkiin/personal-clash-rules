@@ -131,13 +131,28 @@ function countryGroup(name: string, filter: string) {
   };
 }
 
+export const businessProxyGroupNames = [
+  "AI", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
+  "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "SOCIAL", "DEFAULT",
+] as const;
+
+function businessGroup(name: typeof businessProxyGroupNames[number], icon: string, initial = "GLOBAL") {
+  return {
+    name,
+    type: "select",
+    proxies: [...new Set([initial, "GLOBAL", manualProxyGroupName, "AUTO", ...Object.keys(countryGroupNames), "DIRECT"])],
+    "include-all": true,
+    "exclude-filter": metadataFilter,
+    icon: `${policyIconBase}/${icon}.svg`,
+  };
+}
+
 export const mihomoProxyGroups = [
   {
     name: manualProxyGroupName,
     type: "select",
-    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU"],
+    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
     "include-all": true,
-    "exclude-type": "direct",
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/route.svg`,
   },
@@ -188,78 +203,18 @@ export const mihomoProxyGroups = [
     "EU",
     "(?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[ _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))",
   ),
-  {
-    name: "AI",
-    type: "select",
-    proxies: ["GLOBAL", "US", "JP", "SG", "TW"],
-    icon: `${policyIconBase}/ai.svg`,
-  },
-  {
-    name: "APPLE",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
-    icon: `${policyIconBase}/apple.svg`,
-  },
-  {
-    name: "STEAM",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "JP", "US", "SG"],
-    icon: `${policyIconBase}/steam.svg`,
-  },
-  {
-    name: "STEAM-DOWNLOAD",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
-    icon: `${policyIconBase}/download.svg`,
-  },
-  {
-    name: "STEAM-ONLINE",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "JP", "US", "SG", "HK", "TW"],
-    icon: `${policyIconBase}/game.svg`,
-  },
-  {
-    name: "DISCORD",
-    type: "select",
-    proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-    icon: `${policyIconBase}/chat.svg`,
-  },
-  {
-    name: "DEV",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "US", "JP", "SG"],
-    icon: `${policyIconBase}/code.svg`,
-  },
-  {
-    name: "MEDIA",
-    type: "select",
-    proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-    icon: `${policyIconBase}/play.svg`,
-  },
-  {
-    name: "BILIBILI",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "HK", "TW", "SG"],
-    icon: `${policyIconBase}/play.svg`,
-  },
-  {
-    name: "ANIGAMER",
-    type: "select",
-    proxies: ["TW", "GLOBAL", "DIRECT", "AUTO"],
-    icon: `${policyIconBase}/play.svg`,
-  },
-  {
-    name: "SOCIAL",
-    type: "select",
-    proxies: ["GLOBAL", "US", "JP", "SG", "DIRECT"],
-    icon: `${policyIconBase}/chat.svg`,
-  },
-  {
-    name: "DEFAULT",
-    type: "select",
-    proxies: ["GLOBAL", "DIRECT", "AUTO"],
-    icon: `${policyIconBase}/route.svg`,
-  },
+  businessGroup("AI", "ai"),
+  businessGroup("APPLE", "apple"),
+  businessGroup("STEAM", "steam"),
+  businessGroup("STEAM-DOWNLOAD", "download"),
+  businessGroup("STEAM-ONLINE", "game"),
+  businessGroup("DISCORD", "chat"),
+  businessGroup("DEV", "code"),
+  businessGroup("MEDIA", "play"),
+  businessGroup("BILIBILI", "play"),
+  businessGroup("ANIGAMER", "play", "TW"),
+  businessGroup("SOCIAL", "chat"),
+  businessGroup("DEFAULT", "route"),
 ].map(group => ({
   ...group,
   name: countryGroupNames[group.name] ?? group.name,
@@ -293,4 +248,16 @@ export const mihomoRules = [
   "RULE-SET,social,SOCIAL",
   "RULE-SET,ai-anthropic-ip,AI,no-resolve",
   "MATCH,DEFAULT",
+] as const;
+
+// Exact executable names from the installed macOS apps, including their network helpers.
+// These cover IP-only connections without sending an entire shared cloud range directly.
+export const mihomoProfileRules = [
+  "PROCESS-NAME,WeChat,DIRECT",
+  "PROCESS-NAME,WeChatAppEx,DIRECT",
+  "PROCESS-NAME,QQ,DIRECT",
+  "PROCESS-NAME,QQ Helper,DIRECT",
+  "PROCESS-NAME,NeteaseMusic,DIRECT",
+  "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
+  ...mihomoRules,
 ] as const;

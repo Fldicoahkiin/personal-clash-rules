@@ -2,10 +2,14 @@ import { isIP } from "node:net";
 import { isMap, isSeq, parseDocument } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { manualProxyGroupName, mihomoPolicyDisplayNames, mihomoRuleProviders } from "../config/mihomo-policy";
+import { businessProxyGroupNames, manualProxyGroupName, mihomoPolicyDisplayNames, mihomoRuleProviders } from "../config/mihomo-policy";
 
 const nodeName = "ROLA-RESIDENTIAL";
 const groupName = "ROLA";
+const residentialSelectableGroups = [
+  manualProxyGroupName, "GLOBAL", ...businessProxyGroupNames,
+  mihomoPolicyDisplayNames.GLOBAL, ...businessProxyGroupNames.map(name => mihomoPolicyDisplayNames[name]),
+];
 
 export const rolaRulePaths = ["ai-anthropic", "ai-openai"].map(
   name => new URL(mihomoRuleProviders[name].url).pathname.slice(1),
@@ -101,7 +105,7 @@ export function parseRolaSettings(value: unknown) {
   return {
     connectionMode,
     groupName: selectedGroup,
-    policyGroup: input.policyGroup === "AI" ? "AI" : selectedGroup,
+    policyGroup: input.policyGroup === undefined ? undefined : input.policyGroup === "AI" ? "AI" : selectedGroup,
     authMode,
     name: input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
     protocol: input.protocol,
@@ -162,8 +166,11 @@ export function prepareRolaProfile(source: string, value: unknown) {
   if (!isSeq(proxies) || !isSeq(groups) || !isSeq(rules) || !isMap(dns) || dns.get("enable") !== true) {
     throw new Error("Use a complete Mihomo profile with inline nodes, groups, rules and working DNS; a provider-only or empty profile is insufficient");
   }
-  const policyGroup = settings.policyGroup === "AI" && !groups.items.some(group => isMap(group) && group.get("name") === "AI")
-    ? mihomoPolicyDisplayNames.AI : settings.policyGroup;
+  const aiGroup = ["AI", mihomoPolicyDisplayNames.AI].find(name => groups.items.some(group => isMap(group) && group.get("name") === name && group.get("type") === "select"));
+  // Old records did not store a policy choice. Follow the visible AI selector so changing
+  // its exit also changes protected DNS; an explicit empty choice still pins the house.
+  const policyGroup = settings.policyGroup === undefined ? aiGroup ?? groupName
+    : settings.policyGroup === "AI" ? aiGroup ?? "AI" : settings.policyGroup;
   if (policyGroup !== groupName && !groups.items.some(group => isMap(group) && group.get("name") === policyGroup && group.get("type") === "select")) {
     throw new Error("Selected policy group is missing from the base profile");
   }
@@ -228,7 +235,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
   const residentialGroup = groups.items.pop();
   groups.items.splice(Math.min(2, groups.items.length), 0, residentialGroup);
   for (const group of groups.items) {
-    if (!isMap(group) || ![manualProxyGroupName, "GLOBAL", "AI", mihomoPolicyDisplayNames.GLOBAL, mihomoPolicyDisplayNames.AI].includes(String(group.get("name")))) continue;
+    if (!isMap(group) || !residentialSelectableGroups.includes(String(group.get("name")))) continue;
     const members = group.get("proxies", true);
     if (!isSeq(members)) throw new Error("Invalid selectable policy group");
     if (group.get("name") === policyGroup) members.items.unshift(document.createNode(groupName));
@@ -272,7 +279,7 @@ export function createRolaOverride(source: string, value: unknown) {
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
     excludedNodePattern: `^${settings.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
-    selectableGroups: [manualProxyGroupName, "GLOBAL", "AI", mihomoPolicyDisplayNames.GLOBAL, mihomoPolicyDisplayNames.AI], policyGroup: prepared.summary.policyGroup,
+    selectableGroups: residentialSelectableGroups, policyGroup: prepared.summary.policyGroup,
   };
   // This artifact contains credentials. It is downloaded only from the loopback server.
   return `// PRIVATE: import locally and bind to one subscription. Never upload or sync this file.

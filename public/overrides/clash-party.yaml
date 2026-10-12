@@ -169,8 +169,8 @@ rule-providers:
       - 🇹🇼 台湾
       - 🇰🇷 韩国
       - 🇪🇺 欧洲
+      - DIRECT
     include-all: true
-    exclude-type: direct
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🌐 全局
@@ -202,8 +202,7 @@ rule-providers:
     type: select
     include-all: true
     exclude-type: direct
-    filter: (?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New
-      York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))
+    filter: (?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🇯🇵 日本
@@ -245,122 +244,221 @@ rule-providers:
     type: select
     include-all: true
     exclude-type: direct
-    filter: (?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United
-      Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[
-      _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))
+    filter: (?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[ _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🤖 AI
     type: select
     proxies:
       - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
       - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🍎 Apple
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🎮 Steam
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
-      - 🇯🇵 日本
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
+      - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 📥 Steam 下载
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
-      - 🇯🇵 日本
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
+      - 🇯🇵 日本
       - 🇸🇬 新加坡
       - 🇭🇰 香港
       - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🕹️ Steam 联机
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
-      - 🇯🇵 日本
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
+      - 🇯🇵 日本
       - 🇸🇬 新加坡
       - 🇭🇰 香港
       - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 💬 Discord
     type: select
     proxies:
       - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
       - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🛠️ 开发服务
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🎬 流媒体
     type: select
     proxies:
       - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
       - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 📺 哔哩哔哩
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
       - 🇭🇰 香港
       - 🇹🇼 台湾
-      - 🇸🇬 新加坡
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 📺 巴哈姆特
     type: select
     proxies:
       - 🇹🇼 台湾
       - 🌐 全局
-      - DIRECT
+      - 🖐 手动选择
       - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 💬 社交
     type: select
     proxies:
       - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
       - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
       - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
   - name: 🐟 未匹配流量
     type: select
     proxies:
       - 🌐 全局
-      - DIRECT
+      - 🖐 手动选择
       - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
 
 +rules:
+  - PROCESS-NAME,WeChat,DIRECT
+  - PROCESS-NAME,WeChatAppEx,DIRECT
+  - PROCESS-NAME,QQ,DIRECT
+  - PROCESS-NAME,QQ Helper,DIRECT
+  - PROCESS-NAME,NeteaseMusic,DIRECT
+  - PROCESS-NAME,NeteaseMusic Helper,DIRECT
   - RULE-SET,private-domain,DIRECT
   - RULE-SET,private-ip,DIRECT,no-resolve
   - RULE-SET,tencent-messaging,DIRECT

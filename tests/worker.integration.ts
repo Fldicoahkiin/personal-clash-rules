@@ -189,14 +189,32 @@ describe("Worker entrypoint", () => {
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    const preview = await response.json<{ fingerprint: string; ruleSets: Array<{ content: string; policy: string }> }>();
+    const preview = await response.json<RulePreview>();
     expect(preview.fingerprint).toMatch(/^[A-Za-z0-9_-]{43}$/u);
     expect(preview.ruleSets.at(-1)).toMatchObject({ content: "MATCH", policy: "DEFAULT" });
     expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
-    expect(preview.ruleSets[1].content).toContain(",no-resolve");
-    expect(preview.ruleSets[2].policy).toBe("DIRECT");
-    expect(preview.ruleSets[3].policy).toBe("DIRECT");
-    expect(preview.ruleSets[4].policy).toBe("APPLE");
+    expect(preview.ruleSets.slice(0, 6).map(({ content, policy }) => ({ content, policy }))).toEqual([
+      { content: "PROCESS-NAME,WeChat", policy: "DIRECT" },
+      { content: "PROCESS-NAME,WeChatAppEx", policy: "DIRECT" },
+      { content: "PROCESS-NAME,QQ", policy: "DIRECT" },
+      { content: "PROCESS-NAME,QQ Helper", policy: "DIRECT" },
+      { content: "PROCESS-NAME,NeteaseMusic", policy: "DIRECT" },
+      { content: "PROCESS-NAME,NeteaseMusic Helper", policy: "DIRECT" },
+    ]);
+    const privateIpRules = preview.ruleSets.find(item => item.label === "private-ip");
+    expect(privateIpRules).toMatchObject({ policy: "DIRECT" });
+    expect(privateIpRules?.content).toContain("IP-CIDR,192.168.0.0/16,no-resolve");
+    for (const label of ["tencent-messaging", "netease-music"]) {
+      expect(preview.ruleSets.find(item => item.label === label)).toMatchObject({ policy: "DIRECT" });
+    }
+    expect(preview.ruleSets.find(item => item.label === "apple-system")).toMatchObject({ policy: "APPLE" });
+    const rules = preview.ruleSets.map(item => createRuleSet(item, item.content));
+    expect(matchUrl("203.0.113.1", rules, { processName: "WeChat" })).toMatchObject({
+      matched: true, policy: "DIRECT", rule: "PROCESS-NAME,WeChat",
+    });
+    expect(matchUrl("203.0.113.1", rules, { processName: "Firefox" })).toMatchObject({
+      matched: false, policy: "DEFAULT",
+    });
   });
 
   it("uses Anthropic inbound IPs only as a no-resolve fallback after domain policies", async () => {

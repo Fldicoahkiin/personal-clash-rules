@@ -1,7 +1,7 @@
 import { parse } from "yaml";
 import type { RulePreview } from "../config/rule-preview";
 import { ruleTemplates, type RuleTemplateId } from "../config/rule-templates";
-import { mihomoProxyGroups, mihomoRuleProviders, mihomoRules } from "../config/mihomo-policy";
+import { mihomoProxyGroups, mihomoRuleProviders, mihomoProfileRules } from "../config/mihomo-policy";
 import { applyRuleTemplate } from "./rule-template";
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
@@ -15,7 +15,7 @@ export async function createRulePreview(
   const template = ruleTemplates.find(item => item.id === id);
   if (!template) throw new ApiError(400, "invalid_rule_preset", "Rule preset is invalid");
   let config: { rules: readonly string[]; "proxy-groups": ReadonlyArray<{ name: string; type: string; proxies?: readonly string[] }>; "rule-providers": Record<string, { url: string }> } = {
-    rules: mihomoRules, "proxy-groups": mihomoProxyGroups, "rule-providers": mihomoRuleProviders,
+    rules: mihomoProfileRules, "proxy-groups": mihomoProxyGroups, "rule-providers": mihomoRuleProviders,
   };
   if (id !== "flacier") {
     const remote = await readRemoteSource(template.url || customUrl, "Flacier-Rules/1.0");

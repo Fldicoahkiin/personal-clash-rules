@@ -1,5 +1,6 @@
 import {
   countryGroupNames,
+  metadataFilter,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
@@ -12,6 +13,7 @@ type SingBoxOutbound = Record<string, unknown> & {
 };
 
 const regionNames = new Set(Object.values(countryGroupNames));
+const metadataName = new RegExp(metadataFilter.replace(/^\(\?i\)/u, ""), "iu");
 const processNames = ["codex", "codex.exe", "claude", "claude.exe"];
 
 function readNodeResource(input: string): {
@@ -89,10 +91,13 @@ function selector(tag: string, outbounds: readonly string[]): Record<string, unk
 }
 
 function policyOutbounds(nodeTags: string[]): Array<Record<string, unknown>> {
-  return mihomoProxyGroups.map((source) => {
+  const groups = mihomoProxyGroups.filter(group => !regionNames.has(group.name) || ("filter" in group && matchingTags(nodeTags, group.filter).length > 0));
+  const availableGroups = new Set(groups.map(group => group.name));
+  return groups.map((source) => {
     const group = source as {
       name: string;
       proxies?: readonly string[];
+      "include-all"?: boolean;
       filter?: string;
       interval?: number;
       tolerance?: number;
@@ -109,11 +114,12 @@ function policyOutbounds(nodeTags: string[]): Array<Record<string, unknown>> {
     }
     if (regionNames.has(group.name)) {
       const matches = matchingTags(nodeTags, group.filter);
-      return selector(group.name, matches.length > 0 ? matches : ["DIRECT"]);
+      return selector(group.name, matches);
     }
-    const members = group.name === "GLOBAL"
-      ? unique([...(group.proxies ?? []), ...nodeTags])
-      : [...(group.proxies ?? [])];
+    const policyChoices = (group.proxies ?? []).filter(name => !regionNames.has(name) || availableGroups.has(name));
+    const members = group["include-all"]
+      ? unique([...policyChoices, ...nodeTags])
+      : policyChoices;
     return selector(group.name, members);
   });
 }
@@ -176,6 +182,8 @@ export function createSingBoxProfile(nodeResource: string, updateIntervalHours =
       "sing-box node resource has conflicting tags",
     );
   }
+  const selectableTags = nodeTags.filter(name => !metadataName.test(name));
+  if (!selectableTags.length) throw new ApiError(422, "no_nodes_found", "sing-box profile has no selectable nodes");
 
   return `${JSON.stringify({
     log: {
@@ -199,7 +207,7 @@ export function createSingBoxProfile(nodeResource: string, updateIntervalHours =
     outbounds: [
       { type: "direct", tag: "DIRECT" },
       ...nodes.outbounds,
-      ...policyOutbounds(nodeTags),
+      ...policyOutbounds(selectableTags),
     ],
     ...(nodes.endpoints ? { endpoints: nodes.endpoints } : {}),
     route: {

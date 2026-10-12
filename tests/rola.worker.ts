@@ -193,7 +193,7 @@ describe("cloud Rola subscriptions", () => {
     const profile = parse(await response.text());
     expect(profile.proxies.at(-1)).toMatchObject({ type: "socks5", username: exit.account, password: exit.password, "dialer-proxy": "Airport", udp: false });
     expect(profile.rules[0]).toBe("AND,((DOMAIN-SUFFIX,claude.ai),(NETWORK,UDP)),REJECT");
-    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(["https://1.1.1.1/dns-query#ROLA"]);
+    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(["https://1.1.1.1/dns-query#🤖 AI"]);
     const head = await fetchClient(created.url, { method: "HEAD" });
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");
