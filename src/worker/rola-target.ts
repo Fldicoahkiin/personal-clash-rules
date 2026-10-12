@@ -1,6 +1,6 @@
 import { parseDocument } from "yaml";
 import { defaultDnsSettings } from "../config/dns-settings";
-import { parseRolaSettings } from "../local/rola";
+import { parseRolaSettings, rolaDirectGatewayRule } from "../local/rola";
 import { ApiError } from "./api-error";
 import type { SubscriptionNode } from "./node-transforms";
 import { createShadowrocketProfile, type ShadowrocketRouting } from "./shadowrocket-profile";
@@ -49,10 +49,13 @@ export async function renderRolaTarget(env: SubscriptionEnv, profile: string, va
     throw new ApiError(422, "rola_mobile_nodes_unsupported", "Shadowrocket 节点输出不完整，已停止生成。");
   }
   if (target === "shadowrocket") return nodes;
+  // This exact generated exception serves external desktop clients entering through Mihomo.
+  // Do not pass Mihomo-only DST-PORT syntax into the paired iOS configuration.
+  const gatewayRule = rolaDirectGatewayRule(settings);
   return createShadowrocketProfile(base.proxies.map(node => node.name), "flacier", "doh", {
     ...defaultDnsSettings, nameservers: settings.dns, ipv6: false,
   }, {
-    groups: base["proxy-groups"], rules: base.rules, providers: base["rule-providers"] ?? {},
+    groups: base["proxy-groups"], rules: base.rules.filter(rule => rule !== gatewayRule), providers: base["rule-providers"] ?? {},
     dnsNode: settings.name, bootstrap: base.dns["proxy-server-nameserver"],
   });
 }

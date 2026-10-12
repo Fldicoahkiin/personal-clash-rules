@@ -41,7 +41,8 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
-  it.each(["socks5", "http"])("adapts one direct %s link for Mihomo and Shadowrocket without dropping residential nodes or quota", async protocol => {
+  // Twelve sequential Worker requests exercise KV-backed rendering, recovery and revocation in one lifecycle.
+  it.each(["socks5", "http"])("adapts one direct %s link for Mihomo and Shadowrocket without dropping residential nodes or quota", { timeout: 15_000 }, async protocol => {
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(uri, { headers: { "Subscription-Userinfo": "upload=10; download=20; total=100; expire=0" } }));
     try {
       const p = await preview({ sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }] });
@@ -53,7 +54,9 @@ describe("cloud Rola subscriptions", () => {
       for (const ua of ["ClashParty/2.0", "ClashVerge/2.0", "FlClash/0.8"]) {
         const mihomo = await fetchClient(created.universalUrl, { headers: { "User-Agent": ua } });
         expect(mihomo.headers.get("x-subscription-target")).toBe("mihomo-config");
-        expect(parse(await mihomo.text()).proxies.at(-1)).toMatchObject({ type: protocol, "dialer-proxy": "DIRECT" });
+        const profile = parse(await mihomo.text());
+        expect(profile.proxies.at(-1)).toMatchObject({ type: protocol, "dialer-proxy": "DIRECT" });
+        expect(profile.rules[0]).toBe("AND,((DOMAIN,residential.example),(DST-PORT,9004)),DIRECT");
       }
       const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
       expect(phone.status).toBe(200);
@@ -71,6 +74,7 @@ describe("cloud Rola subscriptions", () => {
       expect(conf).toContain("AND,((DOMAIN-SUFFIX,claude.ai),(PROTOCOL,UDP)),REJECT");
       expect(conf).toContain("https://1.1.1.1/dns-query#proxy=US%20Home");
       expect(conf).not.toMatch(/test-password|airport-secret|NETWORK,UDP/);
+      expect(conf).not.toContain("DST-PORT");
       const head = await fetchClient(created.universalUrl, { method: "HEAD", headers: { "User-Agent": "Shadowrocket/2100" } });
       expect(head.headers.get("x-subscription-target")).toBe("shadowrocket");
       expect(await head.text()).toBe("");
@@ -107,7 +111,7 @@ describe("cloud Rola subscriptions", () => {
     for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
       expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
-    expect(profile.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(profile.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
     expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
     expect(profile["proxy-groups"][2]).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
     expect((await post("/api/rola/chains", { ...input, connectionMode: "automatic" })).status).toBe(422);

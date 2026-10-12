@@ -54,6 +54,28 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it.each([
+    ["192.0.2.20", "AND,((IP-CIDR,192.0.2.20/32,no-resolve),(DST-PORT,1080)),DIRECT"],
+    ["residential.example", "AND,((DOMAIN,residential.example),(DST-PORT,1080)),DIRECT"],
+  ])("routes external clients directly only to the exact residential endpoint %s", (server, gatewayRule) => {
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", server };
+    const original = parse(source);
+    original.rules.push(gatewayRule, gatewayRule);
+    const base = stringify(original);
+    const output = parse(prepareRolaProfile(base, input).profile);
+    expect(output.rules[0]).toBe(gatewayRule);
+    expect(output.rules.filter((rule: string) => rule === gatewayRule)).toHaveLength(1);
+    expect(output.rules).not.toContain(`IP-CIDR,${server}/32,DIRECT,no-resolve`);
+    expect(output.rules).not.toContain(`DOMAIN-SUFFIX,${server},DIRECT`);
+    expect(output.rules).not.toContain("PROCESS-NAME,Roxy,DIRECT");
+    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
+    const chained = parse(prepareRolaProfile(source, { ...settings, server }).profile);
+    expect(chained.rules).not.toContain(gatewayRule);
+    for (const invalid of [`${server},DIRECT`, `${server}),(DST-PORT,443`, `${server}\nMATCH,DIRECT`]) {
+      expect(() => prepareRolaProfile(source, { ...input, server: invalid })).toThrow("Rola server");
+    }
+  });
+
   it("makes the residential group selectable in every business policy without adding it to automatic or regional pools", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
@@ -79,12 +101,12 @@ describe("local Rola preparation", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽" };
     const output = parse(prepareRolaProfile(base, input).profile);
-    expect(output.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
     expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🤖 AI`));
     expect(output.dns.nameserver).toEqual(parse(base).dns.nameserver);
     expect(JSON.stringify(output.dns["nameserver-policy"])).not.toContain(`#${input.groupName}`);
     const dedicated = parse(prepareRolaProfile(base, { ...input, policyGroup: "" }).profile);
-    expect(dedicated.rules[1]).toBe(`DOMAIN-SUFFIX,claude.ai,${input.groupName}`);
+    expect(dedicated.rules[2]).toBe(`DOMAIN-SUFFIX,claude.ai,${input.groupName}`);
     expect(dedicated.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#${input.groupName}`));
   });
 
@@ -96,7 +118,7 @@ describe("local Rola preparation", () => {
       expect(output["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI").proxies[0]).toBe(input.groupName);
-    expect(output.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
     expect(output.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#🤖 AI`);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "♻️ 自动选择")["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
     expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
@@ -114,7 +136,7 @@ describe("local Rola preparation", () => {
     const profile = parse(output.profile);
     expect(profile.proxies.at(-1)).toMatchObject({ type: protocol, "dialer-proxy": "DIRECT", udp: false });
     expect(profile["proxy-groups"][2]).toMatchObject({ name: direct.groupName, proxies: ["ROLA-RESIDENTIAL"], "empty-fallback": "REJECT" });
-    expect(profile.rules[1]).toBe(`DOMAIN-SUFFIX,claude.ai,${direct.groupName}`);
+    expect(profile.rules[2]).toBe(`DOMAIN-SUFFIX,claude.ai,${direct.groupName}`);
     expect(profile.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#${direct.groupName}`);
     expect(output.summary.connectionMode).toBe("direct");
     const config = parse(source);

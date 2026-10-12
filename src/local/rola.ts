@@ -1,5 +1,5 @@
 import { isIP } from "node:net";
-import { isMap, isSeq, parseDocument } from "yaml";
+import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
 import { businessProxyGroupNames, manualProxyGroupName, mihomoPolicyDisplayNames, mihomoRuleProviders } from "../config/mihomo-policy";
@@ -147,6 +147,14 @@ function protectedHost(host: string, rules: string[]) {
   });
 }
 
+export function rolaDirectGatewayRule(settings: ReturnType<typeof parseRolaSettings>): string | undefined {
+  if (settings.connectionMode !== "direct") return undefined;
+  const endpoint = isIP(settings.server) === 4
+    ? `IP-CIDR,${settings.server}/32,no-resolve`
+    : `DOMAIN,${settings.server.toLowerCase()}`;
+  return `AND,((${endpoint}),(DST-PORT,${settings.port})),DIRECT`;
+}
+
 export function prepareRolaProfile(source: string, value: unknown) {
   const settings = parseRolaSettings(value);
   const nodeName = settings.name;
@@ -245,6 +253,12 @@ export function prepareRolaProfile(source: string, value: unknown) {
     `AND,((${rule}),(NETWORK,UDP)),REJECT`,
     `${rule},${policyGroup}`,
   ]);
+  const gatewayRule = rolaDirectGatewayRule(settings);
+  if (gatewayRule) {
+    // dialer-proxy affects Mihomo's own socket, not external clients entering through a proxy port or TUN.
+    rules.items = rules.items.filter(rule => !isScalar(rule) || rule.value !== gatewayRule);
+    protectedRules.unshift(gatewayRule);
+  }
   rules.items.unshift(...protectedRules.map(rule => document.createNode(rule)));
   const resolverPolicy = Object.fromEntries(settings.rules.map(rule => {
     const [kind, host] = rule.split(",");
@@ -272,10 +286,11 @@ export function createRolaOverride(source: string, value: unknown) {
   const prepared = prepareRolaProfile(source, value);
   const settings = parseRolaSettings(value);
   const output = parseDocument(prepared.profile).toJS({ maxAliasCount: 100 });
+  const gatewayRule = rolaDirectGatewayRule(settings);
   const patch = {
     connectionMode: settings.connectionMode,
     upstream: settings.upstreamNode, node: output.proxies.at(-1), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
-    rules: output.rules.slice(0, settings.rules.length * 2), domains: settings.rules,
+    rules: output.rules.slice(0, settings.rules.length * 2 + Number(Boolean(gatewayRule))), domains: settings.rules, gatewayRule,
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
     excludedNodePattern: `^${settings.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
@@ -309,6 +324,7 @@ function main(config) {
     if (group.name === data.policyGroup) group.proxies.unshift(data.group.name);
     else group.proxies.push(data.group.name);
   }
+  if (data.gatewayRule) next.rules = next.rules.filter(rule => rule !== data.gatewayRule);
   next.rules.unshift(...data.rules);
   next.dns['nameserver-policy'] = data.policy;
   next.dns.ipv6 = false;
