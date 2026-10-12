@@ -8,6 +8,6 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ["tests/worker.integration.ts", "tests/subscription-converter.worker.ts"],
+    include: ["tests/worker.integration.ts", "tests/subscription-converter.worker.ts", "tests/rola.worker.ts"],
   },
 });

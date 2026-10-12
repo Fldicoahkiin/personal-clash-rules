@@ -31,7 +31,7 @@ export type SubscriptionEnv = {
   ASSETS?: Pick<Env["ASSETS"], "fetch">;
   SUBSCRIPTIONS: {
     get(key: string): Promise<string | null>;
-    put(key: string, value: string): Promise<void>;
+    put(key: string, value: string, options?: { expirationTtl: number }): Promise<void>;
   };
   SUBSCRIPTION_RATE_LIMITER: Pick<Env["SUBSCRIPTION_RATE_LIMITER"], "limit">;
 };

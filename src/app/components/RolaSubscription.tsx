@@ -1,5 +1,6 @@
 import { ArrowRight, Copy, DownloadSimple, LockKey, PlugsConnected } from "@phosphor-icons/react";
-import { type FC, type FormEvent, useReducer } from "react";
+import { type FC, type FormEvent, useReducer, useState } from "react";
+import { RolaCloudSubscription } from "./RolaCloudSubscription";
 
 import { SubscriptionApiError, subscriptionErrorText, type ConvertedSubscription, type OutputTarget } from "../features/subscriptions/api";
 import { createRolaCloudBase, requestRola, rolaLocalOrigin, type RolaExitDraft, type RolaPreview, type RolaResult, type RolaSetup } from "../features/subscriptions/rola-api";
@@ -17,6 +18,14 @@ const initial: State = { setup: null, busy: "", error: "", notice: "", source: "
 const lines = (value: string) => value.split(/\r?\n/u).map(line => line.trim()).filter(line => line && !line.startsWith("#"));
 
 export const RolaSubscription: FC = () => {
+  const [backend, setBackend] = useState("cloud");
+  return <div className={styles.workspace}>
+    <label className="field"><span>串联订阅后端</span><select value={backend} onChange={event => setBackend(event.target.value)}><option value="cloud">Cloudflare 云端（默认）</option><option value="local">本地服务 · 私密覆写</option></select></label>
+    {backend === "cloud" ? <RolaCloudSubscription /> : <LocalRolaSubscription />}
+  </div>;
+};
+
+const LocalRolaSubscription: FC = () => {
   const [state, patch] = useReducer((current: State, next: Partial<State>) => ({ ...current, ...next }), initial);
   const origin = rolaLocalOrigin(window.location);
   function change(next: Partial<State>) { patch({ ...next, result: null, cloudBase: null, error: "", notice: "" }); }

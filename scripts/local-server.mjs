@@ -38,7 +38,7 @@ setInterval(() => {
 }, 60000).unref();
 
 function keyPath(key) {
-  if (!/^subscription:[\w-]{16}$/.test(key)) throw new Error("Invalid subscription key");
+  if (!/^(?:subscription:[\w-]{16}|last-good:[\w-]{43})$/.test(key)) throw new Error("Invalid subscription key");
   return resolve(data, key.replace(":", "-") + ".json");
 }
 const env = {
@@ -57,8 +57,9 @@ const env = {
     },
     async put(key, value) {
       const file = keyPath(key);
-      await writeFile(file + ".tmp", value, { mode: 0o600 });
-      await rename(file + ".tmp", file);
+      const temporary = file + "." + crypto.randomUUID() + ".tmp";
+      await writeFile(temporary, value, { mode: 0o600 });
+      await rename(temporary, file);
     },
   },
   SUBSCRIPTION_RATE_LIMITER: {
@@ -113,12 +114,19 @@ const server = createServer(async (incoming, outgoing) => {
         : new Response(null, { status: 405, headers: { Allow: "GET, HEAD" } });
     }
     if (!response) {
+      const staticPath = ["/", "/favicon.svg", "/index.html", "/build-info.json"].includes(url.pathname)
+        || ["/assets/", "/rules/", "/brand/", "/fonts/", "/client-icons/", "/policy-icons/", "/overrides/"].some(prefix => url.pathname.startsWith(prefix));
+      if (!staticPath) {
+        response = Response.json({ error: "not_found", message: "No such local route" }, { status: 404 });
+      }
+    }
+    if (!response) {
       let path = resolve(root, "dist", "." + decodeURIComponent(url.pathname));
       if (!path.startsWith(resolve(root, "dist") + "/")) path = resolve(root, "dist/index.html");
       try { response = new Response(await readFile(path), { headers: { "Content-Type": mime[extname(path)] || "text/plain" } }); }
       catch (error) {
         if (!["ENOENT", "EISDIR"].includes(error.code)) throw error;
-        response = new Response(await readFile(resolve(root, "dist/index.html")), { headers: { "Content-Type": "text/html" } });
+        response = Response.json({ error: "not_found" }, { status: 404 });
       }
     }
     outgoing.writeHead(response.status, Object.fromEntries(response.headers));

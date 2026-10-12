@@ -11,9 +11,34 @@ export type RolaSetup = { exits: RolaExit[]; defaults: { rules: string[]; dns: s
 export type RolaPreview = {
   baseId: string;
   nodes: { name: string; type: string; selectable: boolean }[];
-  result: ConvertedSubscription;
+  result: Pick<ConvertedSubscription, "nodeStats" | "usage">;
+  sourceMode?: "convert" | "snapshot";
 };
 export type RolaResult = { url: string; overrideUrl: string; summary: { country: string; sessionMinutes: number | null; protectedRules: number; inlineNodes: number } };
+export type RolaCloudResult = Omit<RolaResult, "overrideUrl"> & { revokeToken: string; expiresAt: string; sourceMode: "convert" | "snapshot" };
+export type RolaManagement = Pick<RolaCloudResult, "url" | "revokeToken">;
+
+export async function requestCloudRola<T>(path: "/preview" | "/chains" | "/revoke", input: unknown): Promise<T> {
+  const origin = import.meta.env.DEV ? window.location.origin : "https://rules.flacier.com";
+  let response: Response;
+  try {
+    response = await fetch(`${origin}/api/rola${path}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input),
+      credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", cache: "no-store", signal: AbortSignal.timeout(70000),
+    });
+  } catch { throw new Error("云端没有响应，未改用其他后端，也未改变当前代理。生成结果若未收到，请勿导入未知链接。"); }
+  const data = await response.json() as Record<string, unknown>;
+  if (!response.ok) throw new SubscriptionApiError(response.status, String(data.error || "cloud_rola_failed"), typeof data.message === "string" ? data.message : "云端请求失败。");
+  return data as T;
+}
+
+export function saveRolaManagement(result: RolaManagement) {
+  const blob = new Blob([JSON.stringify({ url: result.url, revokeToken: result.revokeToken }, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = "Flacier-Rola-management.json"; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export function rolaLocalOrigin(location: Pick<Location, "protocol" | "hostname" | "origin">): string {
   return location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname)

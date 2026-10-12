@@ -1,7 +1,9 @@
 import { ApiError } from "./api-error";
+import { withSubscriptionRecovery } from "./subscription-recovery";
 import { parseDnsSettings, type DnsSettings } from "../config/dns-settings";
 import { ruleTemplates } from "../config/rule-templates";
-import { applyRuleTemplate } from "./rule-template";
+import { applyRuleTemplate, expandProfileRules } from "./rule-template";
+import { readSubconverterRequest } from "./subconverter-request";
 import { createRulePreview } from "./rule-preview";
 import {
   applyNodeTransforms,
@@ -27,6 +29,7 @@ import {
   readRemoteSource,
   type RemoteSubscriptionMetadata,
   type SubscriptionUsage,
+  type SourceResourceLimits,
 } from "./sub-store";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
 import { targetForUserAgent } from "./subscription-target";
@@ -56,8 +59,8 @@ async function enforceSubscriptionRateLimit(
   env: SubscriptionEnv,
 ): Promise<void> {
   if (
-    request.method !== "POST"
-    || !["/api/subscriptions", "/api/subscriptions/resolve", "/api/rules/preview"].includes(url.pathname)
+    url.pathname !== "/sub" && (request.method !== "POST"
+    || !["/api/subscriptions", "/api/subscriptions/resolve", "/api/rules/preview"].includes(url.pathname))
   ) {
     return;
   }
@@ -127,7 +130,7 @@ function generatedUsage(
           ? "missing"
           : "client-only";
       return {
-        name: source.name,
+        name: /^订阅\s*\d+$/u.test(source.name) ? sourceMetadata.profileName || source.name : source.name,
         status,
         ...(sourceMetadata.usage ? { usage: sourceMetadata.usage } : {}),
       };
@@ -317,11 +320,11 @@ function readConfig(
   };
 }
 
-async function readRequestObject(request: Request): Promise<Record<string, unknown>> {
+export async function readRequestObject(request: Request, byteLimit = maximumRequestBytes): Promise<Record<string, unknown>> {
   const declaredLength = Number(request.headers.get("content-length") || 0);
-  if (declaredLength > maximumRequestBytes) {
+  if (declaredLength > byteLimit) {
     await request.body?.cancel();
-    throw new ApiError(413, "request_too_large", "Request exceeds the 16 KiB limit");
+    throw new ApiError(413, "request_too_large", `Request exceeds ${byteLimit} bytes`);
   }
 
   const reader = request.body?.getReader();
@@ -329,19 +332,27 @@ async function readRequestObject(request: Request): Promise<Record<string, unkno
   let body = "";
   let receivedBytes = 0;
   if (reader) {
+    let timer: ReturnType<typeof setTimeout>;
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new ApiError(408, "request_timeout", "Request body timed out")), 10000);
+    });
     try {
       while (true) {
-        const { done, value: chunk } = await reader.read();
+        const { done, value: chunk } = await Promise.race([reader.read(), deadline]);
         if (done) break;
         receivedBytes += chunk.byteLength;
-        if (receivedBytes > maximumRequestBytes) {
+        if (receivedBytes > byteLimit) {
           await reader.cancel();
-          throw new ApiError(413, "request_too_large", "Request exceeds the 16 KiB limit");
+          throw new ApiError(413, "request_too_large", `Request exceeds ${byteLimit} bytes`);
         }
         body += decoder.decode(chunk, { stream: true });
       }
       body += decoder.decode();
+    } catch (error) {
+      await reader.cancel();
+      throw error;
     } finally {
+      clearTimeout(timer!);
       reader.releaseLock();
     }
   }
@@ -437,6 +448,7 @@ async function generateTarget(
   env: SubscriptionEnv,
   config: SubscriptionConfig,
   target: OutputTarget,
+  resourceLimits?: SourceResourceLimits,
 ): Promise<{
   content: string;
   inheritedName?: string;
@@ -459,6 +471,7 @@ async function generateTarget(
   } else {
     try {
       const normalized = await normalizeSourceBundle(env, {
+        resourceLimits,
         profileName: config.name,
         sourceUserAgent: config.sourceUserAgent,
         subscriptionUrls: config.sources
@@ -535,6 +548,15 @@ async function generateTarget(
   };
 }
 
+export async function buildSubscription(env: SubscriptionEnv, body: Record<string, unknown>, resourceLimits?: SourceResourceLimits) {
+  if (typeof body.target !== "string" || !isOutputTarget(body.target)) {
+    throw new ApiError(400, "unsupported_target", "Output target is not supported");
+  }
+  const config = readConfig(body, "error");
+  const generated = await generateTarget(env, config, body.target, resourceLimits);
+  return { config, generated, target: body.target, profileName: displayProfileName(config, generated.inheritedName) };
+}
+
 async function createSubscription(
   request: Request,
   url: URL,
@@ -544,17 +566,15 @@ async function createSubscription(
     throw new ApiError(405, "method_not_allowed", "Method not allowed");
   }
   const body = await readRequestObject(request);
-  if (typeof body.target !== "string" || !isOutputTarget(body.target)) {
-    throw new ApiError(400, "unsupported_target", "Output target is not supported");
-  }
-  const config = readConfig(body, "error");
-
-  const generated = await generateTarget(env, config, body.target);
+  const { config, generated, target } = await buildSubscription(env, body);
   const token = randomSubscriptionId();
   // A refresh failure must not replace verified nodes with an unverified provider shell.
   const storedConfig = generated.sourceMode === "convert"
     ? { ...config, fallbackMode: "error" as const } : config;
   await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(storedConfig));
+  if (generated.sourceMode === "convert") {
+    await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${token}/${target}`, async () => subscriptionResponse(config, generated, target, new URL(urlsForToken(url.origin, token)[target])));
+  }
 
   return json({
     nodeStats: generated.nodeStats,
@@ -562,7 +582,7 @@ async function createSubscription(
     sourceMode: generated.sourceMode,
     target: body.target,
     usage: generated.usage,
-    url: urlsForToken(url.origin, token)[body.target],
+    url: urlsForToken(url.origin, token)[target],
     universalUrl: universalUrlForToken(url.origin, token),
     ...(body.target === "shadowrocket-config" ? { nodeUrl: urlsForToken(url.origin, token).shadowrocket } : {}),
   }, { status: 201 });
@@ -651,7 +671,17 @@ async function renderSubscription(
     target = targetForUserAgent(request.headers.get("user-agent") ?? "");
   }
   const config = await readSubscriptionConfig(parts[1], env);
-  const generated = await generateTarget(env, config, target);
+  const rendered = config.sourceMode === "convert"
+    ? await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${parts[1]}/${target}`, async () => subscriptionResponse(config, await generateTarget(env, config, target), target, url))
+    : await subscriptionResponse(config, await generateTarget(env, config, target), target, url);
+  if (universal && !targetParameter) rendered.headers.set("Vary", "User-Agent");
+  if (request.headers.get("if-none-match") === rendered.headers.get("etag") && rendered.headers.get("x-subscription-refresh-status") !== "last-good") {
+    return new Response(null, { status: 304, headers: rendered.headers });
+  }
+  return request.method === "HEAD" ? new Response(null, { headers: rendered.headers }) : rendered;
+}
+
+async function subscriptionResponse(config: SubscriptionConfig, generated: Awaited<ReturnType<typeof generateTarget>>, target: OutputTarget, url: URL): Promise<Response> {
   const subscriptionUserinfo = generated.usage.combined
     ? formatSubscriptionUserinfo(generated.usage.combined)
     : undefined;
@@ -670,16 +700,10 @@ async function renderSubscription(
     "X-Subscription-Source-Mode": generated.sourceMode,
     "X-Subscription-Target": target,
   });
-  if (universal && !targetParameter) {
-    headers.set("Vary", "User-Agent");
-  }
   if (subscriptionUserinfo) {
     headers.set("Subscription-Userinfo", subscriptionUserinfo);
   }
-  if (request.headers.get("if-none-match") === etag) {
-    return new Response(null, { status: 304, headers });
-  }
-  return new Response(request.method === "HEAD" ? null : content, { headers });
+  return new Response(content, { headers });
 }
 
 export async function routeSubscriptionRequest(
@@ -689,6 +713,18 @@ export async function routeSubscriptionRequest(
 ): Promise<Response | null> {
   try {
     await enforceSubscriptionRateLimit(request, url, env);
+    if (url.pathname === "/sub") {
+      if (!["GET", "HEAD"].includes(request.method)) throw new ApiError(405, "method_not_allowed", "Use GET or HEAD for /sub");
+      const input = readSubconverterRequest(url);
+      const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, `sub:${url.search}`, async () => {
+        const { config, generated, target } = await buildSubscription(env, input.body);
+        if (!input.filterUnsupported && generated.nodeStats.skipped) throw new ApiError(422, "target_unsupported", "Target cannot preserve all nodes; select fdn=true to skip unsupported nodes");
+        if (input.expand) generated.content = await expandProfileRules(generated.content, env.ASSETS);
+        return subscriptionResponse(config, generated, target, url);
+      });
+      response.headers.set("Content-Type", "text/yaml; charset=utf-8");
+      return request.method === "HEAD" ? new Response(null, { headers: response.headers }) : response;
+    }
     if (url.pathname === "/api/rules/preview") {
       if (request.method !== "POST") throw new ApiError(405, "method_not_allowed", "Method not allowed");
       const body = await readRequestObject(request);

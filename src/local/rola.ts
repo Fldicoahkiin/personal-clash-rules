@@ -94,6 +94,7 @@ export function parseRolaSettings(value: unknown) {
   }
   return {
     authMode,
+    name: input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
     protocol: input.protocol,
     server,
     port: Number(input.port),
@@ -135,6 +136,9 @@ function protectedHost(host: string, rules: string[]) {
 
 export function prepareRolaProfile(source: string, value: unknown) {
   const settings = parseRolaSettings(value);
+  const nodeName = settings.name;
+  if (["DIRECT", "REJECT", "COMPATIBLE", groupName].includes(nodeName)) throw new Error("Rola node name is reserved");
+  const nodePattern = `^${nodeName.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`;
   const document = parseDocument(source, { prettyErrors: false, uniqueKeys: true });
   if (document.errors.length || !isMap(document.contents)) throw new Error("Base profile is not valid YAML");
   let base: Record<string, unknown>;
@@ -199,7 +203,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
     if (!isMap(group) || (!group.get("include-all") && !group.get("include-all-proxies"))) continue;
     const filter = group.get("exclude-filter");
     if (filter !== undefined && typeof filter !== "string") throw new Error("Invalid group exclude-filter");
-    group.set("exclude-filter", filter ? `${filter}|^${nodeName}$` : `^${nodeName}$`);
+    group.set("exclude-filter", filter ? `${filter}|${nodePattern}` : nodePattern);
   }
   const flag = String.fromCodePoint(...settings.country.toUpperCase().split("").map(char => 127397 + char.charCodeAt(0)));
   groups.add(document.createNode({
@@ -240,6 +244,7 @@ export function createRolaOverride(source: string, value: unknown) {
     rules: output.rules.slice(0, settings.rules.length * 2), domains: settings.rules,
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
+    excludedNodePattern: `^${settings.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
   };
   // This artifact contains credentials. It is downloaded only from the loopback server.
   return `// PRIVATE: import locally and bind to one subscription. Never upload or sync this file.
@@ -258,7 +263,7 @@ function main(config) {
   for (const group of next['proxy-groups']) {
     if (!group['include-all'] && !group['include-all-proxies']) continue;
     if (group['exclude-filter'] !== undefined && typeof group['exclude-filter'] !== 'string') throw new Error('Rola: invalid group filter');
-    group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|^ROLA-RESIDENTIAL$' : '^ROLA-RESIDENTIAL$';
+    group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|' + data.excludedNodePattern : data.excludedNodePattern;
   }
   next.proxies.push(data.node);
   next['proxy-groups'].push(data.group);

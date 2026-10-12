@@ -156,7 +156,7 @@ export function subscriptionErrorText(error: unknown): string {
     too_many_sources: "订阅来源数量过多",
     request_too_large: "输入内容超过 16 KiB",
     rate_limited: "请求太频繁，请稍后重试",
-    no_nodes_found: "不兼容：订阅中没有可识别的节点",
+    no_nodes_found: "有来源返回空内容或没有可识别节点，本次不发布残缺配置；已有链接将尝试保留最近一次有效结果",
     invalid_node_pattern: "正则格式有误，请检查更多设置",
     invalid_node_settings: "节点处理设置有误",
     invalid_rule_preset: "规则方案无效",

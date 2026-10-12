@@ -11,6 +11,7 @@
     "types": ["@cloudflare/vitest-plugin/types"]
   },
   "include": [
+    "src/local/rola.ts",
     "tests/worker.integration.ts",
     "tests/worker.setup.ts",
     "vitest.worker.config.ts",

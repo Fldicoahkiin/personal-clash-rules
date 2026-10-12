@@ -23,6 +23,7 @@ import { SubscriptionLinkLoader } from "./SubscriptionLinkLoader";
 import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
 import { RolaSubscription } from "./RolaSubscription";
+import { ProxyEndpointInput } from "./ProxyEndpointInput";
 import { ruleTemplates, type RuleSelection } from "../../config/rule-templates";
 import { defaultDnsSettings, parseDnsSettings, type DnsSettings } from "../../config/dns-settings";
 
@@ -254,7 +255,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         <span>转换方式</span>
         <select value={rolaMode ? "rola" : "standard"} onChange={event => setRolaMode(event.target.value === "rola")}>
           <option value="standard">普通订阅转换</option>
-          <option value="rola">机场 → Rola · 仅本地</option>
+          <option value="rola">机场 → Rola 家宽出口</option>
         </select>
       </label>
       {rolaMode ? <RolaSubscription /> : <>
@@ -274,6 +275,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
             />
           </label>
           <small>家宽代理可填 socks5://用户:密码@主机:端口，或带账号密码的 HTTP／HTTPS 节点链接。合并不等于代理链。</small>
+          <ProxyEndpointInput onAdd={uri => dispatch({ key: "sourceText", value: [form.sourceText.trim(), uri].filter(Boolean).join("\n") })} />
           <label className="field subscription-name">
             <span>输出名称</span>
             <input

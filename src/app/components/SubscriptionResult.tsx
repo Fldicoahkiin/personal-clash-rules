@@ -31,8 +31,9 @@ function formatBytes(rawValue: string): string {
 }
 
 function formatUsage(usage: SubscriptionUsage): string {
-  const used = (BigInt(usage.upload) + BigInt(usage.download)).toString();
-  return `${formatBytes(used)} / ${formatBytes(usage.total)}`;
+  const used = BigInt(usage.upload) + BigInt(usage.download);
+  const remaining = BigInt(usage.total) - used;
+  return `已用 ${formatBytes(String(used))} / ${formatBytes(usage.total)} · 剩余 ${formatBytes(String(remaining > 0n ? remaining : 0n))}`;
 }
 
 function formatExpiry(expire?: string): string {
@@ -115,6 +116,7 @@ export function SubscriptionResult({
             ) : null}
           </div>
         ) : null}
+        {!clientDirect ? <p>刷新失败时最多回用 24 小时内的完整有效配置，用量也可能是旧数据；不会用空节点覆盖。成功刷新会移除上游已撤回的节点。</p> : null}
         {result.usage.sources.length > 0 ? (
           <div className="subscription-usage">
             <div className="subscription-usage-total">
@@ -140,6 +142,7 @@ export function SubscriptionResult({
                 </li>
               ))}
             </ul>
+            <p>独立机场分别计费，合计余额不能在机场间互转；串联家宽的额度不计入机场合计。来源缺少用量时不伪造总额。</p>
           </div>
         ) : null}
       </div>

@@ -1678,6 +1678,7 @@ function subscriptionProfileName(response: Response): string | undefined {
   const plainName = disposition.match(/filename\s*=\s*"?([^";]+)"?/iu)?.[1];
   let value = encodedName ?? plainName ?? response.headers.get("profile-title") ?? "";
   try {
+    if (value.startsWith("base64:")) value = new TextDecoder().decode(Uint8Array.from(atob(value.slice(7)), character => character.charCodeAt(0)));
     value = decodeURIComponent(value);
   } catch {
     return undefined;
@@ -1768,6 +1769,7 @@ async function requestRemoteSource(
 ): Promise<Response> {
   let url = parseRemoteSubscriptionUrl(value);
   let response: Response | null = null;
+  const signal = AbortSignal.timeout(20_000);
 
   for (let redirectCount = 0; redirectCount <= maximumRedirects; redirectCount += 1) {
     try {
@@ -1775,7 +1777,7 @@ async function requestRemoteSource(
         headers: { "User-Agent": sourceUserAgent },
         method,
         redirect: "manual",
-        signal: AbortSignal.timeout(20_000),
+        signal,
       });
     } catch {
       throw new ApiError(502, "source_unreachable", "Subscription source did not respond");
@@ -1806,12 +1808,13 @@ async function requestRemoteSource(
 export async function readRemoteSource(
   value: string,
   sourceUserAgent: string,
+  byteLimit = maximumRemoteBytes,
 ): Promise<{ content: string; metadata: RemoteSubscriptionMetadata }> {
   const response = await requestRemoteSource(value, sourceUserAgent, "GET");
   const declaredLength = Number(response.headers.get("content-length") || 0);
-  if (declaredLength > maximumRemoteBytes) {
+  if (declaredLength > byteLimit) {
     await response.body?.cancel();
-    throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
+    throw new ApiError(413, "source_response_too_large", `Subscription source exceeds ${byteLimit} bytes`);
   }
 
   const reader = response.body?.getReader();
@@ -1824,13 +1827,16 @@ export async function readRemoteSource(
         const { done, value: chunk } = await reader.read();
         if (done) break;
         receivedBytes += chunk.byteLength;
-        if (receivedBytes > maximumRemoteBytes) {
+        if (receivedBytes > byteLimit) {
           await reader.cancel();
-          throw new ApiError(413, "source_response_too_large", "Subscription source exceeds the 1 MiB limit");
+          throw new ApiError(413, "source_response_too_large", `Subscription source exceeds ${byteLimit} bytes`);
         }
         content += decoder.decode(chunk, { stream: true });
       }
       content += decoder.decode();
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(502, "source_unreachable", "Subscription body could not be read");
     } finally {
       reader.releaseLock();
     }
@@ -1869,6 +1875,8 @@ export async function normalizeSources(
   return (await normalizeSourceBundle(_env, input)).nodes;
 }
 
+export type SourceResourceLimits = { sourceBytes: number; nodes: number };
+
 export async function normalizeSourceBundle(
   _env: SubscriptionEnv,
   input: {
@@ -1876,6 +1884,7 @@ export async function normalizeSourceBundle(
     sourceUserAgent?: string;
     subscriptionUrls: string[];
     nodes: string[];
+    resourceLimits?: SourceResourceLimits;
   },
 ): Promise<{
   inputNodeCount: number;
@@ -1888,13 +1897,23 @@ export async function normalizeSourceBundle(
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
-  const remote = await Promise.all(input.subscriptionUrls.map(
-    (url) => readRemoteSource(url, input.sourceUserAgent || "clash.meta"),
-  ));
+  const remote: Awaited<ReturnType<typeof readRemoteSource>>[] = [];
+  // Do not hold several simultaneous upstream response buffers during conversion.
+  for (const url of input.subscriptionUrls) {
+    remote.push(await readRemoteSource(url, input.sourceUserAgent || "clash.meta", input.resourceLimits?.sourceBytes));
+  }
   const parsed = [
     ...remote.map((source) => source.content),
     ...input.nodes,
-  ].flatMap((content) => parseProxies(decodeMaybeBase64(content)));
+  ].flatMap((content, index) => {
+    const nodes = parseProxies(decodeMaybeBase64(content));
+    if (nodes.length === 0) throw new ApiError(422, "no_nodes_found", "A source returned no supported nodes; the combined profile was not replaced");
+    const sourceName = remote.length > 1 ? remote[index]?.metadata.profileName : undefined;
+    return sourceName ? nodes.map(node => ({ ...node, name: `[${sourceName}] ${node.name}` })) : nodes;
+  });
+  if (input.resourceLimits && parsed.length > input.resourceLimits.nodes) {
+    throw new ApiError(413, "rola_too_many_nodes", `Rola supports at most ${input.resourceLimits.nodes} nodes`);
+  }
   if (parsed.length === 0) {
     throw new ApiError(422, "no_nodes_found", "Subscription sources contained no supported nodes");
   }

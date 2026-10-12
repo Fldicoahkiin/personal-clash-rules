@@ -13,6 +13,8 @@
 - Clash Verge、FlClash、Clash Party、Mihomo 等完整配置；Shadowrocket 配套的节点订阅与原生 `.conf`
 - 节点筛选、多重改名、国旗、类型、UDP、XUDP 与排序
 - 透传、合并上游流量与到期信息
+- 独立 HTTP／HTTPS／SOCKS5 代理字段录入、备注；多机场来源名称与剩余流量
+- 刷新失败时保留 24 小时内的完整有效输出，不用空节点替换
 - 默认 Worker 转换；可选 Clash Party / Mihomo 客户端直读备用
 - 继承独立的原订阅 DNS，或配置节点引导 DNS 与代理 DoH；Mihomo IPv6 默认关闭
 - CF、本地及自定义 Flacier 后端；ACL4SSR 和自定义远程规则模板
@@ -35,11 +37,15 @@ pnpm dev
 pnpm check
 ```
 
+开发时另开终端运行 `pnpm dev:worker`（仅本地 8789 端口）；Vite 的 API 请求会转到该 Worker，不使用其他项目的 8787 端口。
+
 部署使用 Cloudflare Git 集成，见 [Cloudflare 配置](docs/cloudflare-setup.md)。
 
 本地转换：`pnpm build && pnpm start:local`，打开 `http://127.0.0.1:25500`。如需通过已运行的代理客户端下载上游，可给本地服务传入 `--proxy http://127.0.0.1:混合端口`；只影响该进程，不修改系统代理。用量、DNS 与手机端说明见 [客户端配置](docs/clients-and-dns.md)。
 
-Rola 住宅出口：网页订阅转换选择「机场 → Rola · 仅本地」，读取机场节点、保存/选择出口、编辑域名分流与 DoH。支持现成 HTTP/SOCKS5 原样账号和动态住宅会话。可生成本机订阅，或选择「云端机场基础订阅 + Clash Party 本地私密覆写」；家宽凭据不写 CF/KV、不回显、不切换客户端。另提供默认关闭的独立限时回退工具。CLI 的 `pnpm rola init` / `prepare` 仍可离线使用，套餐用量不与机场相加。见 [Rola 接入与验收](docs/rola-residential.md)。
+Rola 住宅出口：网页选择「机场 → Rola 家宽出口」，默认使用 Cloudflare；账号密码通过 HTTPS 提交并保存到 KV 90 天，生成后下载管理文件可删除记录。选择前置加密节点、编辑家宽备注、域名规则和 DoH；可显式上传固定快照，但快照没有自动更新节点和用量的能力。也保留「本地服务 · 私密覆写」及独立限时回退工具。生成不切换客户端，Rola 与机场额度不相加。见 [Rola 接入与验收](docs/rola-residential.md)。
+
+`/sub` 兼容入口支持 Clash/Mihomo 请求、`list`、筛选、排序、国旗、类型、UDP/TFO、证书选项、ACL4SSR INI 和规则展开；未知或不支持的参数返回明确错误，不返回 HTML 冒充配置。其他客户端使用本站界面。见 [本地与云端转换、刷新保护](docs/subscription-refresh.md)。
 
 ## License
 

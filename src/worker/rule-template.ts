@@ -1,6 +1,6 @@
 import { parse, stringify } from "yaml";
 import { ApiError } from "./api-error";
-import { parseRemoteSubscriptionUrl } from "./sub-store";
+import { parseRemoteSubscriptionUrl, readRemoteSource } from "./sub-store";
 import { dnsProxyGroup, dnsProxyGroupName } from "./mihomo-dns";
 
 function invalid(): never {
@@ -81,4 +81,42 @@ export function applyRuleTemplate(profile: string, ini: string): string {
     groups.push(dnsProxyGroup(providerNames));
   }
   return stringify({ ...config, "proxy-groups": groups, "rule-providers": providers, rules });
+}
+
+export async function expandProfileRules(profile: string, assets?: Pick<Env["ASSETS"], "fetch">): Promise<string> {
+  const config = parse(profile) as { rules: string[]; "rule-providers"?: Record<string, { url: string; format: string; behavior: string }> };
+  const providers = Object.entries(config["rule-providers"] || {});
+  if (providers.length > 32) throw new ApiError(413, "output_too_large", "Rule expansion supports at most 32 sources");
+  const expanded = new Map<string, string[]>();
+  let bytes = 0;
+  for (const [name, provider] of providers) {
+    if (provider.format !== "text" || provider.behavior !== "classical") invalid();
+    const url = parseRemoteSubscriptionUrl(provider.url);
+    let content: string;
+    if (assets && url.origin === "https://rules.flacier.com" && url.pathname.startsWith("/rules/")) {
+      const response = await assets.fetch(new Request(url));
+      if (!response.ok) throw new ApiError(502, "source_failed", "Published rules could not be read");
+      content = await response.text();
+    } else content = (await readRemoteSource(url.href, "Flacier-Rules/1.0")).content;
+    bytes += new TextEncoder().encode(content).length;
+    if (bytes > 1_000_000) throw new ApiError(413, "output_too_large", "Expanded rule sources exceed 1 MB; use expand=false");
+    expanded.set(name, content.split(/\r?\n/u).map(line => line.trim()).filter(line => line && !/^[#;]/u.test(line)));
+  }
+  config.rules = config.rules.flatMap(rule => {
+    const [kind, name, policy, flag] = rule.split(",");
+    if (kind !== "RULE-SET") return [rule];
+    const entries = expanded.get(name);
+    if (!entries) invalid();
+    return entries.map(entry => {
+      const parts = entry.split(",");
+      const noResolve = parts.at(-1) === "no-resolve";
+      if (noResolve) parts.pop();
+      if (parts.length !== 2 || !/^(?:DOMAIN(?:-SUFFIX|-KEYWORD|-REGEX)?|IP-CIDR6?|IP-ASN|GEOIP|GEOSITE|PROCESS-NAME|PROCESS-PATH)$/u.test(parts[0])) invalid();
+      return `${parts.join(",")},${policy}${noResolve || flag === "no-resolve" ? ",no-resolve" : ""}`;
+    });
+  });
+  delete config["rule-providers"];
+  const result = stringify(config);
+  if (new TextEncoder().encode(result).length > 1_800_000) throw new ApiError(413, "output_too_large", "Expanded output exceeds 1.8 MB; use expand=false");
+  return result;
 }

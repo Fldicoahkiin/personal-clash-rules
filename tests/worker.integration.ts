@@ -83,6 +83,41 @@ async function createSubscription(
 }
 
 describe("Worker entrypoint", () => {
+  it("serves third-party /sub Clash requests as YAML and expands rules without returning the SPA", async () => {
+    const template = "[custom]\nruleset=Select,https://rules.example/list\nruleset=Select,[]FINAL\ncustom_proxy_group=Select`select`.*\nenable_rule_generator=true\noverwrite_original_rules=true";
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async value => new Response(String(value).includes(".ini") ? template : "DOMAIN-SUFFIX,example.net\nIP-CIDR,203.0.113.0/24,no-resolve"));
+    try {
+      const query = new URLSearchParams({ target: "clash", url: "socks5://user:secret@home.example:9004#Home", config: "https://rules.example/custom.ini", insert: "False", list: "False", new_name: "True", expand: "True", fdn: "False", udp: "True" });
+      const response = await exports.default.fetch(`https://example.com/sub?${query}`);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("yaml");
+      const profile = parse(await response.text());
+      expect(profile.proxies[0]).toMatchObject({ type: "socks5", username: "user", password: "secret" });
+      expect(profile.rules).toEqual(["DOMAIN-SUFFIX,example.net,Select", "IP-CIDR,203.0.113.0/24,Select,no-resolve", "MATCH,Select"]);
+      expect(profile["rule-providers"]).toBeUndefined();
+      expect((await exports.default.fetch(`https://example.com/sub?${query}&script=true`)).status).toBe(400);
+    } finally { spy.mockRestore(); }
+  });
+
+  it("does not erase a failed source from a merged subscription or retain legitimately removed nodes", async () => {
+    let content = nodeUri("First", "a.example", "one") + "\n" + nodeUri("Second", "b.example", "two");
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(content, { headers: { "Profile-Title": "Airport A" } }));
+    try {
+      const { data } = await createSubscription({ sources: [
+        { type: "subscription", value: "https://provider.example/sub" },
+        { type: "node", value: "socks5://user:password@home.example:9004#Home" },
+      ] });
+      expect(data.usage.sources[0].name).toBe("Airport A");
+      content = "proxies: []";
+      const failed = await exports.default.fetch(data.url);
+      expect(failed.headers.get("x-subscription-refresh-status")).toBe("last-good");
+      expect(parse(await failed.text()).proxies).toHaveLength(3);
+      content = nodeUri("First", "a.example", "one");
+      const success = await exports.default.fetch(data.url);
+      expect(success.headers.get("x-subscription-refresh-status")).toBe("fresh");
+      expect(parse(await success.text()).proxies).toHaveLength(2);
+    } finally { spy.mockRestore(); }
+  });
   it("reports deduplication separately from filtering and incompatible nodes", async () => {
     const { data } = await createSubscription({
       nodeSettings: { includePattern: "US", excludePattern: "", renameRules: [], sortMode: "source" },
@@ -342,7 +377,7 @@ describe("KV-backed subscription links", () => {
 
     expect(published.status).toBe(200);
     expect(published.headers.get("cache-control")).toBe(
-      "private, max-age=300, stale-while-revalidate=3600",
+      "no-store",
     );
     expect(published.headers.get("x-subscription-profile")).toBe("Flacier");
     expect(published.headers.get("x-subscription-target")).toBe("mihomo-config");
@@ -757,9 +792,11 @@ describe("KV-backed subscription links", () => {
       expect(data.nodeStats.output).toBe(1);
       fetchSpy.mockImplementation(async () => new Response(null, { status: 403 }));
       const refreshed = await exports.default.fetch(data.url);
-      expect(refreshed.status).toBe(502);
+      expect(refreshed.status).toBe(200);
       expect(refreshed.headers.get("cache-control")).toBe("no-store");
-      expect(await refreshed.json()).toMatchObject({ error: "source_failed" });
+      expect(refreshed.headers.get("x-subscription-refresh-status")).toBe("last-good");
+      expect(refreshed.headers.get("x-subscription-refresh-error")).toBe("source_failed");
+      expect(parse(await refreshed.text()).proxies).toHaveLength(1);
     } finally { fetchSpy.mockRestore(); }
   });
 

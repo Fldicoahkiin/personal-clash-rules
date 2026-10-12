@@ -1,4 +1,5 @@
 import { routeSubscriptionRequest } from "./worker/subscriptions";
+import { routeCloudRola } from "./worker/rola";
 import { isBuildInfo, type VersionInfo } from "./config/build-info";
 
 const securityHeaders = {
@@ -10,7 +11,7 @@ const securityHeaders = {
 } as const;
 
 function isLocalBaseCreation(origin: string, url: URL, method: string): boolean {
-  if (url.pathname !== "/api/subscriptions" || !["POST", "OPTIONS"].includes(method)) return false;
+  if (!["/api/subscriptions", "/api/rules/preview", "/api/rola/preview", "/api/rola/chains", "/api/rola/revoke"].includes(url.pathname) || !["POST", "OPTIONS"].includes(method)) return false;
   try {
     const source = new URL(origin);
     return source.origin === origin && source.protocol === "http:" && ["127.0.0.1", "localhost"].includes(source.hostname)
@@ -19,7 +20,7 @@ function isLocalBaseCreation(origin: string, url: URL, method: string): boolean 
 }
 
 function cacheControl(pathname: string): string {
-  if (pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/") || pathname.startsWith("/r/") || pathname === "/sub" || pathname.startsWith("/s/")) {
     return "no-store";
   }
   if (pathname.startsWith("/assets/")) {
@@ -27,9 +28,6 @@ function cacheControl(pathname: string): string {
   }
   if (pathname.startsWith("/rules/") || pathname.startsWith("/overrides/")) {
     return "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
-  }
-  if (pathname.startsWith("/s/")) {
-    return "private, max-age=300, stale-while-revalidate=3600";
   }
   return "no-cache, no-transform";
 }
@@ -39,6 +37,7 @@ function withResponseHeaders(response: Response, pathname: string): Response {
   for (const [name, value] of Object.entries(securityHeaders)) {
     headers.set(name, value);
   }
+  if (pathname.startsWith("/r/") || pathname.startsWith("/s/") || pathname.startsWith("/api/") || pathname === "/sub") headers.set("Referrer-Policy", "no-referrer");
   headers.set(
     "Cache-Control",
     response.status >= 400 ? "no-store" : cacheControl(pathname),
@@ -71,7 +70,7 @@ export default {
     }
 
     const subscriptionResponse = url.pathname === "/api/version"
-      ? null : await routeSubscriptionRequest(request, url, env);
+      ? null : await routeCloudRola(request, url, env) ?? await routeSubscriptionRequest(request, url, env);
     if (subscriptionResponse) {
       const response = withResponseHeaders(subscriptionResponse, url.pathname);
       if (url.pathname.startsWith("/api/") && origin) {

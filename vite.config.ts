@@ -35,6 +35,7 @@ export default defineConfig(({ command }) => {
         });
       },
     }],
+    server: { proxy: Object.fromEntries(["/api/rola/", "/api/subscriptions", "/api/rules/", "/r/", "/s/"].map(path => [path, "http://127.0.0.1:8789"])) },
     build: { sourcemap: true },
   };
 });
