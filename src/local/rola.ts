@@ -13,6 +13,7 @@ export const rolaRulePaths = ["ai-anthropic", "ai-openai"].map(
 
 export function createRolaTemplate(ruleLists: string[]) {
   return {
+    authMode: "dynamic",
     protocol: "socks5",
     server: "",
     port: 0,
@@ -66,15 +67,17 @@ export function parseRolaSettings(value: unknown) {
   const server = text(input.server, "Rola server");
   if (!domain(server) && isIP(server) !== 4) throw new Error("Rola server must be a hostname or IPv4 address, not a URL");
   if (!Number.isInteger(input.port) || Number(input.port) < 1 || Number(input.port) > 65535) throw new Error("Invalid Rola port");
-  const account = text(input.account, "Rola base account", 64);
-  if (!/^[a-z0-9][a-z0-9._-]*$/iu.test(account) || /-(country|state|city|sessiontime|f)-|_(dc|mobile)(_|$)/iu.test(account)) {
+  const authMode = input.authMode ?? "dynamic";
+  if (authMode !== "literal" && authMode !== "dynamic") throw new Error("Invalid Rola authentication mode");
+  const account = text(input.account, "Rola account", authMode === "literal" ? 255 : 64);
+  if (authMode === "dynamic" && (!/^[a-z0-9][a-z0-9._-]*$/iu.test(account) || /-(country|state|city|sessiontime|f)-|_(dc|mobile)(_|$)/iu.test(account))) {
     throw new Error("Use the base dynamic-residential account, without session or country parameters");
   }
-  const country = text(input.country, "Rola country", 2).toLowerCase();
-  if (!/^[a-z]{2}$/u.test(country)) throw new Error("Use a two-letter Rola country code");
-  const sessionId = text(input.sessionId, "Rola sessionId", 32);
-  if (!/^[a-z0-9]+$/iu.test(sessionId)) throw new Error("Use an alphanumeric Rola sessionId (1–32 characters)");
-  if (!Number.isInteger(input.sessionMinutes) || Number(input.sessionMinutes) < 1 || Number(input.sessionMinutes) > 120) {
+  const country = authMode === "literal" && !input.country ? "" : text(input.country, "Rola country", 2).toLowerCase();
+  if (country && !/^[a-z]{2}$/u.test(country)) throw new Error("Use a two-letter Rola country code");
+  const sessionId = authMode === "literal" ? "" : text(input.sessionId, "Rola sessionId", 32);
+  if (authMode === "dynamic" && !/^[a-z0-9]+$/iu.test(sessionId)) throw new Error("Use an alphanumeric Rola sessionId (1–32 characters)");
+  if (authMode === "dynamic" && (!Number.isInteger(input.sessionMinutes) || Number(input.sessionMinutes) < 1 || Number(input.sessionMinutes) > 120)) {
     throw new Error("Rola sessionMinutes must be 1–120; dynamic sessions are not static IPs");
   }
   if (!Array.isArray(input.rules) || !input.rules.length || input.rules.length > 500) throw new Error("Add 1–500 protected domain rules");
@@ -90,16 +93,17 @@ export function parseRolaSettings(value: unknown) {
     throw new Error("Rola DNS must contain 1–4 IP-address HTTPS resolvers without routing parameters");
   }
   return {
+    authMode,
     protocol: input.protocol,
     server,
     port: Number(input.port),
     password: text(input.password, "Rola password"),
-    username: `${account}_${sessionId}-country-${country}-sessiontime-${input.sessionMinutes}`,
+    username: authMode === "literal" ? account : `${account}_${sessionId}-country-${country}-sessiontime-${input.sessionMinutes}`,
     upstreamNode: text(input.upstreamNode, "upstream node"),
     rules,
     dns: input.dns as string[],
     country,
-    sessionMinutes: Number(input.sessionMinutes),
+    sessionMinutes: authMode === "literal" ? null : Number(input.sessionMinutes),
   };
 }
 
@@ -160,9 +164,20 @@ export function prepareRolaProfile(source: string, value: unknown) {
   }
   // The converter shares bootstrap arrays; YAML may encode the second list as an alias.
   // Validate the bounded, resolved value while retaining the original document and comments.
-  const bootstrap = record(base.dns, "Invalid base DNS")["proxy-server-nameserver"];
-  if (!Array.isArray(bootstrap) || !bootstrap.length || !bootstrap.every(item => item === "system" || ipDoh(item) || (typeof item === "string" && Boolean(isIP(item))))) {
-    throw new Error("Base DNS needs independent proxy-server-nameserver entries (system, IP or IP-address DoH); repair bootstrap before adding a chain");
+  const baseDns = record(base.dns, "Invalid base DNS");
+  const bootstrap = baseDns["proxy-server-nameserver"];
+  const addressResolver = (item: unknown) => ipDoh(item) || (typeof item === "string" && Boolean(isIP(item)));
+  const defaults = baseDns["default-nameserver"];
+  const independent = (item: unknown) => {
+    if (item === "system" || addressResolver(item)) return true;
+    if (typeof item !== "string" || baseDns["respect-rules"] === true || !Array.isArray(defaults) || !defaults.length || !defaults.every(addressResolver)) return false;
+    try {
+      const url = new URL(item);
+      return url.protocol === "https:" && domain(url.hostname) && !url.username && !url.password && !url.hash && !url.search && !protectedHost(url.hostname, settings.rules);
+    } catch { return false; }
+  };
+  if (!Array.isArray(bootstrap) || !bootstrap.length || !bootstrap.every(independent)) {
+    throw new Error("Base DNS needs independent proxy-server-nameserver entries (system, IP or independently bootstrapped HTTPS); review bootstrap before adding a chain");
   }
   if (dns.has("proxy-server-nameserver-policy")) throw new Error("Review the existing proxy-server-nameserver-policy before adding a chain");
   const policy = dns.get("nameserver-policy", true);
@@ -205,7 +220,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
   dns.set("ipv6", false);
   document.set("ipv6", false);
   const summary = {
-    country: `${flag} ${settings.country.toUpperCase()}`,
+    country: settings.country ? `${flag} ${settings.country.toUpperCase()}` : "地区未声明",
     sessionMinutes: settings.sessionMinutes,
     protectedRules: settings.rules.length,
     inlineNodes: proxies.items.length,
@@ -214,4 +229,44 @@ export function prepareRolaProfile(source: string, value: unknown) {
     activation: "not activated; client overrides and device DNS still require review",
   };
   return { profile: document.toString({ lineWidth: 0 }), summary };
+}
+
+export function createRolaOverride(source: string, value: unknown) {
+  const prepared = prepareRolaProfile(source, value);
+  const settings = parseRolaSettings(value);
+  const output = parseDocument(prepared.profile).toJS({ maxAliasCount: 100 });
+  const patch = {
+    upstream: settings.upstreamNode, node: output.proxies.at(-1), group: output["proxy-groups"].at(-1),
+    rules: output.rules.slice(0, settings.rules.length * 2), domains: settings.rules,
+    policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
+    bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
+  };
+  // This artifact contains credentials. It is downloaded only from the loopback server.
+  return `// PRIVATE: import locally and bind to one subscription. Never upload or sync this file.
+const privateRola = ${JSON.stringify(patch)};
+function main(config) {
+  const data = privateRola;
+  const safe = ${encryptedUpstream.toString()};
+  const overlaps = ${protectedHost.toString()};
+  if (config.mode !== 'rule' || !Array.isArray(config.proxies) || !Array.isArray(config['proxy-groups']) || !Array.isArray(config.rules) || !config.dns?.enable) throw new Error('Rola: complete rule-mode base required');
+  const nodes = config.proxies.filter(node => node.name === data.upstream);
+  if (nodes.length !== 1 || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains)) throw new Error('Rola: selected first hop is missing or unsafe');
+  const names = config.proxies.concat(config['proxy-groups']).map(item => item.name);
+  if (new Set(names).size !== names.length || names.includes(data.node.name) || names.includes(data.group.name)) throw new Error('Rola: duplicate names or overlay already applied');
+  if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');
+  const next = JSON.parse(JSON.stringify(config));
+  for (const group of next['proxy-groups']) {
+    if (!group['include-all'] && !group['include-all-proxies']) continue;
+    if (group['exclude-filter'] !== undefined && typeof group['exclude-filter'] !== 'string') throw new Error('Rola: invalid group filter');
+    group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|^ROLA-RESIDENTIAL$' : '^ROLA-RESIDENTIAL$';
+  }
+  next.proxies.push(data.node);
+  next['proxy-groups'].push(data.group);
+  next.rules.unshift(...data.rules);
+  next.dns['nameserver-policy'] = data.policy;
+  next.dns.ipv6 = false;
+  next.ipv6 = false;
+  return next;
+}
+`;
 }

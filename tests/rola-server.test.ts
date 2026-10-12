@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
 import { createRolaRouter } from "../src/local/rola-server";
-import { requestRola, rolaLocalOrigin } from "../src/app/features/subscriptions/rola-api";
+import { createRolaCloudBase, requestRola, rolaLocalOrigin } from "../src/app/features/subscriptions/rola-api";
 
 const origin = "http://127.0.0.1:25500";
 const baseId = "abcdefghijklmnop";
@@ -86,6 +86,10 @@ describe("local Rola web workflow", () => {
     expect(result.headers.get("profile-update-interval")).toBe("6");
     expect(result.headers.has("etag")).toBe(false);
     expect(result.headers.get("cache-control")).toBe("no-store");
+    const script = await f.call(path.replace(/\.yaml$/u, ".js"));
+    expect(script.headers.get("content-type")).toContain("application/javascript");
+    expect(script.headers.get("cache-control")).toBe("no-store");
+    expect(await script.text()).toContain("function main(config)");
     const generated = parse(await result.text());
     expect(generated.proxies.at(-1)).toMatchObject({ password: exit.password, "dialer-proxy": "Airport", username: "privateaccount_web-country-us-sessiontime-120" });
     expect(generated.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,ROLA");
@@ -95,6 +99,18 @@ describe("local Rola web workflow", () => {
     expect(parse(await (await f.call(path)).text()).proxies[0].password).toBe("updated-source-secret");
     const restarted = await createRolaRouter({ directory: f.directory, origin, ruleLists: [], convert: f.convert });
     expect((await restarted(new Request(`${origin}${path}`)))?.status).toBe(200);
+  });
+
+  it("saves literal accounts without dynamic parameters and does not expose credentials", async () => {
+    const f = await fixture();
+    const literal = { ...exit, authMode: "literal", country: "", sessionId: undefined, sessionMinutes: undefined };
+    const response = await f.call("/api/local/rola/exits", literal);
+    expect(response.status).toBe(201);
+    const saved = await response.json() as { id: string; authMode: string };
+    expect(saved.authMode).toBe("literal");
+    expect(JSON.stringify(saved)).not.toMatch(/privateaccount|privatepassword/);
+    const record = JSON.parse(await readFile(resolve(f.directory, `exit-${saved.id}.json`), "utf8"));
+    expect(record.account).toBe(exit.account);
   });
 
   it("rejects missing nodes and upstream failure without publishing an empty or direct fallback", async () => {
@@ -131,6 +147,24 @@ describe("local Rola web workflow", () => {
 
 afterEach(() => vi.unstubAllGlobals());
 describe("browser credential egress boundary", () => {
+  it("sends only an explicit airport allowlist when cloud base creation is requested", async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ url: "https://rules.flacier.com/s/abcdefghijklmnop/clash-party-config" }));
+    vi.stubGlobal("fetch", fetcher);
+    const input = { ...exit, rules: ["DOMAIN,private.example"], exitId: "private-exit", target: "clash-party-config" as const,
+      sourceUserAgent: "clash.meta", sources: [{ name: "Airport", type: "subscription" as const, value: "https://airport.example/sub", password: "do-not-send" }] };
+    await createRolaCloudBase(input);
+    expect(fetcher).toHaveBeenCalledExactlyOnceWith("https://rules.flacier.com/api/subscriptions", expect.objectContaining({ redirect: "error", credentials: "omit", method: "POST" }));
+    const body = JSON.parse(fetcher.mock.calls[0][1].body);
+    expect(body).toMatchObject({ sources: [{ name: "Airport", type: "subscription", value: "https://airport.example/sub" }], rulePreset: "flacier", dnsMode: "doh", fallbackMode: "error", updateIntervalHours: 6 });
+    expect(JSON.stringify(body)).not.toMatch(/privateaccount|privatepassword|private\.example|private-exit|do-not-send/);
+    expect(body.dnsSettings.bootstrapMode).toBe("system");
+  });
+  it("reports cloud rejection without falling back or sending a Rola payload elsewhere", async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ error: "source_failed", message: "HTTP 403" }, { status: 422 }));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(createRolaCloudBase({ name: "Test", sourceUserAgent: "clash.meta", sources: [], target: "clash-party-config" })).rejects.toMatchObject({ code: "source_failed" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("pins public pages to loopback and supports an alternate local port", () => {
     expect(rolaLocalOrigin(new URL("https://rules.flacier.com"))).toBe(origin);
     expect(rolaLocalOrigin(new URL("http://127.0.0.1.evil.example"))).toBe(origin);

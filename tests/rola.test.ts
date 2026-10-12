@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 import { parse, stringify } from "yaml";
 
-import { createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaRulePaths } from "../src/local/rola";
+import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaRulePaths } from "../src/local/rola";
 import { parseRolaUsage, readRolaUsage } from "../src/local/rola-usage";
 
 const settings = {
@@ -52,6 +53,42 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it("uses ready-made proxy credentials verbatim without inventing location or session suffixes", () => {
+    const literal = { ...settings, authMode: "literal", account: "ready_user-country-label", country: "", sessionId: undefined, sessionMinutes: undefined };
+    const parsed = parseRolaSettings(literal);
+    expect(parsed.username).toBe(literal.account);
+    expect(parsed.sessionMinutes).toBeNull();
+    const generated = prepareRolaProfile(source, literal);
+    expect(parse(generated.profile).proxies.at(-1).username).toBe(literal.account);
+    expect(generated.summary.country).toBe("地区未声明");
+    expect(() => parseRolaSettings({ ...literal, authMode: "invalid" })).toThrow();
+  });
+
+  it("preserves working hostname bootstrap only with independent IP bootstrap and no rule-routed DNS", () => {
+    const base = parse(source);
+    base.dns['proxy-server-nameserver'] = ['https://dns.example/dns-query'];
+    expect(() => prepareRolaProfile(stringify(base), settings)).toThrow("independent");
+    base.dns['default-nameserver'] = ['1.1.1.1'];
+    expect(parse(prepareRolaProfile(stringify(base), settings).profile).dns['proxy-server-nameserver']).toEqual(base.dns['proxy-server-nameserver']);
+    base.dns['respect-rules'] = true;
+    expect(() => prepareRolaProfile(stringify(base), settings)).toThrow("independent");
+  });
+
+  it("exports a local-only Party override matching the validated profile and preserving refreshed airport credentials", () => {
+    const script = createRolaOverride(source, { ...settings, authMode: "literal" });
+    const config = parse(source);
+    const expected = parse(prepareRolaProfile(source, { ...settings, authMode: "literal" }).profile);
+    const actual = runInNewContext(script + '\nmain(config)', { config }, { timeout: 1000 });
+    expect(JSON.parse(JSON.stringify(actual))).toEqual(expected);
+    expect(config.proxies.length).toBe(1);
+    config.proxies[0].uuid = "00000000-0000-4000-8000-000000000001";
+    expect(runInNewContext(script + '\nmain(config)', { config }, { timeout: 1000 }).proxies[0].uuid).toBe(config.proxies[0].uuid);
+    config.proxies[0].name = "Missing";
+    expect(() => runInNewContext(script + '\nmain(config)', { config }, { timeout: 1000 })).toThrow("first hop");
+    const dnsChanged = parse(source);
+    dnsChanged.dns['proxy-server-nameserver'] = ['https://1.1.1.1/dns-query#ROLA'];
+    expect(() => runInNewContext(script + '\nmain(config)', { config: dnsChanged }, { timeout: 1000 })).toThrow("DNS changed");
+  });
   it("reuses the published domain rules and stable, documented session syntax", () => {
     const template = createRolaTemplate(rolaRulePaths.map(path => readFileSync(new URL(`../public/${path}`, import.meta.url), "utf8")));
     expect(template.rules).toContain("DOMAIN,anthropic.auth0.com");

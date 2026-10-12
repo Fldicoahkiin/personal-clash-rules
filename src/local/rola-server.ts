@@ -4,7 +4,7 @@ import { chmod, lstat, mkdir, open, readdir, rename } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaUpstreamChoices } from "./rola";
+import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaUpstreamChoices } from "./rola";
 export { rolaRulePaths } from "./rola";
 
 type LocalRouterOptions = {
@@ -14,6 +14,7 @@ type LocalRouterOptions = {
   convert: (request: Request) => Promise<Response>;
 };
 type Exit = {
+  authMode?: "literal" | "dynamic";
   id: string; name: string; protocol: "http" | "socks5"; server: string; port: number;
   account: string; password: string; country: string; sessionId: string; sessionMinutes: number;
 };
@@ -51,7 +52,7 @@ async function body(request: Request) {
 function metadata(exit: Exit) {
   // Account and password are write-only. The browser cannot read saved credentials back.
   const { id, name, protocol, server, port, country, sessionId, sessionMinutes } = exit;
-  return { id, name, protocol, server, port, country, sessionId, sessionMinutes };
+  return { id, name, protocol, server, port, country, sessionId, sessionMinutes, authMode: exit.authMode ?? "dynamic" };
 }
 function json(value: unknown, status = 200) { return Response.json(value, { status, headers: { "Cache-Control": "no-store" } }); }
 
@@ -112,12 +113,13 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         try {
           parseRolaSettings({ ...value, upstreamNode: "validation", rules: defaults.rules, dns: defaults.dns });
           if (typeof value.name !== "string" || !value.name.trim() || value.name.length > 64 || /[\u0000-\u001f\u007f]/u.test(value.name)) throw new Error("Invalid name");
-        } catch { throw new LocalError(400, "invalid_rola_exit", "请检查出口名称、网关、端口、基础账号、密码、两位国家代码和会话参数（1–120 分钟）。不要把完整用户名填到基础账号中。"); }
+        } catch { throw new LocalError(400, "invalid_rola_exit", "请检查出口名称、网关、端口、账号和密码。现成节点应选用户名原样使用；仅动态模式需要基础账号、两位国家代码与会话参数（1–120 分钟）。"); }
         const exit: Exit = {
+          authMode: value.authMode === "literal" ? "literal" : "dynamic",
           id: existing?.id || randomBytes(12).toString("base64url"), name: String(value.name).trim(),
           protocol: value.protocol as Exit["protocol"], server: String(value.server), port: Number(value.port),
-          account: String(value.account), password: String(value.password), country: String(value.country).toLowerCase(),
-          sessionId: String(value.sessionId), sessionMinutes: Number(value.sessionMinutes),
+          account: String(value.account), password: String(value.password), country: String(value.country ?? "").toLowerCase(),
+          sessionId: String(value.sessionId ?? ""), sessionMinutes: Number(value.sessionMinutes ?? 0),
         };
         await write("exit", exit.id, exit);
         return json(metadata(exit), existing ? 200 : 201);
@@ -150,20 +152,22 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         const token = randomBytes(12).toString("base64url");
         // Snapshot the exit: editing its saved credentials must not change an existing subscription.
         await write("chain", token, chain);
-        return json({ url: `${origin}/local/rola/${token}.yaml`, summary: generated.summary }, 201);
+        return json({ url: `${origin}/local/rola/${token}.yaml`, overrideUrl: `${origin}/local/rola/${token}.js`, summary: generated.summary }, 201);
       }
-      const match = /^\/local\/rola\/([A-Za-z0-9_-]{16})\.yaml$/u.exec(url.pathname);
+      const match = /^\/local\/rola\/([A-Za-z0-9_-]{16})\.(yaml|js)$/u.exec(url.pathname);
       if (match && ["GET", "HEAD"].includes(request.method)) {
         const chain = await read<Chain>("chain", match[1]);
         const base = await renderBase(chain.baseId, chain.target);
         if (!base.ok) return base;
         const headers = new Headers(base.headers);
+        const scriptSource = match[2] === "js" ? await base.clone().text() : null;
         const generated = await candidate(base, chain);
+        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
         headers.delete("ETag");
         headers.set("Cache-Control", "no-store");
-        headers.set("Content-Type", "text/yaml; charset=utf-8");
-        headers.set("Content-Disposition", "attachment; filename=Flacier-Rola.yaml");
-        return new Response(request.method === "HEAD" ? null : generated.profile, { headers });
+        headers.set("Content-Type", script ? "application/javascript; charset=utf-8" : "text/yaml; charset=utf-8");
+        headers.set("Content-Disposition", script ? "attachment; filename=Flacier-Rola-private.js" : "attachment; filename=Flacier-Rola.yaml");
+        return new Response(request.method === "HEAD" ? null : script ?? generated.profile, { headers });
       }
       throw new LocalError(404, "local_route_not_found", "本地 Rola 接口或请求方法不存在。");
     } catch (error) {

@@ -1,29 +1,29 @@
 import { ArrowRight, Copy, DownloadSimple, LockKey, PlugsConnected } from "@phosphor-icons/react";
 import { type FC, type FormEvent, useReducer } from "react";
 
-import { SubscriptionApiError, subscriptionErrorText } from "../features/subscriptions/api";
-import { requestRola, rolaLocalOrigin, type RolaExitDraft, type RolaPreview, type RolaResult, type RolaSetup } from "../features/subscriptions/rola-api";
+import { SubscriptionApiError, subscriptionErrorText, type ConvertedSubscription, type OutputTarget } from "../features/subscriptions/api";
+import { createRolaCloudBase, requestRola, rolaLocalOrigin, type RolaExitDraft, type RolaPreview, type RolaResult, type RolaSetup } from "../features/subscriptions/rola-api";
 import { parseSubscriptionInput } from "../lib/subscription-input";
 import styles from "./RolaSubscription.module.css";
 
-const blankExit: RolaExitDraft = { name: "", protocol: "socks5", server: "", port: 1080, account: "", password: "", country: "us", sessionId: "main", sessionMinutes: 120 };
+const blankExit: RolaExitDraft = { authMode: "literal", name: "", protocol: "socks5", server: "", port: 1080, account: "", password: "", country: "", sessionId: "main", sessionMinutes: 120 };
 type State = {
   setup: RolaSetup | null; busy: string; error: string; notice: string;
-  source: string; name: string; target: string; userAgent: string; preview: RolaPreview | null;
+  source: string; name: string; target: OutputTarget; userAgent: string; preview: RolaPreview | null;
   upstream: string; exitId: string; draft: RolaExitDraft | null; rules: string; dns: string;
-  result: RolaResult | null;
+  result: RolaResult | null; cloudBase: ConvertedSubscription | null;
 };
-const initial: State = { setup: null, busy: "", error: "", notice: "", source: "", name: "Flacier-Rola", target: "clash-party-config", userAgent: "clash.meta", preview: null, upstream: "", exitId: "", draft: null, rules: "", dns: "", result: null };
+const initial: State = { setup: null, busy: "", error: "", notice: "", source: "", name: "Flacier-Rola", target: "clash-party-config", userAgent: "clash.meta", preview: null, upstream: "", exitId: "", draft: null, rules: "", dns: "", result: null, cloudBase: null };
 const lines = (value: string) => value.split(/\r?\n/u).map(line => line.trim()).filter(line => line && !line.startsWith("#"));
 
 export const RolaSubscription: FC = () => {
   const [state, patch] = useReducer((current: State, next: Partial<State>) => ({ ...current, ...next }), initial);
   const origin = rolaLocalOrigin(window.location);
-  function change(next: Partial<State>) { patch({ ...next, result: null, error: "", notice: "" }); }
+  function change(next: Partial<State>) { patch({ ...next, result: null, cloudBase: null, error: "", notice: "" }); }
   function sourceChange(next: Partial<State>) { change({ ...next, preview: null, upstream: "" }); }
   function editExit(next: Partial<RolaExitDraft>) { if (state.draft) change({ draft: { ...state.draft, ...next } }); }
   async function run(label: string, work: () => Promise<void>) {
-    patch({ busy: label, error: "", notice: "", result: null });
+    patch({ busy: label, error: "", notice: "", result: null, cloudBase: null });
     try { await work(); }
     catch (error) { patch({ error: error instanceof SubscriptionApiError ? subscriptionErrorText(error) : error instanceof Error ? error.message : "本地操作失败。" }); }
     finally { patch({ busy: "" }); }
@@ -61,13 +61,23 @@ export const RolaSubscription: FC = () => {
       patch({ result });
     });
   }
+  async function generateCloudBase() {
+    patch({ busy: "生成云端基础", error: "", notice: "", cloudBase: null });
+    try {
+      const cloudBase = await createRolaCloudBase({ sources: parseSubscriptionInput(state.source),
+        name: state.name, sourceUserAgent: state.userAgent, target: state.target });
+      patch({ cloudBase });
+    } catch (error) {
+      patch({ error: error instanceof SubscriptionApiError ? subscriptionErrorText(error) : "云端基础订阅生成失败；本地结果仍保留，未切换代理。" });
+    } finally { patch({ busy: "" }); }
+  }
 
   const selectedExit = state.setup?.exits.find(exit => exit.id === state.exitId);
   const selectableCount = state.preview?.nodes.filter(node => node.selectable).length || 0;
   return <div className={styles.workspace}>
     <div className={styles.privacy}>
       <LockKey aria-hidden="true" size={22} />
-      <div><strong>Rola 串联 · 凭据只存本机</strong><p>浏览器只向本地后端发送机场来源和 Rola 凭据，不进入 Cloudflare、云端 KV 或浏览器本地存储。生成的是新订阅，不会导入或切换当前代理。</p></div>
+      <div><strong>Rola 串联 · 家宽凭据只存本机</strong><p>Rola 账号密码只发往本地后端，不进入 Cloudflare、云端 KV 或浏览器本地存储。默认在本机生成；另行点击「生成云端基础订阅」时，仅机场来源发送到 Cloudflare。不会导入或切换当前代理。</p></div>
     </div>
     <div className={styles.connection}>
       <button className="button" type="button" onClick={() => void connect()} disabled={Boolean(state.busy)}><PlugsConnected aria-hidden="true" />{state.busy === "连接" ? "正在连接" : state.setup ? "重新连接本地服务" : "连接本地服务"}</button>
@@ -80,7 +90,7 @@ export const RolaSubscription: FC = () => {
           <h2 id="rola-airport-title">1. 选择前置机场节点</h2>
           <label className="field"><span>机场订阅或节点</span><textarea rows={4} value={state.source} onChange={event => sourceChange({ source: event.target.value })} autoComplete="off" spellCheck={false} placeholder="每行一个机场订阅地址或节点链接；不要在这里填 Rola 账号密码" /></label>
           <div className={styles.grid}>
-            <label className="field"><span>输出客户端</span><select value={state.target} onChange={event => sourceChange({ target: event.target.value })}><option value="clash-party-config">Clash Party</option><option value="clash-verge-config">Clash Verge</option><option value="flclash-config">FlClash</option><option value="mihomo-config">Mihomo</option></select></label>
+            <label className="field"><span>输出客户端</span><select value={state.target} onChange={event => sourceChange({ target: event.target.value as OutputTarget })}><option value="clash-party-config">Clash Party</option><option value="clash-verge-config">Clash Verge</option><option value="flclash-config">FlClash</option><option value="mihomo-config">Mihomo</option></select></label>
             <label className="field"><span>输出名称</span><input value={state.name} maxLength={64} onChange={event => sourceChange({ name: event.target.value })} /></label>
           </div>
           <details className={styles.help}><summary>机场请求设置</summary><label className="field"><span>订阅请求 UA</span><input value={state.userAgent} onChange={event => sourceChange({ userAgent: event.target.value })} list="rola-user-agents" /><datalist id="rola-user-agents"><option value="clash.meta" /><option value="mihomo/1.19" /><option value="ClashForAndroid/2.5.12" /></datalist></label><p>使用 Flacier 分流、独立系统引导 DNS 和代理 DoH；每 6 小时请求更新。不使用客户端直读兜底。</p></details>
@@ -93,21 +103,22 @@ export const RolaSubscription: FC = () => {
         </section>
         <section className={styles.step} aria-labelledby="rola-exit-title">
           <h2 id="rola-exit-title">2. 选择 Rola 出口</h2>
-          <label className="field"><span>本机保存的出口</span><select value={state.exitId} onChange={event => change({ exitId: event.target.value, draft: null })}><option value="">请选择出口</option>{state.setup.exits.map(exit => <option key={exit.id} value={exit.id}>{exit.name} · {exit.country.toUpperCase()} · {exit.sessionMinutes} 分钟</option>)}</select></label>
+          <label className="field"><span>本机保存的出口</span><select value={state.exitId} onChange={event => change({ exitId: event.target.value, draft: null })}><option value="">请选择出口</option>{state.setup.exits.map(exit => <option key={exit.id} value={exit.id}>{exit.name} · {exit.authMode === "literal" ? "原样账号" : `${exit.country.toUpperCase()} · ${exit.sessionMinutes} 分钟`}</option>)}</select></label>
           <div className={styles.actions}><button className="button" type="button" onClick={() => change({ draft: { ...blankExit } })}>添加 Rola 出口</button>{selectedExit ? <button className="button" type="button" onClick={() => change({ draft: { ...selectedExit, account: "", password: "" } })}>编辑所选出口</button> : null}</div>
           {state.draft ? <div className={styles.editor}>
             <div className={styles.grid}>
+              <label className="field"><span>账号格式</span><select value={state.draft.authMode} onChange={event => editExit({ authMode: event.target.value as "literal" | "dynamic", country: event.target.value === "dynamic" ? "us" : "" })}><option value="literal">现成节点 · 用户名原样使用</option><option value="dynamic">Rola 动态住宅 · 拼接国家与会话</option></select></label>
               <label className="field"><span>出口名称</span><input value={state.draft.name} onChange={event => editExit({ name: event.target.value })} maxLength={64} /></label>
               <label className="field"><span>Rola 协议</span><select value={state.draft.protocol} onChange={event => editExit({ protocol: event.target.value as "http" | "socks5" })}><option value="socks5">SOCKS5</option><option value="http">HTTP</option></select></label>
               <label className="field"><span>Rola 网关</span><input value={state.draft.server} onChange={event => editExit({ server: event.target.value.trim() })} placeholder="填写控制台给出的网关，不带协议" autoComplete="off" /></label>
               <label className="field"><span>端口</span><input type="number" min={1} max={65535} value={state.draft.port} onChange={event => editExit({ port: Number(event.target.value) })} /></label>
-              <label className="field"><span>基础账号{state.draft.id ? "（留空保持）" : ""}</span><input type="password" value={state.draft.account} onChange={event => editExit({ account: event.target.value })} autoComplete="off" spellCheck={false} /></label>
+              <label className="field"><span>{state.draft.authMode === "literal" ? "代理账号" : "基础账号"}{state.draft.id ? "（留空保持）" : ""}</span><input type="password" value={state.draft.account} onChange={event => editExit({ account: event.target.value })} autoComplete="off" spellCheck={false} /></label>
               <label className="field"><span>代理密码{state.draft.id ? "（留空保持）" : ""}</span><input type="password" value={state.draft.password} onChange={event => editExit({ password: event.target.value })} autoComplete="new-password" /></label>
-              <label className="field"><span>出口国家代码</span><input value={state.draft.country} onChange={event => editExit({ country: event.target.value.toLowerCase() })} list="rola-countries" maxLength={2} /><datalist id="rola-countries"><option value="us">美国</option><option value="jp">日本</option><option value="sg">新加坡</option><option value="gb">英国</option><option value="de">德国</option></datalist></label>
-              <label className="field"><span>会话标识</span><input value={state.draft.sessionId} onChange={event => editExit({ sessionId: event.target.value })} maxLength={32} /></label>
-              <label className="field"><span>会话保持分钟数</span><input type="number" min={1} max={120} value={state.draft.sessionMinutes} onChange={event => editExit({ sessionMinutes: Number(event.target.value) })} /></label>
+              <label className="field"><span>出口国家代码{state.draft.authMode === "literal" ? "（可留空，仅标签）" : ""}</span><input value={state.draft.country} onChange={event => editExit({ country: event.target.value.toLowerCase() })} list="rola-countries" maxLength={2} /><datalist id="rola-countries"><option value="us">美国</option><option value="jp">日本</option><option value="sg">新加坡</option><option value="gb">英国</option><option value="de">德国</option></datalist></label>
+              {state.draft.authMode === "dynamic" ? <><label className="field"><span>会话标识</span><input value={state.draft.sessionId} onChange={event => editExit({ sessionId: event.target.value })} maxLength={32} /></label>
+              <label className="field"><span>会话保持分钟数</span><input type="number" min={1} max={120} value={state.draft.sessionMinutes} onChange={event => editExit({ sessionMinutes: Number(event.target.value) })} /></label></> : null}
             </div>
-            <p className={styles.note}>填动态住宅的基础账号，不带国家或会话后缀。相同会话会尽量保持出口，1–120 分钟，不代表固定或独享 IP。保存不测试 Rola 连通性，也不扣 Rola 测试流量。</p>
+            <p className={styles.note}>{state.draft.authMode === "literal" ? "现成节点的账号与密码原样使用，不追加国家或会话后缀，也不据此推断是否为固定、独享 IP。" : "填动态住宅的基础账号，不带国家或会话后缀。相同会话会尽量保持出口，1–120 分钟，不代表固定或独享 IP。"}保存不测试 Rola 连通性，也不扣 Rola 测试流量。</p>
             <div className={styles.actions}><button className="button" type="button" onClick={() => void saveExit()}>保存到本机</button><button className="button" type="button" onClick={() => change({ draft: null })}>取消编辑</button></div>
           </div> : null}
         </section>
@@ -129,6 +140,11 @@ export const RolaSubscription: FC = () => {
       <div className={styles.actions}><button className="button" type="button" onClick={() => { void navigator.clipboard.writeText(state.result!.url).then(() => patch({ notice: "本地链接已复制。" }), () => patch({ error: "无法写入剪贴板，请手动复制链接。" })); }}><Copy aria-hidden="true" />复制本机订阅链接</button><a className="button" href={state.result.url} download="Flacier-Rola.yaml" referrerPolicy="no-referrer"><DownloadSimple aria-hidden="true" />下载候选配置</a></div>
       <p>链接只能供这台电脑使用，刷新时本地服务需保持运行。iPhone／Android 无法访问这台电脑的 127.0.0.1；可私下传输下载文件，但文件不会自动更新。Shadowrocket 的「代理通过」需要单独配置，不会拿 Mihomo 文件冒充适配。</p>
       <p>文件和链接都应视为敏感信息，下载文件内含节点凭据。保存出口或修改规则后需生成新链接，不会改变旧订阅。</p>
+      <a className="button" href={state.result.overrideUrl} download="Flacier-Rola-private.js" referrerPolicy="no-referrer"><DownloadSimple aria-hidden="true" />下载 Clash Party 本地私密覆写</a>
+      <p>云端基础订阅 + 本地覆写：将此 JS 文件作为本地覆写导入 Clash Party，只绑定对应的基础订阅，不全局启用。文件内有凭据，不能上传云端或 WebDAV；云端更新后仍在本机叠加。前置节点消失或 DNS 条件变化会拒绝覆写，不替换成直连。</p>
+      <button className="button" type="button" disabled={Boolean(state.busy)} onClick={() => void generateCloudBase()}>{state.busy === "生成云端基础" ? "正在生成云端基础" : "生成云端基础订阅（仅机场来源）"}</button>
+      <p>此操作将当前机场来源提交给 rules.flacier.com 保存和转换，不包含 Rola 账号密码、出口或私密规则。云端链接单独使用只有机场出口；要走家宽，仍需在本机绑定上面的私密覆写。</p>
+      {state.cloudBase ? <div><h3>云端基础订阅 · 不含家宽凭据</h3><code>{state.cloudBase.url}</code><p>读取 {state.cloudBase.nodeStats.read} 个，输出 {state.cloudBase.nodeStats.output} 个机场节点。{state.cloudBase.usage.combined ? "机场用量已继承。" : "机场未提供用量，未伪造额度。"}</p><button className="button" type="button" onClick={() => { void navigator.clipboard.writeText(state.cloudBase!.url).then(() => patch({ notice: "云端基础链接已复制；尚未导入。" }), () => patch({ error: "无法写入剪贴板，请手动复制链接。" })); }}><Copy aria-hidden="true" />复制云端基础链接</button></div> : null}
     </section> : null}
   </div>;
 };

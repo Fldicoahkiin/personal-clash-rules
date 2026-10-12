@@ -202,6 +202,20 @@ describe("Worker entrypoint", () => {
     const denied = await exports.default.fetch("https://example.com/api/subscriptions", { method: "POST", headers: { Origin: "https://unrelated.example" } });
     expect(denied.status).toBe(403);
   });
+  it("allows loopback pages to create cloud bases without opening other APIs or unrelated origins", async () => {
+    for (const origin of ["http://127.0.0.1:25500", "http://localhost:52879"]) {
+      const allowed = await exports.default.fetch("https://example.com/api/subscriptions", { method: "OPTIONS", headers: { Origin: origin } });
+      expect(allowed.status).toBe(204);
+      expect(allowed.headers.get("access-control-allow-origin")).toBe(origin);
+      const invalid = await exports.default.fetch("https://example.com/api/subscriptions", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{}" });
+      expect(invalid.status).toBe(400);
+      expect(invalid.headers.get("access-control-allow-origin")).toBe(origin);
+      expect((await exports.default.fetch("https://example.com/api/version", { headers: { Origin: origin } })).status).toBe(403);
+    }
+    for (const origin of ["null", "http://127.0.0.1.evil.example:25500", "http://user@127.0.0.1:25500", "http://127.0.0.1:25500/path", "http://localhost", "http://192.168.1.2:25500"]) {
+      expect((await exports.default.fetch("https://example.com/api/subscriptions", { method: "OPTIONS", headers: { Origin: origin } })).status).toBe(403);
+    }
+  });
 
   it.each(["clash-verge-config", "flclash-config"])("serves complete %s profiles with actual inline nodes", async (target) => {
     const { response, data } = await createSubscription({ target });

@@ -9,6 +9,15 @@ const securityHeaders = {
   "X-Content-Type-Options": "nosniff",
 } as const;
 
+function isLocalBaseCreation(origin: string, url: URL, method: string): boolean {
+  if (url.pathname !== "/api/subscriptions" || !["POST", "OPTIONS"].includes(method)) return false;
+  try {
+    const source = new URL(origin);
+    return source.origin === origin && source.protocol === "http:" && ["127.0.0.1", "localhost"].includes(source.hostname)
+      && Number(source.port) >= 1024 && Number(source.port) <= 65535;
+  } catch { return false; }
+}
+
 function cacheControl(pathname: string): string {
   if (pathname.startsWith("/api/")) {
     return "no-store";
@@ -47,7 +56,7 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin");
     if (url.pathname.startsWith("/api/") && origin) {
-      if (origin !== url.origin && origin !== "https://rules.flacier.com") {
+      if (origin !== url.origin && origin !== "https://rules.flacier.com" && !isLocalBaseCreation(origin, url, request.method)) {
         return Response.json({ error: "origin_not_allowed" }, { status: 403, headers: securityHeaders });
       }
       if (request.method === "OPTIONS") {
