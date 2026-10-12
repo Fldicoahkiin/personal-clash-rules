@@ -40,12 +40,12 @@ describe("createSingBoxProfile", () => {
     expect(config.outbounds).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "shadowsocks", tag: "US-01" }),
       expect.objectContaining({ type: "urltest", tag: "AUTO", outbounds: ["US-01", "JP-01"] }),
-      expect.objectContaining({ type: "selector", tag: "US", outbounds: ["US-01"] }),
-      expect.objectContaining({ type: "selector", tag: "JP", outbounds: ["JP-01"] }),
+      expect.objectContaining({ type: "selector", tag: "🇺🇸 美国", outbounds: ["US-01"] }),
+      expect.objectContaining({ type: "selector", tag: "🇯🇵 日本", outbounds: ["JP-01"] }),
       expect.objectContaining({
         type: "selector",
         tag: "AI",
-        outbounds: ["GLOBAL", "US", "JP", "SG", "TW"],
+        outbounds: ["GLOBAL", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"],
       }),
     ]));
     expect(config.http_clients).toEqual([

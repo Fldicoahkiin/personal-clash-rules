@@ -1,6 +1,7 @@
 import { stringify as stringifyYaml } from "yaml";
 
 import {
+  countryGroupNames,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
@@ -8,7 +9,7 @@ import {
 import { ApiError } from "./api-error";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
 
-const regions = new Set(["US", "JP", "SG", "HK", "TW", "KR", "EU"]);
+const regions = new Set(Object.values(countryGroupNames));
 
 type EgernGroup = {
   name: string;

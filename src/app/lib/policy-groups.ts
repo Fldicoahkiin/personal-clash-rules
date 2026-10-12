@@ -1,3 +1,5 @@
+import { countryGroupNames } from "../../config/mihomo-policy";
+
 export const displayedPolicyGroups = [
   {
     name: "AI",
@@ -59,7 +61,11 @@ export const displayedPolicyGroups = [
     initial: "GLOBAL",
     options: ["GLOBAL", "DIRECT", "AUTO"],
   },
-] as const;
+].map(group => ({
+  ...group,
+  initial: countryGroupNames[group.initial] ?? group.initial,
+  options: group.options.map(name => countryGroupNames[name] ?? name),
+}));
 
 export function describePolicyRoute(policy: string): {
   mode: string;

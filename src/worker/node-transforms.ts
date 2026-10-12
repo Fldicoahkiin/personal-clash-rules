@@ -1,4 +1,5 @@
 import {
+  countryGroupNames,
   countryFlagRules,
   mihomoProxyGroups,
 } from "../config/mihomo-policy";
@@ -168,6 +169,8 @@ export function applyNodeTransforms(
   const names = new Set([
     "DIRECT",
     "REJECT",
+    // Keep prior collision suffixes stable for existing node selections.
+    ...Object.keys(countryGroupNames),
     ...mihomoProxyGroups.map((group) => group.name),
   ]);
 

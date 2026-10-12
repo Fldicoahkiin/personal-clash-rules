@@ -23,7 +23,7 @@ proxies:
     expect(config.proxies).toHaveLength(1);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "AUTO", "include-all": true }),
-      expect.objectContaining({ name: "ANIGAMER", proxies: ["TW", "GLOBAL", "DIRECT", "AUTO"] }),
+      expect.objectContaining({ name: "ANIGAMER", proxies: ["🇹🇼 台湾", "GLOBAL", "DIRECT", "AUTO"] }),
     ]));
     expect(config["rule-providers"]).toMatchObject({
       "ai-openai": {

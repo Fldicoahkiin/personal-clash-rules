@@ -51,6 +51,7 @@ describe("applyNodeTransforms", () => {
       { name: "US 1", server: "one.example" },
       { name: "US 2", server: "two.example" },
       { name: "DIRECT", server: "direct.example" },
+      { name: "🇯🇵 日本", server: "japan.example" },
     ];
 
     expect(applyNodeTransforms(nodes, {
@@ -62,6 +63,7 @@ describe("applyNodeTransforms", () => {
       "US · 2",
       "US · 3",
       "DIRECT · 2",
+      "🇯🇵 日本 · 2",
     ]);
   });
 

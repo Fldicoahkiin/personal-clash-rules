@@ -1,7 +1,7 @@
 import JSON5 from "json5";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
-import { mihomoProxyGroups } from "../config/mihomo-policy";
+import { countryGroupNames, mihomoProxyGroups } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
 import { createEgernProfile } from "./egern-profile";
@@ -1585,7 +1585,7 @@ export function countTargetCompatibleNodes(
 
 function prepareNodes(nodes: ProxyNode[]): SubscriptionNode[] {
   const fingerprints = new Set<string>();
-  const names = new Set(["DIRECT", "REJECT", ...mihomoProxyGroups.map((group) => group.name)]);
+  const names = new Set(["DIRECT", "REJECT", ...Object.keys(countryGroupNames), ...mihomoProxyGroups.map((group) => group.name)]);
   return nodes.flatMap((candidate) => {
     const node = Object.fromEntries(Object.entries(candidate).filter(([key]) => key !== "id" && !key.startsWith("_"))) as ProxyNode;
     const fingerprint = JSON.stringify(Object.fromEntries(Object.entries(node).filter(([key]) => key !== "name").sort(([left], [right]) => left.localeCompare(right))));

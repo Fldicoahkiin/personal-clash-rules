@@ -1,4 +1,5 @@
 import { displayedPolicyGroups } from "../lib/policy-groups";
+import { countryGroupNames } from "../../config/mihomo-policy";
 
 export function PolicyMap() {
   return (
@@ -47,7 +48,7 @@ export function PolicyMap() {
         </table>
       </div>
       <p className="policy-note">
-        节点名称分组：US · JP · SG · HK · TW · KR · EU
+        节点名称分组：{Object.values(countryGroupNames).join(" · ")}
       </p>
     </section>
   );

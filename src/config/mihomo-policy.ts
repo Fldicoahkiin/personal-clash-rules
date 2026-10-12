@@ -37,6 +37,10 @@ export const mihomoRuleProviders = Object.fromEntries(
 
 const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 const policyIconBase = "https://rules.flacier.com/policy-icons";
+export const countryGroupNames: Record<string, string> = {
+  US: "🇺🇸 美国", JP: "🇯🇵 日本", SG: "🇸🇬 新加坡", HK: "🇭🇰 香港",
+  TW: "🇹🇼 台湾", KR: "🇰🇷 韩国", EU: "🇪🇺 欧洲",
+};
 
 export const countryNodeFilters = {
   US: "🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$)",
@@ -222,7 +226,12 @@ export const mihomoProxyGroups = [
     proxies: ["GLOBAL", "DIRECT", "AUTO"],
     icon: `${policyIconBase}/route.svg`,
   },
-].map(group => ({ ...group, "empty-fallback": "REJECT" as const }));
+].map(group => ({
+  ...group,
+  name: countryGroupNames[group.name] ?? group.name,
+  ...("proxies" in group && group.proxies ? { proxies: group.proxies.map(name => countryGroupNames[name] ?? name) } : {}),
+  "empty-fallback": "REJECT" as const,
+}));
 
 export const mihomoRules = [
   "RULE-SET,private-domain,DIRECT",

@@ -1,12 +1,12 @@
 import { defaultDnsSettings, type DnsSettings } from "../config/dns-settings";
-import { mihomoProxyGroups, mihomoRuleProviders, mihomoRules } from "../config/mihomo-policy";
+import { countryGroupNames, mihomoProxyGroups, mihomoRuleProviders, mihomoRules } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createProxyDns } from "./mihomo-dns";
 import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
 
 const labels: Record<string, string> = {
   AUTO: "♻️ 自动选择", GLOBAL: "🚀 节点选择", AI: "🤖 AI", DEFAULT: "🐟 未匹配流量",
-  US: "🇺🇸 美国", JP: "🇯🇵 日本", SG: "🇸🇬 新加坡", HK: "🇭🇰 香港", TW: "🇹🇼 台湾", KR: "🇰🇷 韩国", EU: "🇪🇺 欧洲",
+  ...countryGroupNames,
   APPLE: "🍎 Apple", STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🎮 Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 Bilibili", ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交",
 };

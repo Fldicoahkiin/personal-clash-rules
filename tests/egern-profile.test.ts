@@ -20,7 +20,8 @@ proxies:
     expect(config.proxies).toHaveLength(1);
     expect(config.policy_groups).toEqual(expect.arrayContaining([
       { auto_test: expect.objectContaining({ name: "AUTO", policies: ["US-01"] }) },
-      { select: expect.objectContaining({ name: "AI", policies: ["GLOBAL", "US", "JP", "SG", "TW"] }) },
+      { select: expect.objectContaining({ name: "🇺🇸 美国", policies: ["US-01"] }) },
+      { select: expect.objectContaining({ name: "AI", policies: ["GLOBAL", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"] }) },
     ]));
     expect(config.rules).toEqual(expect.arrayContaining([
       {

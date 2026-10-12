@@ -1,11 +1,12 @@
 import {
+  countryGroupNames,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
 } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 
-const regions = new Set(["US", "JP", "SG", "HK", "TW", "KR", "EU"]);
+const regions = new Set(Object.values(countryGroupNames));
 
 type LoonGroup = {
   name: string;

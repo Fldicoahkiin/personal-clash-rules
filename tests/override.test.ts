@@ -106,7 +106,7 @@ describe("Clash Party override", () => {
       config["+proxy-groups"].map((group) => [group.name, group]),
     );
 
-    for (const country of ["US", "JP", "SG", "HK", "TW", "KR", "EU"]) {
+    for (const country of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
       expect(groups.get(country)?.type, country).toBe("select");
       expect(groups.get(country)?.filter, country).toBeTruthy();
       expect(groups.get(country), country).toHaveProperty("empty-fallback", "REJECT");
@@ -114,24 +114,24 @@ describe("Clash Party override", () => {
     }
     expect(groups.get("AI")?.proxies).toEqual([
       "GLOBAL",
-      "US",
-      "JP",
-      "SG",
-      "TW",
+      "🇺🇸 美国",
+      "🇯🇵 日本",
+      "🇸🇬 新加坡",
+      "🇹🇼 台湾",
     ]);
     expect(groups.get("STEAM")?.proxies).toContain("DIRECT");
     expect(groups.get("STEAM")?.proxies?.[0]).toBe("GLOBAL");
     expect(groups.get("STEAM-DOWNLOAD")?.proxies?.[0]).toBe("GLOBAL");
     expect(groups.get("STEAM-ONLINE")?.proxies?.[0]).toBe("GLOBAL");
     expect(groups.get("BILIBILI")?.proxies?.[0]).toBe("GLOBAL");
-    expect(groups.get("ANIGAMER")?.proxies?.[0]).toBe("TW");
+    expect(groups.get("ANIGAMER")?.proxies?.[0]).toBe("🇹🇼 台湾");
     expect(groups.get("DISCORD")?.proxies).toContain("GLOBAL");
     expect(groups.get("APPLE")?.proxies).toEqual([
       "GLOBAL",
       "DIRECT",
-      "US",
-      "JP",
-      "SG",
+      "🇺🇸 美国",
+      "🇯🇵 日本",
+      "🇸🇬 新加坡",
     ]);
   });
 

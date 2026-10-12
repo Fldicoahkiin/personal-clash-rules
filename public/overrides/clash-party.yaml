@@ -154,7 +154,7 @@ rule-providers:
     tolerance: 80
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/auto.svg
-  - name: US
+  - name: 🇺🇸 美国
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -162,7 +162,7 @@ rule-providers:
     filter: '(?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))'
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: JP
+  - name: 🇯🇵 日本
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -170,7 +170,7 @@ rule-providers:
     filter: '(?i)(🇯🇵|日本|Japan|Tokyo|Osaka|(^|[ _-])JP([ _-]|$))'
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: SG
+  - name: 🇸🇬 新加坡
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -178,7 +178,7 @@ rule-providers:
     filter: '(?i)(🇸🇬|新加坡|Singapore|(^|[ _-])SG([ _-]|$))'
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: HK
+  - name: 🇭🇰 香港
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -186,7 +186,7 @@ rule-providers:
     filter: '(?i)(🇭🇰|香港|Hong Kong|(^|[ _-])HK([ _-]|$))'
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: TW
+  - name: 🇹🇼 台湾
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -194,7 +194,7 @@ rule-providers:
     filter: '(?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|(^|[ _-])TW([ _-]|$))'
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: KR
+  - name: 🇰🇷 韩国
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -202,7 +202,7 @@ rule-providers:
     filter: '(?i)(🇰🇷|韩国|韓國|South Korea|Seoul|(^|[ _-])KR([ _-]|$))'
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: EU
+  - name: 🇪🇺 欧洲
     type: select
     empty-fallback: REJECT
     include-all: true
@@ -213,64 +213,64 @@ rule-providers:
   - name: GLOBAL
     type: select
     empty-fallback: REJECT
-    proxies: [AUTO, US, JP, SG, HK, TW, KR, EU, DIRECT]
+    proxies: [AUTO, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾, 🇰🇷 韩国, 🇪🇺 欧洲, DIRECT]
     include-all: true
     exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
     icon: https://rules.flacier.com/policy-icons/globe.svg
   - name: AI
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, US, JP, SG, TW]
+    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇹🇼 台湾]
     icon: https://rules.flacier.com/policy-icons/ai.svg
   - name: APPLE
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, US, JP, SG]
+    proxies: [GLOBAL, DIRECT, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡]
     icon: https://rules.flacier.com/policy-icons/apple.svg
   - name: STEAM
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, JP, US, SG]
+    proxies: [GLOBAL, DIRECT, 🇯🇵 日本, 🇺🇸 美国, 🇸🇬 新加坡]
     icon: https://rules.flacier.com/policy-icons/steam.svg
   - name: STEAM-DOWNLOAD
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, JP, US, SG, HK, TW]
+    proxies: [GLOBAL, DIRECT, 🇯🇵 日本, 🇺🇸 美国, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾]
     icon: https://rules.flacier.com/policy-icons/download.svg
   - name: STEAM-ONLINE
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, JP, US, SG, HK, TW]
+    proxies: [GLOBAL, DIRECT, 🇯🇵 日本, 🇺🇸 美国, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾]
     icon: https://rules.flacier.com/policy-icons/game.svg
   - name: DISCORD
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, US, JP, SG, DIRECT]
+    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, DIRECT]
     icon: https://rules.flacier.com/policy-icons/chat.svg
   - name: DEV
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, US, JP, SG]
+    proxies: [GLOBAL, DIRECT, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡]
     icon: https://rules.flacier.com/policy-icons/code.svg
   - name: MEDIA
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, US, JP, SG, DIRECT]
+    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, DIRECT]
     icon: https://rules.flacier.com/policy-icons/play.svg
   - name: BILIBILI
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, HK, TW, SG]
+    proxies: [GLOBAL, DIRECT, 🇭🇰 香港, 🇹🇼 台湾, 🇸🇬 新加坡]
     icon: https://rules.flacier.com/policy-icons/play.svg
   - name: ANIGAMER
     type: select
     empty-fallback: REJECT
-    proxies: [TW, GLOBAL, DIRECT, AUTO]
+    proxies: [🇹🇼 台湾, GLOBAL, DIRECT, AUTO]
     icon: https://rules.flacier.com/policy-icons/play.svg
   - name: SOCIAL
     type: select
     empty-fallback: REJECT
-    proxies: [GLOBAL, US, JP, SG, DIRECT]
+    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, DIRECT]
     icon: https://rules.flacier.com/policy-icons/chat.svg
   - name: DEFAULT
     type: select

@@ -1,4 +1,5 @@
 import {
+  countryGroupNames,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
@@ -10,7 +11,7 @@ type SingBoxOutbound = Record<string, unknown> & {
   tag: string;
 };
 
-const regionNames = new Set(["US", "JP", "SG", "HK", "TW", "KR", "EU"]);
+const regionNames = new Set(Object.values(countryGroupNames));
 const processNames = ["codex", "codex.exe", "claude", "claude.exe"];
 
 function readNodeResource(input: string): {

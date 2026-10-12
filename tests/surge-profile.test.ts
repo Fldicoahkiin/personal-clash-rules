@@ -15,7 +15,7 @@ describe("Surge-compatible profiles", () => {
     expect(output).toContain("[General]\n");
     expect(output).toContain("[Proxy]\nUS-01 = ss, us.example.com");
     expect(output).toContain("[Proxy Group]\nAUTO = url-test");
-    expect(output).toContain("AI = select, GLOBAL, US, JP, SG, TW");
+    expect(output).toContain("AI = select, GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇹🇼 台湾");
     expect(output).toContain(
       "RULE-SET,https://rules.flacier.com/rules/ai/openai.list,AI,update-interval=43200",
     );
@@ -28,7 +28,7 @@ describe("Surge-compatible profiles", () => {
 
     expect(output).toContain("#!MANAGED-CONFIG __FLACIER_SUBSCRIPTION_URL__ interval=43200");
     expect(output).toContain("[Proxy]\nUS-01 = ss, us.example.com");
-    expect(output).toContain("ANIGAMER = select, TW, GLOBAL, DIRECT, AUTO");
+    expect(output).toContain("ANIGAMER = select, 🇹🇼 台湾, GLOBAL, DIRECT, AUTO");
     expect(output).toContain("FINAL,DEFAULT,dns-failed");
   });
 

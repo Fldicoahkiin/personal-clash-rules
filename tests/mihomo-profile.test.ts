@@ -7,6 +7,20 @@ import {
 } from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
+  it("labels country groups with flags and updates all group references", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
+    const names = new Set(profile["proxy-groups"].map((group: { name: string }) => group.name));
+    for (const name of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
+      expect(names.has(name)).toBe(true);
+    }
+    for (const group of profile["proxy-groups"]) {
+      for (const member of group.proxies ?? []) {
+        expect(names.has(member) || ["DIRECT", "REJECT"].includes(member)).toBe(true);
+        expect(["US", "JP", "SG", "HK", "TW", "KR", "EU"]).not.toContain(member);
+      }
+    }
+  });
+
   it("rejects inherited DNS whose original policy group is removed", () => {
     expect(() => createMihomoProfile("proxies: [{name: US, type: ss}]", "flacier", 6, "upstream", {
       dns: { enable: true, nameserver: ["https://1.1.1.1/dns-query#OriginalProxy"] },
@@ -54,9 +68,9 @@ proxies:
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "AI", proxies: ["GLOBAL", "US", "JP", "SG", "TW"] }),
+      expect.objectContaining({ name: "AI", proxies: ["GLOBAL", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"] }),
       expect.objectContaining({ name: "STEAM-DOWNLOAD", proxies: expect.arrayContaining(["DIRECT"]) }),
-      expect.objectContaining({ name: "ANIGAMER", proxies: expect.arrayContaining(["TW"]) }),
+      expect.objectContaining({ name: "ANIGAMER", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
     ]));
     expect((config["proxy-groups"] as Array<Record<string, unknown>>).every(
       (group) => typeof group.icon === "string",
@@ -175,13 +189,13 @@ proxies:
         use: ["订阅 1"],
       }),
       expect.objectContaining({
-        name: "US",
+        name: "🇺🇸 美国",
         "include-all-providers": true,
         use: ["订阅 1"],
       }),
       expect.objectContaining({ name: "AI", proxies: expect.arrayContaining(["GLOBAL"]) }),
     ]));
-    expect(config["proxy-groups"].find((group) => group.name === "US")).toHaveProperty(
+    expect(config["proxy-groups"].find((group) => group.name === "🇺🇸 美国")).toHaveProperty(
       "empty-fallback", "REJECT",
     );
   });

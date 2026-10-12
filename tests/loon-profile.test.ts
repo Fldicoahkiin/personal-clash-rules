@@ -12,9 +12,9 @@ describe("createLoonProfile", () => {
     const output = createLoonProfile(nodes, 12);
 
     expect(output).toContain("[Proxy]\nUS-01=shadowsocks");
-    expect(output).toContain("US = select, US-01");
-    expect(output).toContain("TW = select, TW-01");
-    expect(output).toContain("AI = select, GLOBAL, US, JP, SG, TW");
+    expect(output).toContain("🇺🇸 美国 = select, US-01");
+    expect(output).toContain("🇹🇼 台湾 = select, TW-01");
+    expect(output).toContain("AI = select, GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇹🇼 台湾");
     expect(output).toContain("[Remote Rule]");
     expect(output).toContain(
       "https://rules.flacier.com/rules/ai/openai.list, policy=AI, tag=ai-openai, enabled=true, update-interval=43200",
