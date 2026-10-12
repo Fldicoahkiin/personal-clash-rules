@@ -12,10 +12,10 @@ type State = {
   setup: RolaSetup | null; busy: string; error: string; notice: string;
   source: string; name: string; target: OutputTarget; userAgent: string; preview: RolaPreview | null;
   upstream: string; exitId: string; draft: RolaExitDraft | null; rules: string; dns: string;
-  connectionMode: "chain" | "direct"; groupName: string;
+  connectionMode: "chain" | "direct"; groupName: string; policyGroup: "" | "AI";
   result: RolaResult | null; cloudBase: ConvertedSubscription | null;
 };
-const initial: State = { setup: null, busy: "", error: "", notice: "", source: "", name: "Flacier-Rola", target: "clash-party-config", userAgent: "clash.meta", preview: null, upstream: "", exitId: "", draft: null, rules: "", dns: "", result: null, cloudBase: null, connectionMode: "chain", groupName: "家宽出口" };
+const initial: State = { setup: null, busy: "", error: "", notice: "", source: "", name: "Flacier-Rola", target: "clash-party-config", userAgent: "clash.meta", preview: null, upstream: "", exitId: "", draft: null, rules: "", dns: "", result: null, cloudBase: null, connectionMode: "chain", groupName: "家宽出口", policyGroup: "" };
 const lines = (value: string) => value.split(/\r?\n/u).map(line => line.trim()).filter(line => line && !line.startsWith("#"));
 
 export const RolaSubscription: FC = () => {
@@ -67,7 +67,7 @@ const LocalRolaSubscription: FC = () => {
     await run("生成订阅", async () => {
       if (!state.preview || (state.connectionMode === "chain" && !state.upstream) || !state.exitId || state.draft) throw new Error("请读取基础订阅并保存家宽出口；机场串联还需选择前置节点。");
       const result = await requestRola<RolaResult>("/chains", { baseId: state.preview.baseId, target: state.target,
-        exitId: state.exitId, connectionMode: state.connectionMode, groupName: state.groupName, upstreamNode: state.upstream, rules: lines(state.rules), dns: lines(state.dns) });
+        exitId: state.exitId, connectionMode: state.connectionMode, groupName: state.groupName, policyGroup: state.policyGroup, upstreamNode: state.upstream, rules: lines(state.rules), dns: lines(state.dns) });
       patch({ result });
     });
   }
@@ -137,9 +137,10 @@ const LocalRolaSubscription: FC = () => {
         </section>
         <section className={styles.step} aria-labelledby="rola-rules-title">
           <h2 id="rola-rules-title">3. 编辑经 Rola 的分流规则</h2>
+          <label className="field"><span>域名规则使用的策略组</span><select value={state.policyGroup} onChange={event => change({ policyGroup: event.target.value as State["policyGroup"] })}><option value="">专用家宽组（只走家宽）</option><option value="AI">AI（可在客户端选择出口）</option></select></label>
           <label className="field"><span>域名规则（每行一条）</span><textarea className={styles.rules} value={state.rules} onChange={event => change({ rules: event.target.value })} rows={8} spellCheck={false} /></label>
-          <p className={styles.note}><code>DOMAIN,api.example.com</code> 精确匹配；<code>DOMAIN-SUFFIX,example.com</code> 包含子域名。可用 # 注释。这些规则优先经 Rola，连接失败不直连；未匹配的流量仍按 Flacier 分流。默认包括 OpenAI、Claude 和 GitHub。</p>
-          <details className={styles.help}><summary>DNS 与协议边界</summary><label className="field"><span>经 Rola 的 DoH（每行一个 IP 地址 HTTPS URL）</span><textarea value={state.dns} onChange={event => change({ dns: event.target.value })} rows={3} spellCheck={false} /></label><p>匹配域名使用这些 DoH 经 Rola 解析；机场与 Rola 网关由独立引导 DNS 解析，避免循环。生成文件关闭 IPv6，匹配域名的 UDP 被拒绝以便应用尝试 TCP；不覆盖当前客户端开关。</p><p>SOCKS5／HTTP 的机场到 Rola 网关这一段不视为已加密，访问目标仍应使用 HTTPS。DNS 泄漏与实际出口需导入后另行检查，生成成功不等于网络验收通过。</p></details>
+          <p className={styles.note}><code>DOMAIN,api.example.com</code> 精确匹配；<code>DOMAIN-SUFFIX,example.com</code> 包含子域名，可用 # 注释。匹配域名及其 DNS 跟随所选策略组；选择 AI 时默认家宽，也可手动切换到机场。家宽组同时加入手动选择、全局和 AI，不自动回退直连。</p>
+          <details className={styles.help}><summary>DNS 与协议边界</summary><label className="field"><span>DoH（每行一个 IP 地址 HTTPS URL）</span><textarea value={state.dns} onChange={event => change({ dns: event.target.value })} rows={3} spellCheck={false} /></label><p>匹配域名使用这些 DoH，跟随上面选定的策略组；机场与 Rola 网关由独立引导 DNS 解析，避免循环。生成文件关闭 IPv6，匹配域名的 UDP 被拒绝以便应用尝试 TCP；不覆盖当前客户端开关。</p><p>连接到 SOCKS5／HTTP 网关这一段不视为已加密，访问目标仍应使用 HTTPS。DNS 泄漏与实际出口需导入后另行检查，生成成功不等于网络验收通过。</p></details>
         </section>
         <div className={styles.chain}><span>{state.connectionMode === "direct" ? "设备（不经机场）" : state.upstream || "前置机场节点"}</span><ArrowRight aria-hidden="true" /><span>{selectedExit?.name || "Rola 出口"}</span><ArrowRight aria-hidden="true" /><span>匹配的域名</span></div>
         <button className="button button-primary" type="submit" disabled={!state.preview || (state.connectionMode === "chain" && !state.upstream) || !state.exitId || Boolean(state.draft)}>{state.busy === "生成订阅" ? "正在生成" : "生成本地家宽订阅"}</button>

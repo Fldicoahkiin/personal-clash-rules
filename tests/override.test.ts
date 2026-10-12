@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import {
+  displayMihomoGroup,
+  displayMihomoRule,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
@@ -25,8 +27,8 @@ describe("Clash Party override", () => {
     };
 
     expect(config["rule-providers"]).toEqual(mihomoRuleProviders);
-    expect(config["+proxy-groups"]).toEqual(mihomoProxyGroups);
-    expect(config["+rules"]).toEqual(mihomoRules);
+    expect(config["+proxy-groups"]).toEqual(mihomoProxyGroups.map(displayMihomoGroup));
+    expect(config["+rules"]).toEqual(mihomoRules.map(displayMihomoRule));
   });
 
   it("publishes Apple rules as remote providers", async () => {
@@ -61,34 +63,36 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 6)).toEqual([
+    expect(config["+rules"].slice(0, 8)).toEqual([
       "RULE-SET,private-domain,DIRECT",
       "RULE-SET,private-ip,DIRECT,no-resolve",
-      "RULE-SET,apple-system,APPLE",
-      "RULE-SET,apple-services,APPLE",
-      "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,AI",
-      "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,AI",
+      "RULE-SET,tencent-messaging,DIRECT",
+      "RULE-SET,netease-music,DIRECT",
+      "RULE-SET,apple-system,🍎 Apple",
+      "RULE-SET,apple-services,🍎 Apple",
+      "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI",
+      "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🤖 AI",
     ]);
-    expect(config["+rules"]).toContain("RULE-SET,ai-xai,AI");
-    expect(config["+rules"]).toContain("RULE-SET,steam,STEAM");
+    expect(config["+rules"]).toContain("RULE-SET,ai-xai,🤖 AI");
+    expect(config["+rules"]).toContain("RULE-SET,steam,🎮 Steam");
     expect(config["+rules"]).toContain(
-      "RULE-SET,steam-download,STEAM-DOWNLOAD",
+      "RULE-SET,steam-download,📥 Steam 下载",
     );
-    expect(config["+rules"]).toContain("RULE-SET,steam-online,STEAM-ONLINE");
-    expect(config["+rules"]).toContain("RULE-SET,bilibili,BILIBILI");
-    expect(config["+rules"]).toContain("RULE-SET,anigamer,ANIGAMER");
-    expect(config["+rules"]).toContain("RULE-SET,discord,DISCORD");
-    expect(config["+rules"]).toContain("RULE-SET,apple-system,APPLE");
-    expect(config["+rules"]).toContain("RULE-SET,apple-services,APPLE");
+    expect(config["+rules"]).toContain("RULE-SET,steam-online,🕹️ Steam 联机");
+    expect(config["+rules"]).toContain("RULE-SET,bilibili,📺 哔哩哔哩");
+    expect(config["+rules"]).toContain("RULE-SET,anigamer,📺 巴哈姆特");
+    expect(config["+rules"]).toContain("RULE-SET,discord,💬 Discord");
+    expect(config["+rules"]).toContain("RULE-SET,apple-system,🍎 Apple");
+    expect(config["+rules"]).toContain("RULE-SET,apple-services,🍎 Apple");
 
-    expect(config["+rules"].indexOf("RULE-SET,apple-system,APPLE"))
-      .toBeLessThan(config["+rules"].indexOf("RULE-SET,apple-services,APPLE"));
-    expect(config["+rules"].indexOf("RULE-SET,steam-download,STEAM-DOWNLOAD"))
-      .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam-online,STEAM-ONLINE"));
-    expect(config["+rules"].indexOf("RULE-SET,steam-online,STEAM-ONLINE"))
-      .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam,STEAM"));
-    expect(config["+rules"].indexOf("RULE-SET,bilibili,BILIBILI"))
-      .toBeLessThan(config["+rules"].indexOf("RULE-SET,media,MEDIA"));
+    expect(config["+rules"].indexOf("RULE-SET,apple-system,🍎 Apple"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,apple-services,🍎 Apple"));
+    expect(config["+rules"].indexOf("RULE-SET,steam-download,📥 Steam 下载"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam-online,🕹️ Steam 联机"));
+    expect(config["+rules"].indexOf("RULE-SET,steam-online,🕹️ Steam 联机"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam,🎮 Steam"));
+    expect(config["+rules"].indexOf("RULE-SET,bilibili,📺 哔哩哔哩"))
+      .toBeLessThan(config["+rules"].indexOf("RULE-SET,media,🎬 流媒体"));
   });
 
   it("offers explicit country selectors and service policies", async () => {
@@ -112,22 +116,22 @@ describe("Clash Party override", () => {
       expect(groups.get(country), country).toHaveProperty("empty-fallback", "REJECT");
       expect(groups.get(country)?.["exclude-type"], country).toBe("direct");
     }
-    expect(groups.get("AI")?.proxies).toEqual([
-      "GLOBAL",
+    expect(groups.get("🤖 AI")?.proxies).toEqual([
+      "🌐 全局",
       "🇺🇸 美国",
       "🇯🇵 日本",
       "🇸🇬 新加坡",
       "🇹🇼 台湾",
     ]);
-    expect(groups.get("STEAM")?.proxies).toContain("DIRECT");
-    expect(groups.get("STEAM")?.proxies?.[0]).toBe("GLOBAL");
-    expect(groups.get("STEAM-DOWNLOAD")?.proxies?.[0]).toBe("GLOBAL");
-    expect(groups.get("STEAM-ONLINE")?.proxies?.[0]).toBe("GLOBAL");
-    expect(groups.get("BILIBILI")?.proxies?.[0]).toBe("GLOBAL");
-    expect(groups.get("ANIGAMER")?.proxies?.[0]).toBe("🇹🇼 台湾");
-    expect(groups.get("DISCORD")?.proxies).toContain("GLOBAL");
-    expect(groups.get("APPLE")?.proxies).toEqual([
-      "GLOBAL",
+    expect(groups.get("🎮 Steam")?.proxies).toContain("DIRECT");
+    expect(groups.get("🎮 Steam")?.proxies?.[0]).toBe("🌐 全局");
+    expect(groups.get("📥 Steam 下载")?.proxies?.[0]).toBe("🌐 全局");
+    expect(groups.get("🕹️ Steam 联机")?.proxies?.[0]).toBe("🌐 全局");
+    expect(groups.get("📺 哔哩哔哩")?.proxies?.[0]).toBe("🌐 全局");
+    expect(groups.get("📺 巴哈姆特")?.proxies?.[0]).toBe("🇹🇼 台湾");
+    expect(groups.get("💬 Discord")?.proxies).toContain("🌐 全局");
+    expect(groups.get("🍎 Apple")?.proxies).toEqual([
+      "🌐 全局",
       "DIRECT",
       "🇺🇸 美国",
       "🇯🇵 日本",

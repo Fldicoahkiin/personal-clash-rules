@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 import { defaultDnsSettings, type DnsSettings } from "../config/dns-settings";
+import { metadataFilter } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 
 export const dnsProxyGroupName = "DNS-PROXY";
@@ -10,6 +11,7 @@ export function dnsProxyGroup(providerNames: string[] = []) {
     type: "select",
     "include-all": true,
     "exclude-type": "direct|reject",
+    "exclude-filter": metadataFilter,
     "empty-fallback": "REJECT",
     ...(providerNames.length ? { use: providerNames } : {}),
     icon: "https://rules.flacier.com/policy-icons/globe.svg",

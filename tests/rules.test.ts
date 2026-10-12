@@ -13,6 +13,18 @@ async function read(relativePath: string): Promise<string> {
 }
 
 describe("published rule sets", () => {
+  it("directs QQ, WeChat images and NetEase Music without a blanket China or cloud allowlist", async () => {
+    const rules = await Promise.all(["tencent-messaging", "netease-music"].map(async id => createRuleSet({
+      id, label: id, path: `rules/direct/${id}.list`, policy: "DIRECT",
+    }, await read(`public/rules/direct/${id}.list`))));
+    for (const host of ["weixin.qq.com", "res.wx.qq.com", "thirdwx.qlogo.cn", "mmbiz.qpic.cn", "gchat.qpic.cn", "qzonestyle.gtimg.cn", "music.163.com", "p1.music.126.net", "m7.music.126.net"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ matched: true, policy: "DIRECT" });
+    }
+    for (const host of ["api.openai.com", "api.anthropic.com", "example.cn", "cloud.tencent.com", "cos.ap-guangzhou.myqcloud.com", "qpic.cn.example.org", "news.163.com"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ matched: false, policy: "DEFAULT" });
+    }
+    expect(rules.flatMap(set => set.rules).every(rule => ["DOMAIN", "DOMAIN-SUFFIX"].includes(rule.type))).toBe(true);
+  });
   it("keeps Claude authentication, content and specific intake hosts on the AI policy", async () => {
     const rules = [createRuleSet({
       id: "ai-anthropic", label: "Claude", policy: "AI", path: "rules/ai/anthropic.list",

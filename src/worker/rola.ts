@@ -6,6 +6,7 @@ import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store";
 import { buildSubscription, buildSynchronizedSubscription, readRequestObject } from "./subscriptions";
 import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscription-recovery";
+import { renderRolaTarget, requireRolaTarget, rolaRequestTarget, type RolaTarget } from "./rola-target";
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
 
 const profileBytes = 256 * 1024;
@@ -66,9 +67,11 @@ async function write(env: Env, kind: "preview" | "chain", value: unknown, ttl: n
   return key;
 }
 
-function profileResponse(chain: Chain, profile: string, userinfo: string | null) {
-  const headers = new Headers({ "Content-Type": "text/yaml; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
-    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(chain.name || "Flacier-Rola")}.yaml`,
+function profileResponse(chain: Chain, profile: string, userinfo: string | null, target: RolaTarget = "mihomo-config") {
+  const extension = target === "mihomo-config" ? "yaml" : target === "shadowrocket-config" ? "conf" : "txt";
+  const headers = new Headers({ "Content-Type": target === "mihomo-config" ? "text/yaml; charset=utf-8" : "text/plain; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(chain.name || "Flacier-Rola")}.${extension}`,
+    "Vary": "User-Agent", "X-Subscription-Target": target,
     "Profile-Update-Interval": "6", "X-Subscription-Source-Mode": chain.source.kind, "X-Rola-Expires-At": new Date(chain.expiresAt).toISOString() });
   if (userinfo) headers.set("Subscription-Userinfo", userinfo);
   return new Response(profile, { headers });
@@ -131,7 +134,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       if (url.pathname === "/api/rola/chains") {
         const preview = await read<Preview>(env, "preview", input.baseId);
         const exit = object(input.exit);
-        const settings = { connectionMode: input.connectionMode, groupName: input.groupName, name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
+        const settings = { connectionMode: input.connectionMode, groupName: input.groupName, policyGroup: input.policyGroup, name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
           country: exit.country, sessionId: exit.sessionId, sessionMinutes: exit.sessionMinutes, upstreamNode: input.upstreamNode, rules: input.rules, dns: input.dns };
         const generated = prepare(preview.profile, settings);
         // Only validated, explicitly selected fields can enter a persistent cloud record.
@@ -141,27 +144,36 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         const chain: Chain = { source: preview.source, target: preview.target, name: preview.name, settings, expiresAt, revokeHash: await hashText(revokeToken) };
         const chainId = await write(env, "chain", chain, chainTtl);
         await withSubscriptionRecovery(env.SUBSCRIPTIONS, `rola:${chainId}`, async () => profileResponse(chain, generated.profile, preview.userinfo));
-        return result({ url: `${url.origin}/r/${chainId}.yaml`, summary: generated.summary, revokeToken,
+        const universalUrl = `${url.origin}/r/${chainId}`;
+        return result({ url: `${universalUrl}.yaml`, universalUrl,
+          ...(settings.connectionMode === "direct" ? { shadowrocketConfigUrl: `${universalUrl}?target=shadowrocket-config` } : {}),
+          summary: generated.summary, revokeToken,
           expiresAt: new Date(expiresAt).toISOString(), sourceMode: preview.source.kind }, 201);
       }
       if (url.pathname === "/api/rola/revoke") {
         let link: URL;
         try { link = new URL(String(input.url)); } catch { throw new ApiError(400, "invalid_rola_url", "请填写云端串联订阅链接。"); }
-        const match = /^\/r\/([\w-]{32})\.yaml$/u.exec(link.pathname);
+        const match = /^\/r\/([\w-]{32})(?:\.yaml)?$/u.exec(link.pathname);
         if (!match || link.origin !== url.origin) throw new ApiError(400, "invalid_rola_url", "请填写本站云端串联订阅链接。");
         const chain = await read<Chain>(env, "chain", match[1]);
         const digest = await hashText(typeof input.revokeToken === "string" ? input.revokeToken : "");
         if (!timingSafeEqual(encoder.encode(digest), encoder.encode(chain.revokeHash))) throw new ApiError(403, "rola_revoke_denied", "删除码不匹配，订阅未改变。");
         await env.SUBSCRIPTIONS.delete(`rola:chain:${match[1]}`);
         await env.SUBSCRIPTIONS.delete(await subscriptionRecoveryKey(`rola:${match[1]}`));
+        for (const target of ["shadowrocket", "shadowrocket-config"]) {
+          await env.SUBSCRIPTIONS.delete(await subscriptionRecoveryKey(`rola:${match[1]}:${target}`));
+        }
         return result({ deleted: true });
       }
     }
-    const match = /^\/r\/([\w-]{32})\.yaml$/u.exec(url.pathname);
+    const match = /^\/r\/([\w-]{32})(?:\.yaml)?$/u.exec(url.pathname);
     if (match && ["GET", "HEAD"].includes(request.method)) {
       const chain = await read<Chain>(env, "chain", match[1]);
+      const target = rolaRequestTarget(request, url);
+      requireRolaTarget(chain.settings, target);
       let synchronized: Awaited<ReturnType<typeof buildSynchronizedSubscription>> | undefined;
-      const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, `rola:${match[1]}`, async () => {
+      const recoveryId = `rola:${match[1]}${target === "mihomo-config" ? "" : `:${target}`}`;
+      const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, recoveryId, async () => {
         let profile: string;
         let userinfo: string | null = null;
         if (chain.source.kind === "snapshot") profile = chain.source.profile;
@@ -172,7 +184,9 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           profile = built.generated.content;
           if (built.generated.usage.combined) userinfo = formatSubscriptionUserinfo(built.generated.usage.combined);
         }
-        const rendered = profileResponse(chain, prepare(profile, chain.settings).profile, userinfo);
+        const content = await renderRolaTarget(env, prepare(profile, chain.settings).profile, chain.settings, target);
+        if (encoder.encode(content).length > requestBytes) throw new ApiError(413, "rola_output_too_large", "家宽输出不能超过 512 KiB，请减少节点或规则。");
+        const rendered = profileResponse(chain, content, userinfo, target);
         if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.syncedAt);
         return rendered;
       });

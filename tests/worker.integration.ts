@@ -194,7 +194,9 @@ describe("Worker entrypoint", () => {
     expect(preview.ruleSets.at(-1)).toMatchObject({ content: "MATCH", policy: "DEFAULT" });
     expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
     expect(preview.ruleSets[1].content).toContain(",no-resolve");
-    expect(preview.ruleSets[2].policy).toBe("APPLE");
+    expect(preview.ruleSets[2].policy).toBe("DIRECT");
+    expect(preview.ruleSets[3].policy).toBe("DIRECT");
+    expect(preview.ruleSets[4].policy).toBe("APPLE");
   });
 
   it("uses Anthropic inbound IPs only as a no-resolve fallback after domain policies", async () => {

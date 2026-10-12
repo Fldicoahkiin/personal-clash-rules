@@ -21,7 +21,12 @@ proxy-groups: [{name: PROXY, type: select, proxies: [Airport]}]
 rules: [MATCH,PROXY]
 `;
 function post(path: string, body: unknown, headers: Record<string, string> = {}) {
-  return exports.default.fetch(`${origin}${path}`, { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": `192.0.2.${testClient}`, ...headers }, body: JSON.stringify(body) });
+  return fetchClient(`${origin}${path}`, { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": `192.0.2.${testClient}`, ...headers }, body: JSON.stringify(body) });
+}
+function fetchClient(url: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("CF-Connecting-IP", `192.0.2.${testClient}`);
+  return exports.default.fetch(url, { ...init, headers });
 }
 async function preview(input: Record<string, unknown> = {}) {
   const response = await post("/api/rola/preview", { sources: [{ type: "node", name: "Airport", value: uri }], target: "clash-party-config", name: "Test", ...input });
@@ -36,18 +41,75 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it.each(["socks5", "http"])("adapts one direct %s link for Mihomo and Shadowrocket without dropping residential nodes or quota", async protocol => {
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(uri, { headers: { "Subscription-Userinfo": "upload=10; download=20; total=100; expire=0" } }));
+    try {
+      const p = await preview({ sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }] });
+      const response = await post("/api/rola/chains", { baseId: p.baseId, exit: { ...exit, protocol, name: "US Home" }, rules, dns,
+        connectionMode: "direct", groupName: "🇺🇸 美国家宽", policyGroup: "AI" });
+      expect(response.status).toBe(201);
+      const created = await response.json<{ url: string; universalUrl: string; shadowrocketConfigUrl: string; revokeToken: string }>();
+      expect(created.universalUrl).toMatch(/\/r\/[\w-]{32}$/u);
+      for (const ua of ["ClashParty/2.0", "ClashVerge/2.0", "FlClash/0.8"]) {
+        const mihomo = await fetchClient(created.universalUrl, { headers: { "User-Agent": ua } });
+        expect(mihomo.headers.get("x-subscription-target")).toBe("mihomo-config");
+        expect(parse(await mihomo.text()).proxies.at(-1)).toMatchObject({ type: protocol, "dialer-proxy": "DIRECT" });
+      }
+      const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
+      expect(phone.status).toBe(200);
+      expect(phone.headers.get("content-type")).toContain("text/plain");
+      expect(phone.headers.get("vary")).toBe("User-Agent");
+      expect(phone.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100; expire=0");
+      expect(await phone.text()).toContain(`${protocol}://test-account:test-password@residential.example:9004#US%20Home`);
+      const config = await fetchClient(created.shadowrocketConfigUrl);
+      expect(config.status).toBe(200);
+      const conf = await config.text();
+      expect(conf).toContain("[Proxy Group]");
+      expect(conf).toContain("🇺🇸 美国家宽 = select, US Home");
+      expect(conf).toContain("🤖 AI = select, 🇺🇸 美国家宽");
+      expect(conf).toContain("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+      expect(conf).toContain("AND,((DOMAIN-SUFFIX,claude.ai),(PROTOCOL,UDP)),REJECT");
+      expect(conf).toContain("https://1.1.1.1/dns-query#proxy=US%20Home");
+      expect(conf).not.toMatch(/test-password|airport-secret|NETWORK,UDP/);
+      const head = await fetchClient(created.universalUrl, { method: "HEAD", headers: { "User-Agent": "Shadowrocket/2100" } });
+      expect(head.headers.get("x-subscription-target")).toBe("shadowrocket");
+      expect(await head.text()).toBe("");
+      await clearSourceCache();
+      spy.mockRejectedValue(new Error("offline"));
+      const recovered = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
+      expect(recovered.headers.get("x-subscription-refresh-status")).toBe("last-good");
+      expect(await recovered.text()).toContain(`${protocol}://`);
+      expect((await fetchClient(`${created.universalUrl}?target=surge`)).status).toBe(422);
+      expect((await post("/api/rola/revoke", { url: created.universalUrl, revokeToken: created.revokeToken })).status).toBe(200);
+      expect((await fetchClient(created.url)).status).toBe(404);
+    } finally { spy.mockRestore(); }
+  });
+
+  it("does not flatten an airport-first-hop chain into a direct mobile subscription", async () => {
+    const created = await create();
+    const universal = created.url.replace(/\.yaml$/u, "");
+    const phone = await fetchClient(universal, { headers: { "User-Agent": "Shadowrocket/2100" } });
+    expect(phone.status).toBe(422);
+    expect((await phone.json<{ error: string }>()).error).toBe("rola_mobile_chain_unsupported");
+    expect((await fetchClient(universal)).status).toBe(200);
+  });
+
   it("requires explicit direct mode and retains a separate named residential group", async () => {
     const p = await preview();
-    const input = { baseId: p.baseId, exit, rules, dns, connectionMode: "direct", groupName: "🇺🇸 美国家宽" };
+    const input = { baseId: p.baseId, exit, rules, dns, connectionMode: "direct", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const created = await post("/api/rola/chains", input);
     expect(created.status).toBe(201);
     const data = await created.json<{ url: string; summary: { connectionMode: string } }>();
     expect(data.summary.connectionMode).toBe("direct");
-    const response = await exports.default.fetch(data.url);
+    const response = await fetchClient(data.url);
     expect(response.status).toBe(200);
     const profile = parse(await response.text());
+    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
+      expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
+    }
+    expect(profile.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
     expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
-    expect(profile["proxy-groups"].at(-1)).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
+    expect(profile["proxy-groups"][2]).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
     expect((await post("/api/rola/chains", { ...input, connectionMode: "automatic" })).status).toBe(422);
     expect((await post("/api/rola/chains", { ...input, connectionMode: undefined })).status).toBe(422);
   });
@@ -69,7 +131,7 @@ describe("cloud Rola subscriptions", () => {
       const response = await post("/api/rola/chains", { baseId: p.baseId, exit, upstreamNode: p.nodes[0].name, rules, dns });
       expect(response.status).toBe(201);
       const { url } = await response.json<{ url: string }>();
-      const refreshed = await exports.default.fetch(url);
+      const refreshed = await fetchClient(url);
       expect(refreshed.status).toBe(200);
       expect(refreshed.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100");
       expect(decodeURIComponent(refreshed.headers.get("content-disposition") || "")).toContain("Test.yaml");
@@ -82,13 +144,13 @@ describe("cloud Rola subscriptions", () => {
         snapshot: { readAt: new Date(Date.now() - 120_000).toISOString(), sources: [{ content: uri.replace("airport-secret", "updated-secret"), metadata: { profileName: "Airport", usage: { upload: "10", download: "40", total: "100" } } }] },
       };
       expect((await post("/api/subscriptions/sync", update)).status).toBe(200);
-      const updated = await exports.default.fetch(url);
+      const updated = await fetchClient(url);
       expect(updated.headers.get("subscription-userinfo")).toContain("download=40");
       expect(parse(await updated.text()).proxies[0].password).toBe("updated-secret");
       update.snapshot.readAt = new Date().toISOString();
       update.snapshot.sources[0].content = uri.replace("#Airport", "#Withdrawn");
       expect((await post("/api/subscriptions/sync", update)).status).toBe(200);
-      expect((await exports.default.fetch(url)).status).toBe(422);
+      expect((await fetchClient(url)).status).toBe(422);
       expect(spy).not.toHaveBeenCalled();
     } finally { spy.mockRestore(); }
   });
@@ -111,7 +173,7 @@ describe("cloud Rola subscriptions", () => {
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(airport));
     try {
       const created = await create({ sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }] });
-      const refreshed = await exports.default.fetch(created.url);
+      const refreshed = await fetchClient(created.url);
       expect(refreshed.status).toBe(200);
       expect(parse(await refreshed.text()).proxies).toHaveLength(2);
       spy.mockImplementation(async () => new Response("x".repeat(1_048_577)));
@@ -125,19 +187,19 @@ describe("cloud Rola subscriptions", () => {
     const created = await create();
     expect(JSON.stringify(created)).not.toMatch(/test-password|test-account|airport-secret/);
     expect(new URL(created.url).pathname).toMatch(/^\/r\/[\w-]{32}\.yaml$/u);
-    const response = await exports.default.fetch(created.url);
+    const response = await fetchClient(created.url);
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     const profile = parse(await response.text());
     expect(profile.proxies.at(-1)).toMatchObject({ type: "socks5", username: exit.account, password: exit.password, "dialer-proxy": "Airport", udp: false });
     expect(profile.rules[0]).toBe("AND,((DOMAIN-SUFFIX,claude.ai),(NETWORK,UDP)),REJECT");
     expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(["https://1.1.1.1/dns-query#ROLA"]);
-    const head = await exports.default.fetch(created.url, { method: "HEAD" });
+    const head = await fetchClient(created.url, { method: "HEAD" });
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");
     expect((await post("/api/rola/revoke", { url: created.url, revokeToken: "bad" })).status).toBe(403);
     expect((await post("/api/rola/revoke", { url: created.url, revokeToken: created.revokeToken })).status).toBe(200);
-    expect((await exports.default.fetch(created.url)).status).toBe(404);
+    expect((await fetchClient(created.url)).status).toBe(404);
   });
 
   it("refreshes airport quota and rejects a missing first hop or denied source without returning an empty profile", async () => {
@@ -149,14 +211,14 @@ describe("cloud Rola subscriptions", () => {
       const created = await create({ sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }] });
       upload = 15;
       await clearSourceCache();
-      const refreshed = await exports.default.fetch(created.url);
+      const refreshed = await fetchClient(created.url);
       expect(refreshed.headers.get("subscription-userinfo")).toBe("upload=15; download=20; total=100; expire=0");
       content = uri.replace("#Airport", "#Changed");
       await clearSourceCache();
-      expect((await exports.default.fetch(created.url)).status).toBe(422);
+      expect((await fetchClient(created.url)).status).toBe(422);
       status = 403;
       await clearSourceCache();
-      const failed = await exports.default.fetch(created.url);
+      const failed = await fetchClient(created.url);
       expect(failed.status).toBe(200);
       expect(failed.headers.get("x-subscription-refresh-status")).toBe("last-good");
       expect(parse(await failed.text()).proxies.at(-1)["dialer-proxy"]).toBe("Airport");
@@ -166,7 +228,7 @@ describe("cloud Rola subscriptions", () => {
   it("supports explicit uploaded snapshots without falsely advertising refreshed quota", async () => {
     const created = await create({ snapshot: base, sources: undefined });
     expect(created.sourceMode).toBe("snapshot");
-    const response = await exports.default.fetch(created.url);
+    const response = await fetchClient(created.url);
     expect(response.status).toBe(200);
     expect(response.headers.get("x-subscription-source-mode")).toBe("snapshot");
     expect(response.headers.has("subscription-userinfo")).toBe(false);

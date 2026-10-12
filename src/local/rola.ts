@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 import { isMap, isSeq, parseDocument } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { mihomoRuleProviders } from "../config/mihomo-policy";
+import { manualProxyGroupName, mihomoPolicyDisplayNames, mihomoRuleProviders } from "../config/mihomo-policy";
 
 const nodeName = "ROLA-RESIDENTIAL";
 const groupName = "ROLA";
@@ -68,6 +68,7 @@ export function parseRolaSettings(value: unknown) {
   if (connectionMode === "direct" && input.upstreamNode) throw new Error("Direct Rola access must not select an airport first hop");
   const selectedGroup = input.groupName === undefined || input.groupName === "" ? groupName : text(input.groupName, "Rola group name", 64);
   if (["DIRECT", "REJECT", "COMPATIBLE"].includes(selectedGroup) || /[,#&]/u.test(selectedGroup)) throw new Error("Invalid Rola group name");
+  if (input.policyGroup !== undefined && input.policyGroup !== "" && input.policyGroup !== "AI") throw new Error("Invalid protected policy group");
   if (input.protocol !== "http" && input.protocol !== "socks5") throw new Error("Rola protocol must be http or socks5; TLS/UDP support has not been verified");
   const server = text(input.server, "Rola server");
   if (!domain(server) && isIP(server) !== 4) throw new Error("Rola server must be a hostname or IPv4 address, not a URL");
@@ -100,6 +101,7 @@ export function parseRolaSettings(value: unknown) {
   return {
     connectionMode,
     groupName: selectedGroup,
+    policyGroup: input.policyGroup === "AI" ? "AI" : selectedGroup,
     authMode,
     name: input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
     protocol: input.protocol,
@@ -160,6 +162,11 @@ export function prepareRolaProfile(source: string, value: unknown) {
   if (!isSeq(proxies) || !isSeq(groups) || !isSeq(rules) || !isMap(dns) || dns.get("enable") !== true) {
     throw new Error("Use a complete Mihomo profile with inline nodes, groups, rules and working DNS; a provider-only or empty profile is insufficient");
   }
+  const policyGroup = settings.policyGroup === "AI" && !groups.items.some(group => isMap(group) && group.get("name") === "AI")
+    ? mihomoPolicyDisplayNames.AI : settings.policyGroup;
+  if (policyGroup !== groupName && !groups.items.some(group => isMap(group) && group.get("name") === policyGroup && group.get("type") === "select")) {
+    throw new Error("Selected policy group is missing from the base profile");
+  }
   const names = new Set<string>();
   for (const item of [...proxies.items, ...groups.items]) {
     if (!isMap(item) || typeof item.get("name") !== "string") throw new Error("Unsupported proxy/group structure in base profile");
@@ -217,16 +224,24 @@ export function prepareRolaProfile(source: string, value: unknown) {
   groups.add(document.createNode({
     name: groupName, type: "select", proxies: [nodeName],
     "empty-fallback": "REJECT", "disable-udp": true,
-    icon: "https://rules.flacier.com/policy-icons/region.svg",
   }));
+  const residentialGroup = groups.items.pop();
+  groups.items.splice(Math.min(2, groups.items.length), 0, residentialGroup);
+  for (const group of groups.items) {
+    if (!isMap(group) || ![manualProxyGroupName, "GLOBAL", "AI", mihomoPolicyDisplayNames.GLOBAL, mihomoPolicyDisplayNames.AI].includes(String(group.get("name")))) continue;
+    const members = group.get("proxies", true);
+    if (!isSeq(members)) throw new Error("Invalid selectable policy group");
+    if (group.get("name") === policyGroup) members.items.unshift(document.createNode(groupName));
+    else members.add(groupName);
+  }
   const protectedRules = settings.rules.flatMap(rule => [
     `AND,((${rule}),(NETWORK,UDP)),REJECT`,
-    `${rule},${groupName}`,
+    `${rule},${policyGroup}`,
   ]);
   rules.items.unshift(...protectedRules.map(rule => document.createNode(rule)));
   const resolverPolicy = Object.fromEntries(settings.rules.map(rule => {
     const [kind, host] = rule.split(",");
-    return [kind === "DOMAIN-SUFFIX" ? `+.${host}` : host, settings.dns.map(url => `${url}#${groupName}`)];
+    return [kind === "DOMAIN-SUFFIX" ? `+.${host}` : host, settings.dns.map(url => `${url}#${policyGroup}`)];
   }));
   dns.set("nameserver-policy", document.createNode(resolverPolicy));
   dns.set("ipv6", false);
@@ -234,6 +249,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
   const summary = {
     connectionMode: settings.connectionMode,
     groupName,
+    policyGroup,
     country: settings.country ? `${flag} ${settings.country.toUpperCase()}` : "地区未声明",
     sessionMinutes: settings.sessionMinutes,
     protectedRules: settings.rules.length,
@@ -251,11 +267,12 @@ export function createRolaOverride(source: string, value: unknown) {
   const output = parseDocument(prepared.profile).toJS({ maxAliasCount: 100 });
   const patch = {
     connectionMode: settings.connectionMode,
-    upstream: settings.upstreamNode, node: output.proxies.at(-1), group: output["proxy-groups"].at(-1),
+    upstream: settings.upstreamNode, node: output.proxies.at(-1), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
     rules: output.rules.slice(0, settings.rules.length * 2), domains: settings.rules,
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
     excludedNodePattern: `^${settings.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
+    selectableGroups: [manualProxyGroupName, "GLOBAL", "AI", mihomoPolicyDisplayNames.GLOBAL, mihomoPolicyDisplayNames.AI], policyGroup: prepared.summary.policyGroup,
   };
   // This artifact contains credentials. It is downloaded only from the loopback server.
   return `// PRIVATE: import locally and bind to one subscription. Never upload or sync this file.
@@ -269,6 +286,7 @@ function main(config) {
   if (data.connectionMode === 'chain' && (nodes.length !== 1 || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains))) throw new Error('Rola: selected first hop is missing or unsafe');
   const names = config.proxies.concat(config['proxy-groups']).map(item => item.name);
   if (new Set(names).size !== names.length || names.includes(data.node.name) || names.includes(data.group.name)) throw new Error('Rola: duplicate names or overlay already applied');
+  if (data.policyGroup !== data.group.name && !config['proxy-groups'].some(group => group.name === data.policyGroup && group.type === 'select')) throw new Error('Rola: selected policy group is missing');
   if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');
   const next = JSON.parse(JSON.stringify(config));
   for (const group of next['proxy-groups']) {
@@ -277,7 +295,13 @@ function main(config) {
     group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|' + data.excludedNodePattern : data.excludedNodePattern;
   }
   next.proxies.push(data.node);
-  next['proxy-groups'].push(data.group);
+  next['proxy-groups'].splice(Math.min(2, next['proxy-groups'].length), 0, data.group);
+  for (const group of next['proxy-groups']) {
+    if (!data.selectableGroups.includes(group.name)) continue;
+    if (!Array.isArray(group.proxies)) throw new Error('Rola: invalid selectable policy group');
+    if (group.name === data.policyGroup) group.proxies.unshift(data.group.name);
+    else group.proxies.push(data.group.name);
+  }
   next.rules.unshift(...data.rules);
   next.dns['nameserver-policy'] = data.policy;
   next.dns.ipv6 = false;

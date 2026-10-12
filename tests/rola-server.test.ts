@@ -57,7 +57,7 @@ describe("local Rola web workflow", () => {
     expect(refreshed.headers.get("subscription-userinfo")).toContain("total=1000");
     const profile = parse(await refreshed.text());
     expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
-    expect(profile["proxy-groups"].at(-1).name).toBe("🇺🇸 美国家宽");
+    expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国家宽")).toBeDefined();
     expect(await (await f.call(new URL(created.overrideUrl).pathname)).text()).toContain('"connectionMode":"direct"');
   });
 

@@ -1,6 +1,8 @@
 const publishedRuleFiles = {
   "private-domain": "local/private-domain.list",
   "private-ip": "local/private-ip.list",
+  "tencent-messaging": "direct/tencent-messaging.list",
+  "netease-music": "direct/netease-music.list",
   "apple-system": "apple/system.list",
   "apple-services": "apple/services.list",
   "ai-openai": "ai/openai.list",
@@ -35,7 +37,30 @@ export const mihomoRuleProviders = Object.fromEntries(
   ]),
 );
 
-const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
+export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
+export const manualProxyGroupName = "🖐 手动选择";
+export const mihomoPolicyDisplayNames: Record<string, string> = {
+  GLOBAL: "🌐 全局", AUTO: "♻️ 自动选择", AI: "🤖 AI", APPLE: "🍎 Apple",
+  STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
+  DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
+  ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交", DEFAULT: "🐟 未匹配流量",
+};
+
+export function displayMihomoGroup(group: { name: string; proxies?: readonly string[]; icon?: string }) {
+  const { icon: _icon, ...rest } = group;
+  return {
+    ...rest,
+    name: mihomoPolicyDisplayNames[group.name] ?? group.name,
+    ...(group.proxies ? { proxies: group.proxies.map(name => mihomoPolicyDisplayNames[name] ?? name) } : {}),
+  };
+}
+
+export function displayMihomoRule(rule: string): string {
+  const parts = rule.split(",");
+  const index = parts.at(-1) === "no-resolve" ? parts.length - 2 : parts.length - 1;
+  parts[index] = mihomoPolicyDisplayNames[parts[index]] ?? parts[index];
+  return parts.join(",");
+}
 const policyIconBase = "https://rules.flacier.com/policy-icons";
 export const countryGroupNames: Record<string, string> = {
   US: "🇺🇸 美国", JP: "🇯🇵 日本", SG: "🇸🇬 新加坡", HK: "🇭🇰 香港",
@@ -108,6 +133,23 @@ function countryGroup(name: string, filter: string) {
 
 export const mihomoProxyGroups = [
   {
+    name: manualProxyGroupName,
+    type: "select",
+    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU"],
+    "include-all": true,
+    "exclude-type": "direct",
+    "exclude-filter": metadataFilter,
+    icon: `${policyIconBase}/route.svg`,
+  },
+  {
+    name: "GLOBAL",
+    type: "select",
+    proxies: [manualProxyGroupName, "AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
+    "include-all": true,
+    "exclude-filter": metadataFilter,
+    icon: `${policyIconBase}/globe.svg`,
+  },
+  {
     name: "AUTO",
     type: "url-test",
     "include-all": true,
@@ -146,14 +188,6 @@ export const mihomoProxyGroups = [
     "EU",
     "(?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[ _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))",
   ),
-  {
-    name: "GLOBAL",
-    type: "select",
-    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
-    "include-all": true,
-    "exclude-filter": metadataFilter,
-    icon: `${policyIconBase}/globe.svg`,
-  },
   {
     name: "AI",
     type: "select",
@@ -236,6 +270,8 @@ export const mihomoProxyGroups = [
 export const mihomoRules = [
   "RULE-SET,private-domain,DIRECT",
   "RULE-SET,private-ip,DIRECT,no-resolve",
+  "RULE-SET,tencent-messaging,DIRECT",
+  "RULE-SET,netease-music,DIRECT",
   "RULE-SET,apple-system,APPLE",
   "RULE-SET,apple-services,APPLE",
   "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,AI",

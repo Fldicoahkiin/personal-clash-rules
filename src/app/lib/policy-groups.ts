@@ -1,4 +1,4 @@
-import { countryGroupNames } from "../../config/mihomo-policy";
+import { countryGroupNames, mihomoPolicyDisplayNames } from "../../config/mihomo-policy";
 
 export const displayedPolicyGroups = [
   {
@@ -63,8 +63,9 @@ export const displayedPolicyGroups = [
   },
 ].map(group => ({
   ...group,
-  initial: countryGroupNames[group.initial] ?? group.initial,
-  options: group.options.map(name => countryGroupNames[name] ?? name),
+  name: mihomoPolicyDisplayNames[group.name] ?? group.name,
+  initial: countryGroupNames[group.initial] ?? mihomoPolicyDisplayNames[group.initial] ?? group.initial,
+  options: group.options.map(name => countryGroupNames[name] ?? mihomoPolicyDisplayNames[name] ?? name),
 }));
 
 export function describePolicyRoute(policy: string): {
@@ -76,7 +77,7 @@ export function describePolicyRoute(policy: string): {
     return { mode: "直连", route: "DIRECT", target: "DIRECT" };
   }
 
-  const group = displayedPolicyGroups.find((item) => item.name === policy);
+  const group = displayedPolicyGroups.find((item) => item.name === (mihomoPolicyDisplayNames[policy] ?? policy));
   if (!group) {
     return { mode: "代理", route: policy, target: "PROXY" };
   }

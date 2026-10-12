@@ -8,6 +8,9 @@ sources:
   - name: Apple network endpoints
     url: https://support.apple.com/101555
     license: reference
+  - name: blackmatrix7 service domain lists
+    url: https://github.com/blackmatrix7/ios_rule_script
+    license: reference
   - name: Claude Code network requirements
     url: https://code.claude.com/docs/en/network-config
     license: reference
@@ -15,6 +18,14 @@ sources:
     url: https://platform.claude.com/docs/en/api/ip-addresses
     license: reference
 ruleSets:
+  - id: tencent-messaging
+    label: QQ 与微信白名单
+    policy: DIRECT
+    path: rules/direct/tencent-messaging.list
+  - id: netease-music
+    label: 网易云音乐白名单
+    policy: DIRECT
+    path: rules/direct/netease-music.list
   - id: private-domain
     label: 本地网络
     policy: DIRECT

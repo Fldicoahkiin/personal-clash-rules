@@ -1,0 +1,34 @@
+# QQ / WeChat and their image, file and mini-program endpoints.
+# References: https://github.com/v2fly/domain-list-community/blob/master/data/tencent
+# https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Clash/WeChat/WeChat.list
+# Domain-only allowlist: intentionally excludes Tencent Cloud IP ranges and ASNs.
+DOMAIN,apd-pcdnwxlogin.teg.tencent-cloud.net
+DOMAIN,slife.xy-asia.com
+DOMAIN-SUFFIX,qq.com
+DOMAIN-SUFFIX,qq.com.cn
+DOMAIN-SUFFIX,imqq.com
+DOMAIN-SUFFIX,qzone.com
+DOMAIN-SUFFIX,gtimg.cn
+DOMAIN-SUFFIX,gtimg.com
+DOMAIN-SUFFIX,gtimg.com.cn
+DOMAIN-SUFFIX,idqqimg.com
+DOMAIN-SUFFIX,qlogo.cn
+DOMAIN-SUFFIX,qpic.cn
+DOMAIN-SUFFIX,servicewechat.com
+DOMAIN-SUFFIX,tenpay.com
+DOMAIN-SUFFIX,wechat.com
+DOMAIN-SUFFIX,wechatlegal.net
+DOMAIN-SUFFIX,wechatos.net
+DOMAIN-SUFFIX,wechatpay.com
+DOMAIN-SUFFIX,wechatpay.cn
+DOMAIN-SUFFIX,weixin.com
+DOMAIN-SUFFIX,weixinbridge.com
+DOMAIN-SUFFIX,weixinsxy.com
+DOMAIN-SUFFIX,weiyun.com
+DOMAIN-SUFFIX,wxcloudrun.com
+DOMAIN-SUFFIX,wxgateway.com
+DOMAIN-SUFFIX,wxlivecdn.com
+DOMAIN-SUFFIX,mmbizurl.cn
+DOMAIN-SUFFIX,url.cn
+DOMAIN-SUFFIX,wxaurl.cn
+DOMAIN-SUFFIX,wxmpurl.cn

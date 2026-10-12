@@ -9,13 +9,13 @@ import styles from "./RolaSubscription.module.css";
 type State = {
   source: string; sourceMode: "convert" | "snapshot"; snapshot: string; filename: string;
   name: string; target: OutputTarget; userAgent: string; preview: RolaPreview | null; upstream: string;
-  connectionMode: "chain" | "direct"; groupName: string;
+  connectionMode: "chain" | "direct"; groupName: string; policyGroup: "" | "AI";
   exit: RolaExitDraft; rules: string; dns: string; busy: string; error: string; notice: string;
   result: RolaCloudResult | null; management: RolaManagement | null;
 };
 const initial: State = {
   source: "", sourceMode: "convert", snapshot: "", filename: "", name: "Flacier-Rola", target: "clash-party-config", userAgent: "clash.meta", preview: null, upstream: "",
-  connectionMode: "chain", groupName: "家宽出口",
+  connectionMode: "chain", groupName: "家宽出口", policyGroup: "",
   exit: { authMode: "literal", name: "Rola", protocol: "socks5", server: "", port: 9004, account: "", password: "", country: "", sessionId: "main", sessionMinutes: 120 },
   rules: ["anthropic.com", "claude.ai", "claude.com", "clau.de", "claudemcpclient.com", "claudeusercontent.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "github.com", "githubusercontent.com", "githubassets.com"].map(host => `DOMAIN-SUFFIX,${host}`).join("\n"),
   dns: defaultDnsSettings.nameservers.join("\n"), busy: "", error: "", notice: "", result: null, management: null,
@@ -55,7 +55,7 @@ export const RolaCloudSubscription: FC = () => {
     patch({ result: null });
     await run("generate", async () => {
       if (!state.preview || (state.connectionMode === "chain" && !state.upstream)) throw new Error("请先读取基础订阅；机场串联模式还需选择前置节点。");
-      const result = await requestCloudRola<RolaCloudResult>("/chains", { baseId: state.preview.baseId, connectionMode: state.connectionMode, groupName: state.groupName, upstreamNode: state.upstream,
+      const result = await requestCloudRola<RolaCloudResult>("/chains", { baseId: state.preview.baseId, connectionMode: state.connectionMode, groupName: state.groupName, policyGroup: state.policyGroup, upstreamNode: state.upstream,
         exit: state.exit, rules: lines(state.rules), dns: lines(state.dns) });
       patch({ result, management: { url: result.url, revokeToken: result.revokeToken } });
     });
@@ -111,17 +111,19 @@ export const RolaCloudSubscription: FC = () => {
         </div><p className={styles.note}>现成节点不会追加用户名后缀；动态会话不代表固定或独享 IP。账号密码不存浏览器本地存储，点击生成时上传 CF。生成只验证配置，不证明供应商网关可以连接。</p>
       </section>
       <section className={styles.step} aria-labelledby="cloud-rules-title"><h2 id="cloud-rules-title">3. 编辑经家宽的域名规则</h2>
+        <label className="field"><span>域名规则使用的策略组</span><select value={state.policyGroup} onChange={event => change({ policyGroup: event.target.value as State["policyGroup"] })}><option value="">专用家宽组（只走家宽）</option><option value="AI">AI（可在客户端选择出口）</option></select></label>
         <label className="field"><span>家宽分流规则</span><textarea rows={8} className={styles.rules} value={state.rules} onChange={event => change({ rules: event.target.value })} spellCheck={false} /></label>
-        <p className={styles.note}>每行 <code>DOMAIN,api.example.com</code> 或 <code>DOMAIN-SUFFIX,example.com</code>，最多 500 条。这些域名只经 Rola，不自动改走直连；其他流量遵循基础配置规则。</p>
-        <details className={styles.help}><summary>DNS 与连接边界</summary><label className="field"><span>经家宽的 DoH（每行一个 IP 地址 HTTPS URL）</span><textarea rows={3} value={state.dns} onChange={event => change({ dns: event.target.value })} spellCheck={false} /></label><p>匹配域名经 Rola 解析，节点网关使用独立引导 DNS；生成文件关闭 IPv6，匹配域名的 UDP 被拒绝以便应用尝试 TCP。机场到 SOCKS5／HTTP 网关这一段不视为加密，请使用 HTTPS 访问目标。</p><p>Shadowrocket 的代理串联需要单独适配。这里输出的 Mihomo 配置不会自动调整设备的 DNS 覆写、TUN 或 PAC。</p></details>
+        <p className={styles.note}>每行 <code>DOMAIN,api.example.com</code> 或 <code>DOMAIN-SUFFIX,example.com</code>，最多 500 条。匹配域名及其 DNS 跟随上面的策略组；选择 AI 时默认家宽，也可手动切换到机场。家宽组会同时加入手动选择、全局和 AI，不自动回退直连。</p>
+        <details className={styles.help}><summary>DNS 与连接边界</summary><label className="field"><span>DoH（每行一个 IP 地址 HTTPS URL）</span><textarea rows={3} value={state.dns} onChange={event => change({ dns: event.target.value })} spellCheck={false} /></label><p>Mihomo 中匹配域名的 DNS 跟随所选策略组，节点网关使用独立引导 DNS。生成文件关闭 IPv6，匹配域名的 UDP 被拒绝以便应用尝试 TCP。连接到 SOCKS5／HTTP 网关这一段不视为加密，请使用 HTTPS 访问目标。</p><p>直接家宽支持 Shadowrocket 节点订阅及配套配置：手机配置把业务 DNS 固定经家宽节点发送，不随 AI 组切换。机场前置串联暂不支持 Shadowrocket。这些链接不会自动调整桌面 DNS 覆写、TUN 或 PAC。</p></details>
       </section>
       <div className={styles.chain}><span>{state.connectionMode === "direct" ? "设备（不经机场）" : state.upstream || "前置机场节点"}</span><ArrowRight aria-hidden="true" /><span>Rola 家宽</span><ArrowRight aria-hidden="true" /><span>匹配域名</span></div>
       <button className="button button-primary" type="submit" disabled={!state.preview || (state.connectionMode === "chain" && !state.upstream) || !state.exit.account || !state.exit.password}>{state.busy === "generate" ? "正在生成" : "上传到 CF 并生成家宽订阅"}</button>
     </fieldset></form>
     {state.error ? <p role="alert" className="field-error">{state.error}</p> : null}
     {state.notice ? <p role="status">{state.notice}</p> : null}
-    {state.result ? <section className={styles.result} aria-label="云端家宽生成结果"><h2>云端家宽订阅已生成，尚未导入</h2><p>{state.result.summary.connectionMode === "direct" ? "直接接入家宽" : "机场前置串联"} · {state.result.summary.groupName} · {state.result.summary.inlineNodes} 个节点 · {state.result.summary.protectedRules} 条家宽规则 · {state.result.summary.country}</p><code>{state.result.url}</code><div className={styles.actions}>
-      <button className="button" type="button" onClick={() => { void navigator.clipboard.writeText(state.result!.url).then(() => patch({ notice: "链接已复制，尚未导入。" }), () => patch({ error: "剪贴板不可用，请手动复制。" })); }}><Copy aria-hidden="true" />复制云端订阅链接</button><a className="button" href={state.result.url} download referrerPolicy="no-referrer"><DownloadSimple aria-hidden="true" />下载候选配置</a><button className="button" type="button" onClick={() => saveRolaManagement(state.result!)}><DownloadSimple aria-hidden="true" />保存管理文件</button>
+    {state.result ? <section className={styles.result} aria-label="云端家宽生成结果"><h2>云端家宽订阅已生成，尚未导入</h2><p>{state.result.summary.connectionMode === "direct" ? "直接接入家宽" : "机场前置串联"} · {state.result.summary.groupName} · {state.result.summary.inlineNodes} 个节点 · {state.result.summary.protectedRules} 条家宽规则 · {state.result.summary.country}</p><code>{state.result.universalUrl}</code><div className={styles.actions}>
+      <button className="button" type="button" onClick={() => { void navigator.clipboard.writeText(state.result!.universalUrl).then(() => patch({ notice: "通用链接已复制，尚未导入。" }), () => patch({ error: "剪贴板不可用，请手动复制。" })); }}><Copy aria-hidden="true" />复制通用订阅链接</button><a className="button" href={state.result.url} download referrerPolicy="no-referrer"><DownloadSimple aria-hidden="true" />下载 Mihomo 候选配置</a><button className="button" type="button" onClick={() => saveRolaManagement(state.result!)}><DownloadSimple aria-hidden="true" />保存管理文件</button>
+      {state.result.shadowrocketConfigUrl ? <button className="button" type="button" onClick={() => { void navigator.clipboard.writeText(state.result!.shadowrocketConfigUrl!).then(() => patch({ notice: "Shadowrocket 规则链接已复制，请添加到配置页。" }), () => patch({ error: "剪贴板不可用，请手动复制。" })); }}><Copy aria-hidden="true" />复制 Shadowrocket 规则链接</button> : null}
     </div><p>{state.result.sourceMode === "snapshot" ? "固定配置快照：不会自动刷新机场节点和用量。" : state.result.sourceMode === "local-sync" ? "继承本地同步的节点和用量。电脑离线或读取失败时保留旧内容并标记同步过期；所选前置节点消失或不安全时拒绝更新，不改为直连。" : "客户端每 6 小时请求更新；来源失败时最多回用 24 小时内的有效结果，用量也可能滞后。所选前置节点消失或不安全时拒绝更新，不改为直连。"} 云端记录保存至 {new Date(state.result.expiresAt).toLocaleString("zh-CN")}，不是机场或家宽套餐的到期时间。</p><p>请先测试再导入。修改后生成新链接，不会影响旧链接；管理文件包含订阅链接与删除码，也请保密。</p></section> : null}
     <details className={styles.help}><summary>删除云端订阅</summary><label className="field"><span>载入之前保存的管理文件</span><input type="file" accept=".json" disabled={Boolean(state.busy)} onChange={event => void upload(event.target.files?.[0], true)} /></label>{state.management ? <><p>将删除：<code>{state.management.url}</code></p><button className="button" type="button" disabled={Boolean(state.busy)} onClick={() => void revoke()}>删除此云端订阅</button></> : <p>本页新生成的订阅可直接删除；刷新页面后请载入管理文件。删除不会清除客户端已下载的文件。</p>}</details>
   </div>;

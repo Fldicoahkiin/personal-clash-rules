@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 
 import {
   countryFlagRules,
+  displayMihomoGroup,
+  displayMihomoRule,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
@@ -99,9 +101,9 @@ function profileBody(
     },
     proxies,
     ...(providers ? { "proxy-providers": providers } : {}),
-    "proxy-groups": proxyGroups,
+    "proxy-groups": proxyGroups.map(group => displayMihomoGroup(group as { name: string; proxies?: string[]; icon?: string })),
     ...(flacierRules ? { "rule-providers": mihomoRuleProviders } : {}),
-    rules: directRules ? ["MATCH,DIRECT"] : flacierRules ? mihomoRules : globalRules,
+    rules: (directRules ? ["MATCH,DIRECT"] : flacierRules ? mihomoRules : globalRules).map(displayMihomoRule),
   };
 }
 

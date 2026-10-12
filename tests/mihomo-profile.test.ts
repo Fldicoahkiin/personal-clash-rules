@@ -7,6 +7,14 @@ import {
 } from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
+  it("puts manual selection before global and excludes quota notices from DNS choices", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}, {name: '剩余流量：1 TB', type: ss}]"));
+    expect(profile["proxy-groups"].slice(0, 2).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "🌐 全局"]);
+    expect(profile["proxy-groups"][0]).toMatchObject({ type: "select", "include-all": true, proxies: expect.arrayContaining(["♻️ 自动选择", "🇺🇸 美国"]) });
+    expect(profile["proxy-groups"][1].proxies[0]).toBe("🖐 手动选择");
+    const dns = profile["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
+    expect(dns["exclude-filter"]).toContain("剩余");
+  });
   it("labels country groups with flags and updates all group references", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     const names = new Set(profile["proxy-groups"].map((group: { name: string }) => group.name));
@@ -68,12 +76,12 @@ proxies:
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "AI", proxies: ["GLOBAL", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"] }),
-      expect.objectContaining({ name: "STEAM-DOWNLOAD", proxies: expect.arrayContaining(["DIRECT"]) }),
-      expect.objectContaining({ name: "ANIGAMER", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
+      expect.objectContaining({ name: "🤖 AI", proxies: ["🌐 全局", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾"] }),
+      expect.objectContaining({ name: "📥 Steam 下载", proxies: expect.arrayContaining(["DIRECT"]) }),
+      expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
     ]));
     expect((config["proxy-groups"] as Array<Record<string, unknown>>).every(
-      (group) => typeof group.icon === "string",
+      (group) => group.icon === undefined,
     )).toBe(true);
     expect(config["rule-providers"]).toMatchObject({
       "ai-openai": {
@@ -86,10 +94,10 @@ proxies:
       },
     });
     expect(config.rules).toEqual(expect.arrayContaining([
-      "RULE-SET,ai-openai,AI",
-      "RULE-SET,apple-services,APPLE",
-      "RULE-SET,steam-download,STEAM-DOWNLOAD",
-      "MATCH,DEFAULT",
+      "RULE-SET,ai-openai,🤖 AI",
+      "RULE-SET,apple-services,🍎 Apple",
+      "RULE-SET,steam-download,📥 Steam 下载",
+      "MATCH,🐟 未匹配流量",
     ]));
     expect(config).not.toHaveProperty("+proxy-groups");
     expect(config).not.toHaveProperty("+rules");
@@ -184,7 +192,7 @@ proxies:
     );
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        name: "AUTO",
+        name: "♻️ 自动选择",
         "include-all-providers": true,
         use: ["订阅 1"],
       }),
@@ -193,7 +201,7 @@ proxies:
         "include-all-providers": true,
         use: ["订阅 1"],
       }),
-      expect.objectContaining({ name: "AI", proxies: expect.arrayContaining(["GLOBAL"]) }),
+      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["🌐 全局"]) }),
     ]));
     expect(config["proxy-groups"].find((group) => group.name === "🇺🇸 美国")).toHaveProperty(
       "empty-fallback", "REJECT",
@@ -216,7 +224,7 @@ proxies:
     expect(config.rules).toEqual([
       "GEOSITE,private,DIRECT",
       "GEOIP,private,DIRECT,no-resolve",
-      "MATCH,GLOBAL",
+      "MATCH,🌐 全局",
     ]);
   });
 

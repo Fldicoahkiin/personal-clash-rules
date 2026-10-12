@@ -14,8 +14,8 @@ export type RolaPreview = {
   result: Pick<ConvertedSubscription, "nodeStats" | "usage">;
   sourceMode?: "convert" | "snapshot" | "local-sync";
 };
-export type RolaResult = { url: string; overrideUrl: string; summary: { connectionMode: "chain" | "direct"; groupName: string; country: string; sessionMinutes: number | null; protectedRules: number; inlineNodes: number } };
-export type RolaCloudResult = Omit<RolaResult, "overrideUrl"> & { revokeToken: string; expiresAt: string; sourceMode: "convert" | "snapshot" | "local-sync" };
+export type RolaResult = { url: string; overrideUrl: string; summary: { connectionMode: "chain" | "direct"; groupName: string; policyGroup: string; country: string; sessionMinutes: number | null; protectedRules: number; inlineNodes: number } };
+export type RolaCloudResult = Omit<RolaResult, "overrideUrl"> & { universalUrl: string; shadowrocketConfigUrl?: string; revokeToken: string; expiresAt: string; sourceMode: "convert" | "snapshot" | "local-sync" };
 export type RolaManagement = Pick<RolaCloudResult, "url" | "revokeToken">;
 
 export async function requestCloudRola<T>(path: "/preview" | "/chains" | "/revoke", input: unknown): Promise<T> {

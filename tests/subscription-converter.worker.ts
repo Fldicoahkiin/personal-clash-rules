@@ -279,7 +279,7 @@ describe("native subscription converter", () => {
     const qx = await produceTarget(env, nodes, "quantumult-x");
 
     expect(mihomo.proxies).toHaveLength(1);
-    expect(mihomo.rules).toContain("MATCH,DEFAULT");
+    expect(mihomo.rules).toContain("MATCH,🐟 未匹配流量");
     expect(surge).toContain("[Proxy]\nUS-01=ss,us.example.com,8388");
     expect(qx).toContain("shadowsocks=us.example.com:8388");
   });

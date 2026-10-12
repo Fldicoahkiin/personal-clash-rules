@@ -23,6 +23,37 @@ type Group = {
   url?: string;
 };
 
+export type ShadowrocketRouting = {
+  groups: Group[];
+  rules: string[];
+  providers: Record<string, { url: string }>;
+  dnsNode: string;
+  bootstrap: string[];
+};
+
+function iniName(name: string): boolean {
+  return Boolean(name) && !/[\r\n,=#;"']/u.test(name);
+}
+
+function ruleLine(rule: string, providers: ShadowrocketRouting["providers"]): string[] {
+  if (rule.startsWith("PROCESS-NAME")) return [];
+  const udp = /^AND,\(\((DOMAIN(?:-SUFFIX)?),([a-z0-9.-]+)\),\(NETWORK,UDP\)\),REJECT$/iu.exec(rule);
+  if (udp) return [`AND,((${udp[1]},${udp[2]}),(PROTOCOL,UDP)),REJECT`];
+  const [type, value, policy, ...options] = rule.split(",");
+  if (type === "MATCH") return [`FINAL,${labels[value] ?? value}`];
+  if (type === "RULE-SET") {
+    const resource = providers[value];
+    if (!resource || !/^https:\/\//u.test(resource.url) || /[\r\n,]/u.test(resource.url)) {
+      throw new ApiError(422, "shadowrocket_rule_provider", "Shadowrocket needs an HTTPS text rule provider");
+    }
+    return [[type, resource.url, labels[policy] ?? policy, ...options].join(",")];
+  }
+  if (!["DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "IP-CIDR", "IP-CIDR6", "IP-ASN", "GEOIP"].includes(type) || !policy || /[\r\n]/u.test(rule)) {
+    throw new ApiError(422, "shadowrocket_rule_unsupported", "The base profile contains a rule that cannot be preserved in Shadowrocket");
+  }
+  return [[type, value, labels[policy] ?? policy, ...options].join(",")];
+}
+
 function matches(name: string, filter: string): boolean {
   return new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu").test(name);
 }
@@ -32,7 +63,7 @@ function groupLine(group: Group, names: string[]): string {
     (!group.filter || matches(name, group.filter))
     && (!group["exclude-filter"] || !matches(name, group["exclude-filter"]))
   )) : [];
-  const members = [...(group.proxies ?? []).map(name => labels[name] ?? name), ...included];
+  const members = [...new Set([...(group.proxies ?? []).map(name => labels[name] ?? name), ...included])];
   if (!members.length) return `${labels[group.name] ?? group.name} = select, REJECT`;
   const options = group.type === "url-test"
     ? [`url=${group.url}`, `interval=${group.interval ?? 300}`, `tolerance=${group.tolerance ?? 80}`, "timeout=5"] : [];
@@ -44,31 +75,32 @@ export function createShadowrocketProfile(
   preset: MihomoRulePreset = "flacier",
   dnsMode: MihomoDnsMode = "doh",
   settings: DnsSettings = defaultDnsSettings,
+  routing?: ShadowrocketRouting,
 ): string {
   if (preset !== "flacier") throw new ApiError(422, "unsupported_rule_template", "Shadowrocket configuration currently supports the Flacier template");
   if (!nodeNames.length) throw new ApiError(422, "no_nodes_found", "Importable nodes are required");
   // INI members are comma-delimited; never turn a node name into a policy or parameter.
-  if (nodeNames.some(name => /[\r\n,=#;"']/u.test(name) || Object.values(labels).includes(name))) {
+  if (nodeNames.some(name => !iniName(name) || Object.values(labels).includes(name))) {
     throw new ApiError(422, "shadowrocket_node_name", "Rename node names containing INI separators before generating a Shadowrocket configuration");
   }
   if (dnsMode === "upstream" || (dnsMode === "doh" && settings.bootstrapMode === "upstream")) {
     throw new ApiError(422, "shadowrocket_dns_mode", "Mihomo upstream DNS cannot be copied into Shadowrocket; choose system or custom bootstrap DNS");
   }
-  const proxied = settings.nameservers.map(url => `${url}#proxy`).join(", ");
+  const groups = routing?.groups ?? mihomoProxyGroups;
+  if (groups.some(group => !iniName(group.name) || !["select", "url-test"].includes(group.type) || group.proxies?.some(name => !iniName(name)))) {
+    throw new ApiError(422, "shadowrocket_group_unsupported", "The base profile contains an unsupported policy group");
+  }
+  if (routing && !nodeNames.includes(routing.dnsNode)) throw new ApiError(422, "shadowrocket_dns_node_missing", "The paired residential DNS node is missing");
+  const suffix = routing ? `#proxy=${encodeURIComponent(routing.dnsNode)}` : "#proxy";
+  const proxied = settings.nameservers.map(url => `${url}${suffix}`).join(", ");
   const dns = dnsMode === "doh" ? proxied : "system";
-  const bootstrap = dnsMode === "doh" ? createProxyDns(settings)["proxy-server-nameserver"].join(", ") : "system";
-  const rules = mihomoRules.flatMap(rule => {
-    if (rule.startsWith("PROCESS-NAME")) return [];
-    if (rule.startsWith("MATCH,")) return [`FINAL,${labels.DEFAULT}`];
-    const [type, provider, policy, ...options] = rule.split(",");
-    const resource = mihomoRuleProviders[provider];
-    if (!resource) throw new Error(`Unknown rule provider: ${provider}`);
-    return [[type, resource.url, labels[policy] ?? policy, ...options].join(",")];
-  });
+  const bootstrap = routing ? routing.bootstrap.join(", ") : dnsMode === "doh" ? createProxyDns(settings)["proxy-server-nameserver"].join(", ") : "system";
+  const rules = (routing?.rules ?? mihomoRules).flatMap(rule => ruleLine(rule, routing?.providers ?? mihomoRuleProviders));
   return [
     "# Flacier · Shadowrocket",
     "# Import the paired node subscription first; this file contains routing and DNS, not node credentials.",
     "# Update both resources after changing subscription sources or node names.",
+    ...(routing ? ["# Business DNS uses the named residential node independently of policy selections."] : []),
     "[General]",
     `ipv6 = ${settings.ipv6}`,
     "prefer-ipv6 = false",
@@ -77,11 +109,12 @@ export function createShadowrocketProfile(
     `fallback-dns-server = ${dns}`,
     `proxy-dns-server = ${bootstrap}`,
     "dns-direct-system = false",
+    ...(routing ? ["always-ip-address = true", "use-local-host-item-for-proxy = true"] : []),
     "udp-policy-not-supported-behaviour = REJECT",
     "close-if-proxy-chain-missing = true",
     "",
     "[Proxy Group]",
-    ...mihomoProxyGroups.map(group => groupLine(group, nodeNames)),
+    ...groups.map(group => groupLine(group, nodeNames)),
     "",
     "[Rule]",
     ...rules,

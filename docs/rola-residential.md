@@ -21,6 +21,18 @@ Cloudflare 和本地转换器只生成配置，不承担第二条路径的转发
 
 两种方式都支持自定义家宽分组名称；只包含这一条家宽节点，不把机场或 DIRECT 当作故障备用。旧记录的默认组名仍为 `ROLA`。家宽与机场分别计费，响应头只继承已取得的机场用量，不能将静态家宽的有效期伪装成机场到期时间。
 
+Flacier 的 Mihomo 模板将「🖐 手动选择」放在第一位、「🌐 全局」放在第二位；加入家宽后，第三位是专用家宽组，其后是「♻️ 自动选择」和国家／业务组。手动组可选实际机场节点、国家组、自动组；手动、全局、AI 都可选专用家宽组。使用名称中的旗帜和 emoji，不依赖远程 SVG。Mihomo 自带的 `GLOBAL` 模式组不等同于这里的「🌐 全局」，国内白名单需要客户端处于规则模式。
+
+家宽仍排除在自动测速和国家组的自动收集之外。`DNS-PROXY` 排除“剩余流量／到期”等展示节点，不能把机场的额度提示当作 DNS 出口。更改组名后客户端旧的已选出口或显示顺序可能失效，需要核对实际运行配置；生成器不会替用户切换客户端。
+
+## 国内应用直连白名单
+
+Flacier 模板将 QQ／微信（含图片、头像和小程序相关域名）及网易云音乐（含封面、音频相关域名）作为独立 `DIRECT` 规则集，位于未匹配代理兜底之前。域名来自 [v2fly 的腾讯表](https://github.com/v2fly/domain-list-community/blob/master/data/tencent)、[blackmatrix7 的微信表](https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Clash/WeChat/WeChat.list) 和 [网易云音乐表](https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Clash/NetEaseMusic/NetEaseMusic.list)，只采用与这些应用相关的域名，不导入整段腾讯云 ASN／IP，也不添加 `GEOIP,CN,DIRECT`。
+
+直连意味着这些服务能看到设备所在网络的公网出口；它不是匿名选项。其余网站仍按业务组和代理兜底处理。域名白名单无法识别没有域名信息的纯 IP 连接，新增失败资源应根据实际连接记录补充，而不是默认放行所有国内 IP。两份规则同时发布为 Mihomo／Shadowrocket 文本、Egern YAML 和 sing-box JSON，云端及本地生成器使用同一来源。
+
+域名规则默认固定走专用家宽组；可在网页显式选择 `AI` 策略（`policyGroup: "AI"`）。后者把家宽设为 AI 的默认选项，匹配域名的连接与 Mihomo DNS 跟随 AI 组的手动选择。不会在 AI 组改变后仍由更早的固定 Rola 规则抢先匹配。旧记录省略该字段时保持固定家宽，不改变其路由含义。
+
 诊断时先比较相同协议、凭据和目标在物理网卡直达与不同机场前置下的结果。一次 TCP 连接建立不代表 SOCKS5 认证成功；某条前置失败也不代表家宽账号不可用。切换测试必须建立新连接，不能复用上一个出口的 HTTP 连接。浏览器检测页面及其测试域名也需要核对实际路由。
 
 HTTP/SOCKS5 是官方文档明确的接入方式，本工具不推断 TLS 网关或 UDP 支持。第一跳机场应提供加密；普通 HTTP/SOCKS5 在**机场到 Rola**这一段仍没有代理协议自身的加密，网关认证与目标地址可能被该段观察者看到。目标网站的 HTTPS 是另一层保护，不能把它说成整条链路都加密。不关闭证书校验；是否有可用的 TLS 网关要由 Rola 明确提供。
@@ -100,8 +112,11 @@ HTTP/SOCKS5 还可能把目标域名交给 Rola 服务端解析。本地 DoH 策
 ## Shadowrocket / FlClash
 
 - Clash Party、Clash Verge 和 FlClash 使用同一 Mihomo 候选 YAML，但各客户端的全局覆写仍需检查；不替换当前可用订阅。
-- Shadowrocket **不能直接导入这个 YAML**。先按 Rola 官方 iOS 教程导入 HTTP/SOCKS5 节点，在节点详情「代理通过」选择已验证的机场节点。裸节点 URI 不包含这一步。
-- 本网站配套 `.conf` 仍可提供 iOS 分流基础，但 Rola 的专用域名规则、选中节点和 DNS 路径要在 iPhone 上另行确认。这里没有生成或声称已经验证 iOS 的 Rola 代理链；不要因为 Mac 配置检查通过就立即接管手机流量。
+- 云端返回 `universalUrl`（`/r/随机令牌`）。请求 UA 为 Clash Party / Clash Verge / FlClash 时返回完整 Mihomo；Shadowrocket 返回同一来源的机场和住宅节点 URI。`url` 的 `.yaml` 后缀仍是固定 Mihomo 下载地址；不把 YAML 冒充手机适配。
+- 对直接家宽，`shadowrocketConfigUrl`（同一链接加 `?target=shadowrocket-config`）返回配套 `.conf`。先把通用链接添加到 Shadowrocket 首页的订阅，再把配套链接添加到配置页。两者共享节点名、手动／全局／AI／家宽分组和域名规则；节点名或来源改变后，两份资源都应刷新。
+- 手机配套文件关闭 IPv6，拒绝不支持的 UDP，业务 DNS 固定用 IP 地址 DoH 经**具体家宽节点**发送。它不等同于 Mihomo 按域名跟随 AI 组的 DNS 策略；AI 改为机场后，手机 DNS 仍走家宽。节点主机名保留独立引导 DNS；配置文件不含密码，但配套订阅包含凭据。节点缺失或被改名时需重新生成；Shadowrocket 对错误的 DNS 节点名可能使用默认节点，不能声称客户端会严格拒绝这种错误。
+- 机场前置串联不输出手机 URI，返回 `rola_mobile_chain_unsupported`；不会丢掉第一跳后假装转换成功。其他不支持的客户端、无法保留的节点／代理链／规则也明确报错。每种输出独立保存最近成功结果，避免手机刷新失败时拿到旧 YAML。
+- iPhone 上的实际导入、网络出口和 DNS 仍需验收；服务端测试只证明输出和元数据一致，不代表手机已连接。
 
 ## 云端基础订阅 + 本地私密覆写
 

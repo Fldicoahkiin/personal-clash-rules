@@ -2,6 +2,20 @@ import { ArrowUpRight } from "@phosphor-icons/react";
 
 const catalog = [
   {
+    category: "QQ / 微信",
+    coverage: "登录、图片、头像、文件与小程序相关域名",
+    strategy: "DIRECT",
+    href: "/rules/direct/tencent-messaging.list",
+    count: "1 个",
+  },
+  {
+    category: "网易云音乐",
+    coverage: "音乐接口、封面、音频与视频相关域名",
+    strategy: "DIRECT",
+    href: "/rules/direct/netease-music.list",
+    count: "1 个",
+  },
+  {
     category: "AI",
     coverage: "OpenAI · Claude（含 API IP）· Grok · Gemini · Coding · General",
     strategy: "AI",

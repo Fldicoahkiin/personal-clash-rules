@@ -16,6 +16,20 @@ rule-providers:
     url: https://rules.flacier.com/rules/local/private-ip.list
     path: ./ruleset/personal/private-ip.list
     interval: 86400
+  tencent-messaging:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/direct/tencent-messaging.list
+    path: ./ruleset/personal/tencent-messaging.list
+    interval: 86400
+  netease-music:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/direct/netease-music.list
+    path: ./ruleset/personal/netease-music.list
+    interval: 86400
   apple-system:
     type: http
     behavior: classical
@@ -144,161 +158,231 @@ rule-providers:
     interval: 86400
 
 +proxy-groups:
-  - name: AUTO
-    type: url-test
+  - name: 🖐 手动选择
+    type: select
+    proxies:
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+    include-all: true
+    exclude-type: direct
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
+  - name: 🌐 全局
+    type: select
+    proxies:
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: ♻️ 自动选择
+    type: url-test
     include-all: true
     exclude-type: direct
     url: https://cp.cloudflare.com/generate_204
     interval: 300
     tolerance: 80
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/auto.svg
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇺🇸 美国
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
+    filter: (?i)(🇺🇸|美国|美國|United States|Los Angeles|Seattle|San Jose|New
+      York|Dallas|Chicago|(^|[ _-])(US|USA)([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇯🇵 日本
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇯🇵|日本|Japan|Tokyo|Osaka|(^|[ _-])JP([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
+    filter: (?i)(🇯🇵|日本|Japan|Tokyo|Osaka|(^|[ _-])JP([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇸🇬 新加坡
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇸🇬|新加坡|Singapore|(^|[ _-])SG([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
+    filter: (?i)(🇸🇬|新加坡|Singapore|(^|[ _-])SG([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇭🇰 香港
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇭🇰|香港|Hong Kong|(^|[ _-])HK([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
+    filter: (?i)(🇭🇰|香港|Hong Kong|(^|[ _-])HK([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇹🇼 台湾
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|(^|[ _-])TW([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
+    filter: (?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|(^|[ _-])TW([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇰🇷 韩国
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇰🇷|韩国|韓國|South Korea|Seoul|(^|[ _-])KR([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
+    filter: (?i)(🇰🇷|韩国|韓國|South Korea|Seoul|(^|[ _-])KR([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🇪🇺 欧洲
     type: select
-    empty-fallback: REJECT
     include-all: true
     exclude-type: direct
-    filter: '(?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[ _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))'
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/region.svg
-  - name: GLOBAL
-    type: select
+    filter: (?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United
+      Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[
+      _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
-    proxies: [AUTO, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾, 🇰🇷 韩国, 🇪🇺 欧洲, DIRECT]
-    include-all: true
-    exclude-filter: '(?i)(剩余|流量|到期|官网|客服|订阅)'
-    icon: https://rules.flacier.com/policy-icons/globe.svg
-  - name: AI
+  - name: 🤖 AI
     type: select
+    proxies:
+      - 🌐 全局
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇹🇼 台湾
     empty-fallback: REJECT
-    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇹🇼 台湾]
-    icon: https://rules.flacier.com/policy-icons/ai.svg
-  - name: APPLE
+  - name: 🍎 Apple
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡]
-    icon: https://rules.flacier.com/policy-icons/apple.svg
-  - name: STEAM
+  - name: 🎮 Steam
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - 🇯🇵 日本
+      - 🇺🇸 美国
+      - 🇸🇬 新加坡
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, 🇯🇵 日本, 🇺🇸 美国, 🇸🇬 新加坡]
-    icon: https://rules.flacier.com/policy-icons/steam.svg
-  - name: STEAM-DOWNLOAD
+  - name: 📥 Steam 下载
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - 🇯🇵 日本
+      - 🇺🇸 美国
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, 🇯🇵 日本, 🇺🇸 美国, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾]
-    icon: https://rules.flacier.com/policy-icons/download.svg
-  - name: STEAM-ONLINE
+  - name: 🕹️ Steam 联机
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - 🇯🇵 日本
+      - 🇺🇸 美国
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, 🇯🇵 日本, 🇺🇸 美国, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾]
-    icon: https://rules.flacier.com/policy-icons/game.svg
-  - name: DISCORD
+  - name: 💬 Discord
     type: select
+    proxies:
+      - 🌐 全局
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - DIRECT
     empty-fallback: REJECT
-    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, DIRECT]
-    icon: https://rules.flacier.com/policy-icons/chat.svg
-  - name: DEV
+  - name: 🛠️ 开发服务
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡]
-    icon: https://rules.flacier.com/policy-icons/code.svg
-  - name: MEDIA
+  - name: 🎬 流媒体
     type: select
+    proxies:
+      - 🌐 全局
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - DIRECT
     empty-fallback: REJECT
-    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, DIRECT]
-    icon: https://rules.flacier.com/policy-icons/play.svg
-  - name: BILIBILI
+  - name: 📺 哔哩哔哩
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇸🇬 新加坡
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, 🇭🇰 香港, 🇹🇼 台湾, 🇸🇬 新加坡]
-    icon: https://rules.flacier.com/policy-icons/play.svg
-  - name: ANIGAMER
+  - name: 📺 巴哈姆特
     type: select
+    proxies:
+      - 🇹🇼 台湾
+      - 🌐 全局
+      - DIRECT
+      - ♻️ 自动选择
     empty-fallback: REJECT
-    proxies: [🇹🇼 台湾, GLOBAL, DIRECT, AUTO]
-    icon: https://rules.flacier.com/policy-icons/play.svg
-  - name: SOCIAL
+  - name: 💬 社交
     type: select
+    proxies:
+      - 🌐 全局
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - DIRECT
     empty-fallback: REJECT
-    proxies: [GLOBAL, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, DIRECT]
-    icon: https://rules.flacier.com/policy-icons/chat.svg
-  - name: DEFAULT
+  - name: 🐟 未匹配流量
     type: select
+    proxies:
+      - 🌐 全局
+      - DIRECT
+      - ♻️ 自动选择
     empty-fallback: REJECT
-    proxies: [GLOBAL, DIRECT, AUTO]
-    icon: https://rules.flacier.com/policy-icons/route.svg
 
 +rules:
   - RULE-SET,private-domain,DIRECT
   - RULE-SET,private-ip,DIRECT,no-resolve
-  - RULE-SET,apple-system,APPLE
-  - RULE-SET,apple-services,APPLE
-  - PROCESS-NAME-REGEX,(?i)^codex(\.exe)?$,AI
-  - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,AI
-  - RULE-SET,ai-openai,AI
-  - RULE-SET,ai-anthropic,AI
-  - RULE-SET,ai-xai,AI
-  - RULE-SET,ai-google,AI
-  - RULE-SET,ai-coding,AI
-  - RULE-SET,ai-general,AI
-  - RULE-SET,steam-download,STEAM-DOWNLOAD
-  - RULE-SET,steam-online,STEAM-ONLINE
-  - RULE-SET,steam,STEAM
-  - RULE-SET,discord,DISCORD
-  - RULE-SET,developer,DEV
-  - RULE-SET,bilibili,BILIBILI
-  - RULE-SET,anigamer,ANIGAMER
-  - RULE-SET,media,MEDIA
-  - RULE-SET,social,SOCIAL
-  - RULE-SET,ai-anthropic-ip,AI,no-resolve
-  - MATCH,DEFAULT
+  - RULE-SET,tencent-messaging,DIRECT
+  - RULE-SET,netease-music,DIRECT
+  - RULE-SET,apple-system,🍎 Apple
+  - RULE-SET,apple-services,🍎 Apple
+  - PROCESS-NAME-REGEX,(?i)^codex(\.exe)?$,🤖 AI
+  - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,🤖 AI
+  - RULE-SET,ai-openai,🤖 AI
+  - RULE-SET,ai-anthropic,🤖 AI
+  - RULE-SET,ai-xai,🤖 AI
+  - RULE-SET,ai-google,🤖 AI
+  - RULE-SET,ai-coding,🤖 AI
+  - RULE-SET,ai-general,🤖 AI
+  - RULE-SET,steam-download,📥 Steam 下载
+  - RULE-SET,steam-online,🕹️ Steam 联机
+  - RULE-SET,steam,🎮 Steam
+  - RULE-SET,discord,💬 Discord
+  - RULE-SET,developer,🛠️ 开发服务
+  - RULE-SET,bilibili,📺 哔哩哔哩
+  - RULE-SET,anigamer,📺 巴哈姆特
+  - RULE-SET,media,🎬 流媒体
+  - RULE-SET,social,💬 社交
+  - RULE-SET,ai-anthropic-ip,🤖 AI,no-resolve
+  - MATCH,🐟 未匹配流量
