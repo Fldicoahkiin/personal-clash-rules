@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import * as yaml from "yaml";
 import { defaultDnsSettings } from "../src/config/dns-settings";
@@ -9,7 +10,7 @@ import type { SubscriptionEnv } from "../src/worker/types";
 
 vi.mock("yaml", async importOriginal => {
   const original = await importOriginal<typeof import("yaml")>();
-  return { ...original, stringify: vi.fn(original.stringify) };
+  return { ...original, stringify: vi.fn(original.stringify), parseDocument: vi.fn(original.parseDocument) };
 });
 
 const env = {} as SubscriptionEnv;
@@ -24,15 +25,33 @@ const airportNodes = Array.from({ length: 68 }, (_, index) => ({
   ...(index % 2 ? { type: "hysteria2", password: "fixture-airport-secret", sni: "tls.example" }
     : { type: "vless", uuid: "00000000-0000-4000-8000-000000000001", tls: true, network: "ws", "ws-opts": { path: "/socket" } }),
 }));
-const profile = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies: airportNodes })), settings).profile;
+const prepared = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies: airportNodes })), settings);
+const profile = prepared.profile;
 
 describe("residential mobile rendering resource budget", () => {
+  it.each([
+    ["shadowrocket", "fce0e569019a8679a3610004878387720246faf0365be94975b00c6d689b1f86"],
+    ["shadowrocket-config", "0ff9d7897a3de519f8670d0a63516836b00d0ba9bc166936b64efab9d030e938"],
+  ] as const)("reuses the validated %s structure without changing the output bytes", async (target, expectedHash) => {
+    const parse = vi.mocked(yaml.parseDocument).mockClear();
+    try {
+      const output = await renderRolaTarget(env, prepared, settings, target);
+      expect(createHash("sha256").update(output).digest("hex")).toBe(expectedHash);
+      expect(parse).not.toHaveBeenCalled();
+    } finally { parse.mockClear(); }
+  });
+
+  it("keeps the internal document out of serialized preparation results", () => {
+    expect(Object.keys(JSON.parse(JSON.stringify(prepared)))).toEqual(["profile", "summary"]);
+    expect(prepared.toJS()).toEqual(yaml.parse(profile));
+  });
+
   it("renders 69 paired nodes and configuration without serializing unused Mihomo YAML", async () => {
     const serialize = vi.mocked(yaml.stringify).mockClear();
     try {
-      const nodes = await renderRolaTarget(env, profile, settings, "shadowrocket");
+      const nodes = await renderRolaTarget(env, prepared, settings, "shadowrocket");
       expect(nodes.split("\n")).toHaveLength(69);
-      const config = await renderRolaTarget(env, profile, settings, "shadowrocket-config");
+      const config = await renderRolaTarget(env, prepared, settings, "shadowrocket-config");
       for (const node of airportNodes) expect(config).toContain(node.name);
       expect(config).toContain("Home = select, US Home");
       expect(config).toContain("🇺🇸 美国 = select, US Airport 1");

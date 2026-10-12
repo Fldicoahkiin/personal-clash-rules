@@ -1,6 +1,5 @@
-import { parseDocument } from "yaml";
 import { defaultDnsSettings } from "../config/dns-settings";
-import { parseRolaSettings, rolaDirectGatewayRule } from "../local/rola";
+import { parseRolaSettings, rolaDirectGatewayRule, type prepareRolaProfile } from "../local/rola";
 import { ApiError } from "./api-error";
 import type { SubscriptionNode } from "./node-transforms";
 import { createShadowrocketProfile, type ShadowrocketRouting } from "./shadowrocket-profile";
@@ -24,14 +23,13 @@ export function requireRolaTarget(settings: Record<string, unknown>, target: Rol
   }
 }
 
-export async function renderRolaTarget(env: SubscriptionEnv, profile: string, value: Record<string, unknown>, target: RolaTarget) {
+export async function renderRolaTarget(env: SubscriptionEnv, prepared: ReturnType<typeof prepareRolaProfile>, value: Record<string, unknown>, target: RolaTarget) {
   requireRolaTarget(value, target);
-  if (target === "mihomo-config") return profile;
+  if (target === "mihomo-config") return prepared.profile;
   const settings = parseRolaSettings(value);
   // The input is already validated by prepareRolaProfile. Keep its exact names so the
   // paired node subscription and policy file cannot diverge through renaming/deduplication.
-  const document = parseDocument(profile, { prettyErrors: false, uniqueKeys: true });
-  const base = document.toJS({ maxAliasCount: 100 }) as {
+  const base = prepared.toJS() as {
     proxies: SubscriptionNode[];
     "proxy-groups": ShadowrocketRouting["groups"];
     "rule-providers"?: ShadowrocketRouting["providers"];

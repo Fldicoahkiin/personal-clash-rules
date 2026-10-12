@@ -302,7 +302,11 @@ export function prepareRolaProfile(source: string, value: unknown) {
     quota: "Rola and airport quotas are separate, not additive",
     activation: "not activated; client overrides and device DNS still require review",
   };
-  return { profile: document.toString({ lineWidth: 0 }), summary };
+  return {
+    profile: document.toString({ lineWidth: 0 }), summary,
+    // Keep the validated AST internal; mobile renderers read its current values without reparsing YAML.
+    toJS() { return record(document.toJS({ maxAliasCount: 100 }), "Invalid prepared profile"); },
+  };
 }
 
 export function createRolaOverride(source: string, value: unknown) {

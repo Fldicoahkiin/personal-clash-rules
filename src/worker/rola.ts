@@ -184,7 +184,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           profile = built.generated.content;
           if (built.generated.usage.combined) userinfo = formatSubscriptionUserinfo(built.generated.usage.combined);
         }
-        const content = await renderRolaTarget(env, prepare(profile, chain.settings).profile, chain.settings, target);
+        const content = await renderRolaTarget(env, prepare(profile, chain.settings), chain.settings, target);
         if (encoder.encode(content).length > requestBytes) throw new ApiError(413, "rola_output_too_large", "家宽输出不能超过 512 KiB，请减少节点或规则。");
         const rendered = profileResponse(chain, content, userinfo, target);
         if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.syncedAt);
