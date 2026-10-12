@@ -54,14 +54,12 @@ function ruleLine(rule: string, providers: ShadowrocketRouting["providers"]): st
   return [[type, value, labels[policy] ?? policy, ...options].join(",")];
 }
 
-function matches(name: string, filter: string): boolean {
-  return new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu").test(name);
-}
-
 function groupLine(group: Group, names: string[]): string {
+  const includedPattern = group["include-all"] && group.filter ? new RegExp(group.filter.replace(/^\(\?i\)/u, ""), "iu") : undefined;
+  const excludedPattern = group["include-all"] && group["exclude-filter"] ? new RegExp(group["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu") : undefined;
   const included = group["include-all"] ? names.filter(name => (
-    (!group.filter || matches(name, group.filter))
-    && (!group["exclude-filter"] || !matches(name, group["exclude-filter"]))
+    (!includedPattern || includedPattern.test(name))
+    && (!excludedPattern || !excludedPattern.test(name))
   )) : [];
   const members = [...new Set([...(group.proxies ?? []).map(name => labels[name] ?? name), ...included])];
   if (!members.length) return `${labels[group.name] ?? group.name} = select, REJECT`;

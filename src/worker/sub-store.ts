@@ -2014,18 +2014,17 @@ export async function produceTarget(
   if (supported.length === 0) {
     throw new ApiError(422, "target_unsupported", `${target} could not represent the normalized nodes`);
   }
-  const mihomoNodes = stringifyYaml({ proxies: supported });
   if (isMihomoConfigTarget(target)) {
-    return createMihomoProfile(mihomoNodes, rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings);
+    return createMihomoProfile(stringifyYaml({ proxies: supported }), rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings);
   }
   if (target === "shadowrocket-config") return createShadowrocketProfile(supported.map(node => node.name), rulePreset, dnsMode, dnsSettings);
-  if (target === "stash-config") return createStashProfile(mihomoNodes, updateIntervalHours);
+  if (target === "stash-config") return createStashProfile(stringifyYaml({ proxies: supported }), updateIntervalHours);
   if (target === "surge-config") return createSurgeProfile(renderSurgeProxies(supported), updateIntervalHours);
   if (target === "surfboard-config") return createSurfboardProfile(renderSurfboardProxies(supported), updateIntervalHours);
   if (target === "loon-config") return createLoonProfile(renderLoonProxies(supported), updateIntervalHours);
   if (target === "egern-config") return createEgernProfile(renderEgernYaml(supported), updateIntervalHours);
   if (target === "sing-box-config") return createSingBoxProfile(renderSingBoxJson(supported), updateIntervalHours);
-  if (target === "mihomo" || target === "clash" || target === "stash") return mihomoNodes;
+  if (target === "mihomo" || target === "clash" || target === "stash") return stringifyYaml({ proxies: supported });
   if (target === "surge") return renderSurgeProxies(supported);
   if (target === "surfboard") return renderSurfboardProxies(supported);
   if (target === "loon") return renderLoonProxies(supported);
