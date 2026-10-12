@@ -91,7 +91,7 @@ describe("local Rola preparation", () => {
     for (const groupName of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
       const group = output["proxy-groups"].find((group: { name: string }) => group.name === groupName);
       const members: string[] = group.proxies ?? [];
-      expect(members.includes(name), groupName).toBe(groupName === region);
+      expect(members).not.toContain(name);
       expect(members).not.toContain("ROLA");
       const matches = (filter: string) => new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu").test(name);
       expect(matches(group["exclude-filter"]), groupName).toBe(groupName !== region);
@@ -100,11 +100,28 @@ describe("local Rola preparation", () => {
     const us = output["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
     expect(us["include-all"]).toBe(true);
     expect(new RegExp(us.filter.replace(/^\(\?i\)/u, ""), "iu").test("US Airport")).toBe(true);
+    const usNodes = output.proxies.filter((node: { name: string }) => new RegExp(us.filter.replace(/^\(\?i\)/u, ""), "iu").test(node.name)
+      && !new RegExp(us["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test(node.name)).map((node: { name: string }) => node.name);
+    expect(usNodes).toEqual(region === "🇺🇸 美国" ? ["US Airport", name] : ["US Airport"]);
     const auto = output["proxy-groups"].find((group: { name: string }) => group.name === "♻️ 自动选择");
     expect(auto.proxies ?? []).not.toContain(name);
     expect(new RegExp(auto["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(true);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([name]);
     expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
+  });
+
+  it.each([false, true])("preserves regional ordering with include-all-proxies=%s", includeAllProxies => {
+    const original = parse(createMihomoProfile("proxies: [{name: US Airport, type: trojan, server: airport.example, port: 443, password: demo}]"));
+    const us = original["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
+    delete us["include-all"];
+    if (includeAllProxies) us["include-all-proxies"] = true;
+    else us.proxies = ["US Airport"];
+    const base = stringify(original);
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", name: "Dedicated exit" };
+    const output = parse(prepareRolaProfile(base, input).profile);
+    expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国").proxies)
+      .toEqual(includeAllProxies ? undefined : ["US Airport", input.name]);
+    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
   });
 
   it("makes the residential group selectable in every business policy without adding it to automatic or unrelated regional pools", () => {

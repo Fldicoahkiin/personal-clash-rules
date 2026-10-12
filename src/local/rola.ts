@@ -242,10 +242,12 @@ export function prepareRolaProfile(source: string, value: unknown) {
   for (const group of groups.items) {
     if (!isMap(group)) continue;
     if (countryGroups.includes(String(group.get("name")))) {
-      const members = group.get("proxies", true);
-      if (members !== undefined && !isSeq(members)) throw new Error("Invalid country policy group");
-      if (isSeq(members)) members.add(nodeName);
-      else group.set("proxies", document.createNode([nodeName]));
+      if (!group.get("include-all") && !group.get("include-all-proxies")) {
+        const members = group.get("proxies", true);
+        if (members !== undefined && !isSeq(members)) throw new Error("Invalid country policy group");
+        if (isSeq(members)) members.add(nodeName);
+        else group.set("proxies", document.createNode([nodeName]));
+      }
       const filter = group.get("filter");
       if (filter !== undefined && typeof filter !== "string") throw new Error("Invalid country group filter");
       if (filter) group.set("filter", `${filter}|${nodePattern}`);
@@ -335,8 +337,10 @@ function main(config) {
   const next = JSON.parse(JSON.stringify(config));
   for (const group of next['proxy-groups']) {
     if (data.countryGroups.includes(group.name)) {
-      if (group.proxies !== undefined && !Array.isArray(group.proxies)) throw new Error('Rola: invalid country policy group');
-      group.proxies = [...(group.proxies || []), data.node.name];
+      if (!group['include-all'] && !group['include-all-proxies']) {
+        if (group.proxies !== undefined && !Array.isArray(group.proxies)) throw new Error('Rola: invalid country policy group');
+        group.proxies = [...(group.proxies || []), data.node.name];
+      }
       if (group.filter !== undefined && typeof group.filter !== 'string') throw new Error('Rola: invalid country group filter');
       if (group.filter) group.filter += '|' + data.excludedNodePattern;
       continue;

@@ -57,7 +57,9 @@ describe("cloud Rola subscriptions", () => {
         const profile = parse(await mihomo.text());
         expect(profile.proxies.at(-1)).toMatchObject({ type: protocol, "dialer-proxy": "DIRECT" });
         expect(profile.rules[0]).toBe("AND,((DOMAIN,residential.example),(DST-PORT,9004)),DIRECT");
-        expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国").proxies).toContain("US Home");
+        const us = profile["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
+        expect(us.proxies ?? []).not.toContain("US Home");
+        expect(new RegExp(us.filter.replace(/^\(\?i\)/u, ""), "iu").test("US Home")).toBe(true);
       }
       const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
       expect(phone.status).toBe(200);
