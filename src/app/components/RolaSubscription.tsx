@@ -150,6 +150,7 @@ const LocalRolaSubscription: FC = () => {
     {state.error ? <p className="field-error" role="alert">{state.error}</p> : null}
     {state.result ? <section className={styles.result} aria-live="polite" aria-label="Rola 生成结果">
       <h2>本地家宽订阅已生成，尚未导入</h2><p>{state.result.summary.connectionMode === "direct" ? "直接接入家宽" : "机场前置串联"} · {state.result.summary.groupName} · {state.result.summary.inlineNodes} 个节点 · {state.result.summary.protectedRules} 条 Rola 域名规则 · {state.result.summary.country}</p>
+      {state.result.summary.dnsSelection ? <p>{state.result.summary.dnsSelection}</p> : null}
       <code>{state.result.url}</code>
       <div className={styles.actions}><button className="button" type="button" onClick={() => { void navigator.clipboard.writeText(state.result!.url).then(() => patch({ notice: "本地链接已复制。" }), () => patch({ error: "无法写入剪贴板，请手动复制链接。" })); }}><Copy aria-hidden="true" />复制本机订阅链接</button><a className="button" href={state.result.url} download="Flacier-Rola.yaml" referrerPolicy="no-referrer"><DownloadSimple aria-hidden="true" />下载候选配置</a></div>
       <p>链接只能供这台电脑使用，刷新时本地服务需保持运行。iPhone／Android 无法访问这台电脑的 127.0.0.1；可私下传输下载文件，但文件不会自动更新。Shadowrocket 的「代理通过」需要单独配置，不会拿 Mihomo 文件冒充适配。</p>

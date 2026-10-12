@@ -9,7 +9,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fixture() {
   const directory = mkdtempSync(resolve(tmpdir(), "rola-cli-"));
-  for (const path of ["scripts/rola.mjs", "src/local", "src/config", "public/rules/ai"]) {
+  for (const path of ["scripts/rola.mjs", "src/local", "src/config", "src/worker/mihomo-dns.ts", "src/worker/api-error.ts", "public/rules/ai"]) {
     mkdirSync(dirname(resolve(directory, path)), { recursive: true });
     cpSync(resolve(root, path), resolve(directory, path), { recursive: true });
   }

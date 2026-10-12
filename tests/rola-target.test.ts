@@ -29,14 +29,25 @@ const prepared = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies
 const profile = prepared.profile;
 
 describe("residential mobile rendering resource budget", () => {
-  it.each([
-    ["shadowrocket", "fce0e569019a8679a3610004878387720246faf0365be94975b00c6d689b1f86"],
-    ["shadowrocket-config", "0ff9d7897a3de519f8670d0a63516836b00d0ba9bc166936b64efab9d030e938"],
-  ] as const)("reuses the validated %s structure without changing the output bytes", async (target, expectedHash) => {
+  it("does not pin business DNS to the residential exit after switching the mobile default node", async () => {
+    const config = await renderRolaTarget(env, prepared, settings, "shadowrocket-config");
+    for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {
+      expect(config.split("\n").find(line => line.startsWith(`${key} =`)))
+        .toBe(`${key} = https://1.1.1.1/dns-query#proxy`);
+    }
+    expect(config).toContain("proxy-dns-server = system\n");
+    expect(config).toContain("Home = select, US Home");
+    expect(config).not.toContain("#proxy=");
+  });
+
+  it.each(["shadowrocket", "shadowrocket-config"] as const)("reuses the validated %s structure without reparsing YAML", async target => {
     const parse = vi.mocked(yaml.parseDocument).mockClear();
     try {
       const output = await renderRolaTarget(env, prepared, settings, target);
-      expect(createHash("sha256").update(output).digest("hex")).toBe(expectedHash);
+      if (target === "shadowrocket") {
+        expect(createHash("sha256").update(output).digest("hex"))
+          .toBe("fce0e569019a8679a3610004878387720246faf0365be94975b00c6d689b1f86");
+      }
       expect(parse).not.toHaveBeenCalled();
     } finally { parse.mockClear(); }
   });
@@ -73,7 +84,7 @@ describe("residential mobile rendering resource budget", () => {
     });
     try {
       const config = createShadowrocketProfile(source.proxies.map((node: { name: string }) => node.name), "flacier", "doh", defaultDnsSettings, {
-        groups: source["proxy-groups"], rules: ["MATCH,🌐 全局"], providers: {}, dnsNode: settings.name, bootstrap: ["system"],
+        groups: source["proxy-groups"], rules: ["MATCH,🌐 全局"], providers: {}, bootstrap: ["system"],
       });
       expect(config).toContain("🇺🇸 美国 = select, US Airport 1");
       expect(config).toContain("Home = select, US Home");
@@ -84,7 +95,7 @@ describe("residential mobile rendering resource budget", () => {
   it("does not compile unused filters on an explicit group", () => {
     const output = createShadowrocketProfile(["US Home"], "flacier", "doh", defaultDnsSettings, {
       groups: [{ name: "Home", type: "select", proxies: ["US Home"], filter: "[", "exclude-filter": "[" }],
-      rules: ["MATCH,Home"], providers: {}, dnsNode: "US Home", bootstrap: ["system"],
+      rules: ["MATCH,Home"], providers: {}, bootstrap: ["system"],
     });
     expect(output).toContain("Home = select, US Home");
   });

@@ -27,6 +27,8 @@ Flacier 的 Mihomo 模板将「🖐 手动选择」放在第一位、「🌐 全
 
 国家组按地区收录节点，不区分机场或家宽来源。家宽优先按 `settings.country` 加入对应国家组；未声明时才沿用已有的节点名称地区过滤规则，无法识别则不猜测。节点备注不含国家名也不影响明确声明的地区；已有国家组没有覆盖该地区时，只保留独立家宽组和业务组中的选择。国家组直接收录实际家宽节点，不引用家宽组形成组循环。「♻️ 自动选择」仍排除家宽，其他国家组也不会误收录。`DNS-PROXY` 排除“剩余流量／到期”等展示节点，不能把机场的额度提示当作 DNS 出口。更改组名后客户端旧的已选出口或显示顺序可能失效，需要核对实际运行配置；生成器不会替用户切换客户端。
 
+`DNS-PROXY` 允许手动选家宽，但不会因新增家宽而改掉原来的默认机场，也不把家宽加入自动测速。能够从基础配置确认原默认节点时，生成器保留组的动态过滤与来源，设置 `default-selected` 后开放家宽选项；若外部 provider 或自定义过滤使原默认无法确认，则维持原组行为，并在生成结果中提示“尚未加入家宽”。这不会改动已运行客户端的选择缓存；业务域名另有 AI／家宽 DNS 策略时，仍优先遵从该策略。
+
 ## 国内应用直连白名单
 
 Flacier 模板将 QQ／微信（含图片、头像和小程序相关域名）及网易云音乐（含封面、音频相关域名）作为独立 `DIRECT` 规则集，位于未匹配代理兜底之前。域名来自 [v2fly 的腾讯表](https://github.com/v2fly/domain-list-community/blob/master/data/tencent)、[blackmatrix7 的微信表](https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Clash/WeChat/WeChat.list) 和 [网易云音乐表](https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Clash/NetEaseMusic/NetEaseMusic.list)，只采用与这些应用相关的域名，不导入整段腾讯云 ASN／IP，也不添加 `GEOIP,CN,DIRECT`。
@@ -116,7 +118,7 @@ HTTP/SOCKS5 还可能把目标域名交给 Rola 服务端解析。本地 DoH 策
 - Clash Party、Clash Verge 和 FlClash 使用同一 Mihomo 候选 YAML，但各客户端的全局覆写仍需检查；不替换当前可用订阅。
 - 云端返回 `universalUrl`（`/r/随机令牌`）。请求 UA 为 Clash Party / Clash Verge / FlClash 时返回完整 Mihomo；Shadowrocket 返回同一来源的机场和住宅节点 URI。`url` 的 `.yaml` 后缀仍是固定 Mihomo 下载地址；不把 YAML 冒充手机适配。
 - 对直接家宽，`shadowrocketConfigUrl`（同一链接加 `?target=shadowrocket-config`）返回配套 `.conf`。先把通用链接添加到 Shadowrocket 首页的订阅，再把配套链接添加到配置页。两者共享节点名、手动／全局／AI／家宽分组和域名规则；节点名或来源改变后，两份资源都应刷新。
-- 手机配套文件关闭 IPv6，拒绝不支持的 UDP，业务 DNS 固定用 IP 地址 DoH 经**具体家宽节点**发送。它不等同于 Mihomo 按域名跟随 AI 组的 DNS 策略；AI 改为机场后，手机 DNS 仍走家宽。节点主机名保留独立引导 DNS；配置文件不含密码，但配套订阅包含凭据。节点缺失或被改名时需重新生成；Shadowrocket 对错误的 DNS 节点名可能使用默认节点，不能声称客户端会严格拒绝这种错误。
+- 手机配套文件关闭 IPv6，拒绝不支持的 UDP，业务、直连规则和备用 DNS 均使用 IP 地址 DoH 加 `#proxy`，跟随 **Shadowrocket 首页的默认节点**，不再固定绑定家宽。它不等同于 Mihomo 按域名跟随 AI 组的 DNS 策略：只切换 AI／全局策略组不会切换手机的 DNS 出口，家宽不可用时需在首页选择可用节点。此语义来自 [Shadowrocket 官方 2.2.62 说明](https://t.me/s/shadowrocketnews?before=890)，不将任意策略组名当作受支持的 DNS 节点名。节点主机名保留独立引导 DNS，业务 DNS 失败不会自动退回直连解析；配置文件不含密码，但配套订阅包含凭据。节点缺失或改名时，两份资源都需刷新。
 - 机场前置串联不输出手机 URI，返回 `rola_mobile_chain_unsupported`；不会丢掉第一跳后假装转换成功。其他不支持的客户端、无法保留的节点／代理链／规则也明确报错。每种输出独立保存最近成功结果，避免手机刷新失败时拿到旧 YAML。
 - iPhone 上的实际导入、网络出口和 DNS 仍需验收；服务端测试只证明输出和元数据一致，不代表手机已连接。
 

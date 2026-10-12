@@ -76,7 +76,11 @@ describe("cloud Rola subscriptions", () => {
       expect(conf).toContain("🤖 AI = select, 🇺🇸 美国家宽");
       expect(conf).toContain("DOMAIN-SUFFIX,claude.ai,🤖 AI");
       expect(conf).toContain("AND,((DOMAIN-SUFFIX,claude.ai),(PROTOCOL,UDP)),REJECT");
-      expect(conf).toContain("https://1.1.1.1/dns-query#proxy=US%20Home");
+      for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {
+        expect(conf.split("\n").find(line => line.startsWith(`${key} =`)))
+          .toBe(`${key} = https://1.1.1.1/dns-query#proxy`);
+      }
+      expect(conf).not.toContain("#proxy=");
       expect(conf).not.toMatch(/test-password|airport-secret|NETWORK,UDP/);
       expect(conf).not.toContain("DST-PORT");
       const head = await fetchClient(created.universalUrl, { method: "HEAD", headers: { "User-Agent": "Shadowrocket/2100" } });

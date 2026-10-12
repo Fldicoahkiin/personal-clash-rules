@@ -54,6 +54,6 @@ export async function renderRolaTarget(env: SubscriptionEnv, prepared: ReturnTyp
     ...defaultDnsSettings, nameservers: settings.dns, ipv6: false,
   }, {
     groups: base["proxy-groups"], rules: base.rules.filter(rule => rule !== gatewayRule), providers: base["rule-providers"] ?? {},
-    dnsNode: settings.name, bootstrap: base.dns["proxy-server-nameserver"],
+    bootstrap: base.dns["proxy-server-nameserver"],
   });
 }

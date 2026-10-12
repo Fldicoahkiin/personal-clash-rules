@@ -27,7 +27,6 @@ export type ShadowrocketRouting = {
   groups: Group[];
   rules: string[];
   providers: Record<string, { url: string }>;
-  dnsNode: string;
   bootstrap: string[];
 };
 
@@ -88,9 +87,8 @@ export function createShadowrocketProfile(
   if (groups.some(group => !iniName(group.name) || !["select", "url-test"].includes(group.type) || group.proxies?.some(name => !iniName(name)))) {
     throw new ApiError(422, "shadowrocket_group_unsupported", "The base profile contains an unsupported policy group");
   }
-  if (routing && !nodeNames.includes(routing.dnsNode)) throw new ApiError(422, "shadowrocket_dns_node_missing", "The paired residential DNS node is missing");
-  const suffix = routing ? `#proxy=${encodeURIComponent(routing.dnsNode)}` : "#proxy";
-  const proxied = settings.nameservers.map(url => `${url}${suffix}`).join(", ");
+  // Shadowrocket documents #proxy as its default node, not a named routing policy group.
+  const proxied = settings.nameservers.map(url => `${url}#proxy`).join(", ");
   const dns = dnsMode === "doh" ? proxied : "system";
   const bootstrap = routing ? routing.bootstrap.join(", ") : dnsMode === "doh" ? createProxyDns(settings)["proxy-server-nameserver"].join(", ") : "system";
   const rules = (routing?.rules ?? mihomoRules).flatMap(rule => ruleLine(rule, routing?.providers ?? mihomoRuleProviders));
@@ -98,7 +96,7 @@ export function createShadowrocketProfile(
     "# Flacier · Shadowrocket",
     "# Import the paired node subscription first; this file contains routing and DNS, not node credentials.",
     "# Update both resources after changing subscription sources or node names.",
-    ...(routing ? ["# Business DNS uses the named residential node independently of policy selections."] : []),
+    "# Business DNS follows Shadowrocket's default node; it does not follow the AI or global policy group.",
     "[General]",
     `ipv6 = ${settings.ipv6}`,
     "prefer-ipv6 = false",
