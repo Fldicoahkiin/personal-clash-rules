@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { businessProxyGroupNames, manualProxyGroupName, mihomoPolicyDisplayNames, mihomoRuleProviders } from "../config/mihomo-policy";
+import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
 
 const nodeName = "ROLA-RESIDENTIAL";
 const groupName = "ROLA";
@@ -155,6 +155,15 @@ export function rolaDirectGatewayRule(settings: ReturnType<typeof parseRolaSetti
   return `AND,((${endpoint}),(DST-PORT,${settings.port})),DIRECT`;
 }
 
+function residentialCountryGroups(settings: ReturnType<typeof parseRolaSettings>): string[] {
+  return Object.entries(countryGroupNames).flatMap(([code, name]) => {
+    const group = mihomoProxyGroups.find(group => group.name === name);
+    if (!group || !("filter" in group) || !group.filter) return [];
+    const pattern = new RegExp(group.filter.replace(/^\(\?i\)/u, ""), "iu");
+    return pattern.test(settings.country || settings.name) ? [code, name] : [];
+  });
+}
+
 export function prepareRolaProfile(source: string, value: unknown) {
   const settings = parseRolaSettings(value);
   const nodeName = settings.name;
@@ -228,9 +237,21 @@ export function prepareRolaProfile(source: string, value: unknown) {
     "dialer-proxy": settings.connectionMode === "direct" ? "DIRECT" : settings.upstreamNode,
   };
   proxies.add(document.createNode(rola));
-  // Keep the metered exit out of every include-all group, including automatic health checks.
+  const countryGroups = residentialCountryGroups(settings);
+  // Region membership follows geography; other include-all pools must not start testing the metered exit.
   for (const group of groups.items) {
-    if (!isMap(group) || (!group.get("include-all") && !group.get("include-all-proxies"))) continue;
+    if (!isMap(group)) continue;
+    if (countryGroups.includes(String(group.get("name")))) {
+      const members = group.get("proxies", true);
+      if (members !== undefined && !isSeq(members)) throw new Error("Invalid country policy group");
+      if (isSeq(members)) members.add(nodeName);
+      else group.set("proxies", document.createNode([nodeName]));
+      const filter = group.get("filter");
+      if (filter !== undefined && typeof filter !== "string") throw new Error("Invalid country group filter");
+      if (filter) group.set("filter", `${filter}|${nodePattern}`);
+      continue;
+    }
+    if (!group.get("include-all") && !group.get("include-all-proxies")) continue;
     const filter = group.get("exclude-filter");
     if (filter !== undefined && typeof filter !== "string") throw new Error("Invalid group exclude-filter");
     group.set("exclude-filter", filter ? `${filter}|${nodePattern}` : nodePattern);
@@ -294,6 +315,7 @@ export function createRolaOverride(source: string, value: unknown) {
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
     excludedNodePattern: `^${settings.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
+    countryGroups: residentialCountryGroups(settings),
     selectableGroups: residentialSelectableGroups, policyGroup: prepared.summary.policyGroup,
   };
   // This artifact contains credentials. It is downloaded only from the loopback server.
@@ -312,6 +334,13 @@ function main(config) {
   if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');
   const next = JSON.parse(JSON.stringify(config));
   for (const group of next['proxy-groups']) {
+    if (data.countryGroups.includes(group.name)) {
+      if (group.proxies !== undefined && !Array.isArray(group.proxies)) throw new Error('Rola: invalid country policy group');
+      group.proxies = [...(group.proxies || []), data.node.name];
+      if (group.filter !== undefined && typeof group.filter !== 'string') throw new Error('Rola: invalid country group filter');
+      if (group.filter) group.filter += '|' + data.excludedNodePattern;
+      continue;
+    }
     if (!group['include-all'] && !group['include-all-proxies']) continue;
     if (group['exclude-filter'] !== undefined && typeof group['exclude-filter'] !== 'string') throw new Error('Rola: invalid group filter');
     group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|' + data.excludedNodePattern : data.excludedNodePattern;

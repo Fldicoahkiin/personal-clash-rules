@@ -76,7 +76,38 @@ describe("local Rola preparation", () => {
     }
   });
 
-  it("makes the residential group selectable in every business policy without adding it to automatic or regional pools", () => {
+  it.each([
+    ["us", "Dedicated exit", "🇺🇸 美国"],
+    ["jp", "US Home", "🇯🇵 日本"],
+    ["de", "Dedicated exit", "🇪🇺 欧洲"],
+    ["", "US Home", "🇺🇸 美国"],
+    ["", "Tokyo Home", "🇯🇵 日本"],
+    ["", "Private exit", ""],
+    ["zz", "US Home", ""],
+  ])("adds residential country %s / name %s only to its matching region", (country, name, region) => {
+    const base = createMihomoProfile("proxies: [{name: US Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
+    const input = { ...settings, authMode: "literal", connectionMode: "direct", upstreamNode: "", country, name };
+    const output = parse(prepareRolaProfile(base, input).profile);
+    for (const groupName of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
+      const group = output["proxy-groups"].find((group: { name: string }) => group.name === groupName);
+      const members: string[] = group.proxies ?? [];
+      expect(members.includes(name), groupName).toBe(groupName === region);
+      expect(members).not.toContain("ROLA");
+      const matches = (filter: string) => new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu").test(name);
+      expect(matches(group["exclude-filter"]), groupName).toBe(groupName !== region);
+      if (groupName === region) expect(matches(group.filter)).toBe(true);
+    }
+    const us = output["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
+    expect(us["include-all"]).toBe(true);
+    expect(new RegExp(us.filter.replace(/^\(\?i\)/u, ""), "iu").test("US Airport")).toBe(true);
+    const auto = output["proxy-groups"].find((group: { name: string }) => group.name === "♻️ 自动选择");
+    expect(auto.proxies ?? []).not.toContain(name);
+    expect(new RegExp(auto["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(true);
+    expect(output["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([name]);
+    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
+  });
+
+  it("makes the residential group selectable in every business policy without adding it to automatic or unrelated regional pools", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
@@ -88,7 +119,7 @@ describe("local Rola preparation", () => {
       expect(group["include-all"], name).toBe(true);
       expect(group["exclude-filter"], name).toContain("ROLA-RESIDENTIAL");
     }
-    for (const name of ["♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本"]) {
+    for (const name of ["♻️ 自动选择", "🇯🇵 日本"]) {
       const group = output["proxy-groups"].find((group: { name: string }) => group.name === name);
       expect(group.proxies ?? []).not.toContain(input.groupName);
       expect(group["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
