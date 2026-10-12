@@ -1,9 +1,12 @@
 import { exports } from "cloudflare:workers";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { clearSourceCache } from "./helpers/source-cache";
 import { parse } from "yaml";
 import { isVersionInfo } from "../src/config/build-info";
 import type { RulePreview } from "../src/config/rule-preview";
 import { createRuleSet, matchUrl } from "../src/app/lib/rule-matcher";
+
+beforeEach(clearSourceCache);
 
 type CreatedSubscription = {
   nodeStats: {
@@ -109,6 +112,7 @@ describe("Worker entrypoint", () => {
       ] });
       expect(data.usage.sources[0].name).toBe("Airport A");
       content = "proxies: []";
+      await clearSourceCache();
       const failed = await exports.default.fetch(data.url);
       expect(failed.headers.get("x-subscription-refresh-status")).toBe("last-good");
       expect(parse(await failed.text()).proxies).toHaveLength(3);
@@ -172,6 +176,7 @@ describe("Worker entrypoint", () => {
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const first = await exports.default.fetch(data.url);
       upload = 15;
+      await clearSourceCache();
       const next = await exports.default.fetch(data.url, { headers: { "If-None-Match": first.headers.get("etag")! } });
       expect(next.status).toBe(200);
       expect(next.headers.get("subscription-userinfo")).toBe("upload=15; download=20; total=100");
@@ -545,7 +550,7 @@ describe("KV-backed subscription links", () => {
           },
         }],
       });
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     } finally {
       fetchSpy.mockRestore();
     }
@@ -791,6 +796,7 @@ describe("KV-backed subscription links", () => {
       expect(response.status).toBe(201);
       expect(data.nodeStats.output).toBe(1);
       fetchSpy.mockImplementation(async () => new Response(null, { status: 403 }));
+      await clearSourceCache();
       const refreshed = await exports.default.fetch(data.url);
       expect(refreshed.status).toBe(200);
       expect(refreshed.headers.get("cache-control")).toBe("no-store");

@@ -22,6 +22,8 @@ import { SubscriptionFormatPicker } from "./SubscriptionFormatPicker";
 import { SubscriptionLinkLoader } from "./SubscriptionLinkLoader";
 import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
+import { SubscriptionCloudSync } from "./SubscriptionCloudSync";
+import { SubscriptionSyncTasks } from "./SubscriptionSyncTasks";
 import { RolaSubscription } from "./RolaSubscription";
 import { ProxyEndpointInput } from "./ProxyEndpointInput";
 import { ruleTemplates, type RuleSelection } from "../../config/rule-templates";
@@ -377,17 +379,24 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         </div>
       </form>
 
+      {(form.backendMode === "local" || (form.backendMode === "current" && typeof window !== "undefined" && ["127.0.0.1", "localhost"].includes(window.location.hostname)))
+        ? <SubscriptionSyncTasks backend={backend} /> : null}
+
       {form.error ? (
         <p className="field-error" role="alert">{form.error}</p>
       ) : null}
 
       {form.result ? (
+        <>
         <SubscriptionResult
           copied={form.copied}
           format={selectedFormat}
           result={form.result}
           onCopy={() => void copyResult()}
         />
+        {form.result.sourceMode === "convert" && ["127.0.0.1", "localhost"].includes(new URL(form.result.url).hostname)
+          ? <SubscriptionCloudSync key={form.result.url} localUrl={form.result.url} format={selectedFormat} /> : null}
+        </>
       ) : null}
       </>}
     </section>

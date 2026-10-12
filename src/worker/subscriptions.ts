@@ -1,4 +1,6 @@
 import { ApiError } from "./api-error";
+import { timingSafeEqual } from "node:crypto";
+import { maximumSyncRequestBytes, readSubscriptionSnapshot, type ManagedSubscriptionSnapshot } from "./subscription-snapshot";
 import { withSubscriptionRecovery } from "./subscription-recovery";
 import { parseDnsSettings, type DnsSettings } from "../config/dns-settings";
 import { ruleTemplates } from "../config/rule-templates";
@@ -28,6 +30,7 @@ import {
   produceTarget,
   readRemoteSource,
   type RemoteSubscriptionMetadata,
+  type RemoteSubscriptionSource,
   type SubscriptionUsage,
   type SourceResourceLimits,
 } from "./sub-store";
@@ -60,7 +63,7 @@ async function enforceSubscriptionRateLimit(
 ): Promise<void> {
   if (
     url.pathname !== "/sub" && (request.method !== "POST"
-    || !["/api/subscriptions", "/api/subscriptions/resolve", "/api/rules/preview"].includes(url.pathname))
+    || !["/api/subscriptions", "/api/subscriptions/resolve", "/api/subscriptions/sync", "/api/rules/preview"].includes(url.pathname))
   ) {
     return;
   }
@@ -449,6 +452,7 @@ async function generateTarget(
   config: SubscriptionConfig,
   target: OutputTarget,
   resourceLimits?: SourceResourceLimits,
+  resolvedSources?: RemoteSubscriptionSource[],
 ): Promise<{
   content: string;
   inheritedName?: string;
@@ -471,6 +475,7 @@ async function generateTarget(
   } else {
     try {
       const normalized = await normalizeSourceBundle(env, {
+        resolvedSources,
         resourceLimits,
         profileName: config.name,
         sourceUserAgent: config.sourceUserAgent,
@@ -548,12 +553,12 @@ async function generateTarget(
   };
 }
 
-export async function buildSubscription(env: SubscriptionEnv, body: Record<string, unknown>, resourceLimits?: SourceResourceLimits) {
+export async function buildSubscription(env: SubscriptionEnv, body: Record<string, unknown>, resourceLimits?: SourceResourceLimits, resolvedSources?: RemoteSubscriptionSource[]) {
   if (typeof body.target !== "string" || !isOutputTarget(body.target)) {
     throw new ApiError(400, "unsupported_target", "Output target is not supported");
   }
   const config = readConfig(body, "error");
-  const generated = await generateTarget(env, config, body.target, resourceLimits);
+  const generated = await generateTarget(env, config, body.target, resourceLimits, resolvedSources);
   return { config, generated, target: body.target, profileName: displayProfileName(config, generated.inheritedName) };
 }
 
@@ -591,7 +596,7 @@ async function createSubscription(
 async function readSubscriptionConfig(
   token: string,
   env: SubscriptionEnv,
-): Promise<SubscriptionConfig> {
+): Promise<{ config: SubscriptionConfig; localSync?: ManagedSubscriptionSnapshot }> {
   let value: unknown;
   try {
     if (token.startsWith("v1.")) {
@@ -613,10 +618,25 @@ async function readSubscriptionConfig(
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
   try {
-    return readConfig(value);
+    const config = readConfig(value);
+    const localSync = (value as Record<string, unknown>).localSync;
+    if (localSync) {
+      const snapshot = readSubscriptionSnapshot(localSync, config.sources.filter(source => source.type === "subscription").length);
+      const managementHash = (localSync as Record<string, unknown>).managementHash;
+      if (typeof managementHash !== "string" || !/^[\w-]{43}$/u.test(managementHash)) throw new Error("Invalid sync record");
+      return { config, localSync: { ...snapshot, managementHash } };
+    }
+    return { config };
   } catch {
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
+}
+
+export async function buildSynchronizedSubscription(env: SubscriptionEnv, id: string, target: OutputTarget, resourceLimits?: SourceResourceLimits) {
+  const { config, localSync } = await readSubscriptionConfig(id, env);
+  if (!localSync) throw new ApiError(400, "sync_base_required", "This base must be a locally synchronized subscription");
+  const generated = await generateTarget(env, config, target, resourceLimits, localSync.sources);
+  return { config, generated, target, profileName: displayProfileName(config, generated.inheritedName), syncedAt: localSync.readAt };
 }
 
 async function resolveSubscription(
@@ -640,10 +660,10 @@ async function resolveSubscription(
   if (parts[0] !== "s" || !parts[1] || parts.length > 3) {
     throw new ApiError(400, "invalid_subscription_url", "Subscription URL is invalid");
   }
-  const config = await readSubscriptionConfig(parts[1], env);
+  const { config, localSync } = await readSubscriptionConfig(parts[1], env);
   const targetValue = parts[2] || link.searchParams.get("target") || "clash-party-config";
   const target = isOutputTarget(targetValue) ? targetValue : "clash-party-config";
-  return json({ config, target });
+  return json({ config, target, ...(localSync ? { syncedAt: localSync.readAt } : {}) });
 }
 
 async function renderSubscription(
@@ -670,15 +690,63 @@ async function renderSubscription(
   } else {
     target = targetForUserAgent(request.headers.get("user-agent") ?? "");
   }
-  const config = await readSubscriptionConfig(parts[1], env);
+  const { config, localSync } = await readSubscriptionConfig(parts[1], env);
   const rendered = config.sourceMode === "convert"
-    ? await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${parts[1]}/${target}`, async () => subscriptionResponse(config, await generateTarget(env, config, target), target, url))
+    ? await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${parts[1]}/${target}${localSync ? `/${localSync.readAt}` : ""}`, async () => subscriptionResponse(config, await generateTarget(env, config, target, undefined, localSync?.sources), target, url))
     : await subscriptionResponse(config, await generateTarget(env, config, target), target, url);
   if (universal && !targetParameter) rendered.headers.set("Vary", "User-Agent");
-  if (request.headers.get("if-none-match") === rendered.headers.get("etag") && rendered.headers.get("x-subscription-refresh-status") !== "last-good") {
+  if (localSync) {
+    rendered.headers.set("X-Subscription-Source-Mode", "local-sync");
+    rendered.headers.set("X-Subscription-Synced-At", localSync.readAt);
+    rendered.headers.set("X-Subscription-Last-Success", localSync.readAt);
+    if (Date.now() - Date.parse(localSync.readAt) > config.updateIntervalHours * 3_600_000) {
+      rendered.headers.set("X-Subscription-Refresh-Status", "sync-overdue");
+      rendered.headers.set("Warning", '110 - "Local synchronization is overdue; nodes and quota are from the last successful sync"');
+    }
+  }
+  if (request.headers.get("if-none-match") === rendered.headers.get("etag") && !["last-good", "sync-overdue"].includes(rendered.headers.get("x-subscription-refresh-status") ?? "")) {
     return new Response(null, { status: 304, headers: rendered.headers });
   }
   return request.method === "HEAD" ? new Response(null, { headers: rendered.headers }) : rendered;
+}
+
+async function syncSubscription(request: Request, url: URL, env: SubscriptionEnv): Promise<Response> {
+  if (request.method !== "POST") throw new ApiError(405, "method_not_allowed", "Use POST for synchronization");
+  const body = await readRequestObject(request, maximumSyncRequestBytes);
+  if (typeof body.id !== "string" || !/^[\w-]{16}$/u.test(body.id)
+    || typeof body.managementToken !== "string" || !/^[\w-]{32}$/u.test(body.managementToken)) {
+    throw new ApiError(400, "invalid_sync_identity", "A random sync identity and management token are required");
+  }
+  const key = `${subscriptionKeyPrefix}${body.id}`;
+  const existing = await env.SUBSCRIPTIONS.get(key);
+  const managementHash = await hashText(body.managementToken);
+  let previous: ManagedSubscriptionSnapshot | undefined;
+  if (existing) {
+    previous = (await readSubscriptionConfig(body.id, env)).localSync;
+    if (!previous || !timingSafeEqual(encoder.encode(managementHash), encoder.encode(previous.managementHash))) {
+      throw new ApiError(403, "sync_forbidden", "The synchronization credential is invalid");
+    }
+  }
+  const config = readConfig(body.config, "error");
+  if (config.sourceMode !== "convert") throw new ApiError(400, "invalid_source_snapshot", "Only converted sources can be synchronized");
+  config.fallbackMode = "error";
+  const snapshot = readSubscriptionSnapshot(body.snapshot, config.sources.filter(source => source.type === "subscription").length);
+  if (previous && Date.parse(snapshot.readAt) < Date.parse(previous.readAt)) throw new ApiError(409, "sync_outdated", "A newer snapshot is already published");
+  if (typeof body.target !== "string" || !isOutputTarget(body.target)) throw new ApiError(400, "unsupported_target", "Output target is not supported");
+  const generated = await generateTarget(env, config, body.target, undefined, snapshot.sources);
+  // One record changes atomically only after every source and the requested output validate.
+  const record = JSON.stringify({ ...config, localSync: { ...snapshot, managementHash } });
+  if (encoder.encode(record).length > maximumSyncRequestBytes) throw new ApiError(413, "source_snapshot_too_large", "Source snapshots exceed the sync limit");
+  if (previous?.readAt === snapshot.readAt && existing !== record) throw new ApiError(409, "sync_outdated", "This snapshot revision already contains different data");
+  if (previous && previous.readAt !== snapshot.readAt && Date.now() - Date.parse(previous.readAt) < 60_000) {
+    throw new ApiError(429, "sync_too_soon", "Wait a minute before synchronizing again");
+  }
+  if (!previous || previous.readAt !== snapshot.readAt) await env.SUBSCRIPTIONS.put(key, record);
+  return json({ nodeStats: generated.nodeStats, profileName: displayProfileName(config, generated.inheritedName),
+    sourceMode: "local-sync", target: body.target, usage: generated.usage, syncedAt: snapshot.readAt,
+    url: urlsForToken(url.origin, body.id)[body.target], universalUrl: universalUrlForToken(url.origin, body.id),
+    ...(body.target === "shadowrocket-config" ? { nodeUrl: urlsForToken(url.origin, body.id).shadowrocket } : {}),
+  }, { status: existing ? 200 : 201 });
 }
 
 async function subscriptionResponse(config: SubscriptionConfig, generated: Awaited<ReturnType<typeof generateTarget>>, target: OutputTarget, url: URL): Promise<Response> {
@@ -737,6 +805,7 @@ export async function routeSubscriptionRequest(
     if (url.pathname === "/api/subscriptions") {
       return await createSubscription(request, url, env);
     }
+    if (url.pathname === "/api/subscriptions/sync") return await syncSubscription(request, url, env);
     if (url.pathname === "/api/subscriptions/resolve") {
       return await resolveSubscription(request, env);
     }

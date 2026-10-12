@@ -12,10 +12,10 @@ export type RolaPreview = {
   baseId: string;
   nodes: { name: string; type: string; selectable: boolean }[];
   result: Pick<ConvertedSubscription, "nodeStats" | "usage">;
-  sourceMode?: "convert" | "snapshot";
+  sourceMode?: "convert" | "snapshot" | "local-sync";
 };
 export type RolaResult = { url: string; overrideUrl: string; summary: { country: string; sessionMinutes: number | null; protectedRules: number; inlineNodes: number } };
-export type RolaCloudResult = Omit<RolaResult, "overrideUrl"> & { revokeToken: string; expiresAt: string; sourceMode: "convert" | "snapshot" };
+export type RolaCloudResult = Omit<RolaResult, "overrideUrl"> & { revokeToken: string; expiresAt: string; sourceMode: "convert" | "snapshot" | "local-sync" };
 export type RolaManagement = Pick<RolaCloudResult, "url" | "revokeToken">;
 
 export async function requestCloudRola<T>(path: "/preview" | "/chains" | "/revoke", input: unknown): Promise<T> {

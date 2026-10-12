@@ -29,7 +29,7 @@ export type OutputTarget =
 export type SourceType = "subscription" | "node";
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
 export type RulePreset = import("../../../config/rule-templates").RuleTemplateId | "global" | "direct";
-export type SourceMode = "convert" | "mihomo-provider";
+export type SourceMode = "convert" | "mihomo-provider" | "local-sync";
 export type FallbackMode = "error" | "mihomo-provider";
 export type DnsMode = "doh" | "system" | "upstream";
 
@@ -68,6 +68,7 @@ export interface ConvertedSubscription {
   url: string;
   universalUrl: string;
   nodeUrl?: string;
+  syncedAt?: string;
 }
 
 export interface SubscriptionUsage {
@@ -163,10 +164,10 @@ export function subscriptionErrorText(error: unknown): string {
   if (error.code === "source_failed") {
     const upstream = error.upstream;
     const evidence = upstream ? ` 上游 HTTP ${upstream.status}${upstream.rayId ? ` · 请求编号 ${upstream.rayId}` : ""}。` : "";
-    if (upstream?.challenge) return `机场返回了 Cloudflare 浏览器验证页，不是节点配置。请机场提供供客户端读取的订阅接口，或允许本站 Worker 读取；重复生成和修改本地 DNS 不能完成这个验证。${evidence}`;
+    if (upstream?.challenge) return `当前后端收到浏览器验证页，不是节点配置。可选择本地后端读取，成功后同步到自己的 CF；不需要修改当前 DNS 或代理设置，也不会自动把订阅交给第三方。${evidence}`;
     if (upstream?.status === 429 || /HTTP 429$/u.test(error.message)) return `机场限制了请求频率，请等待后再试；当前订阅和代理未改变。${evidence}`;
     if (upstream?.status === 401) return `机场要求有效的订阅凭据，请在机场面板确认订阅地址仍有效。${evidence}`;
-    if (upstream?.status === 403 || /HTTP 403$/u.test(error.message)) return `机场拒绝当前后端读取（403），现有证据不能确认具体拦截规则。请机场核对该请求；不会自动切换后端或输出空节点。${evidence}`;
+    if (upstream?.status === 403 || /HTTP 403$/u.test(error.message)) return `当前读取路径返回 403，现有证据不能确认具体拦截规则。请核对所选 UA，或明确选择本地后端读取再同步云端；不会自动切换出口或输出空节点。${evidence}`;
   }
   const messages: Record<string, string> = {
     no_sources: "请添加一个订阅或节点",
@@ -201,6 +202,34 @@ export function subscriptionErrorText(error: unknown): string {
     source_transform_unavailable: "客户端直连模式不支持节点排序",
     target_unsupported: "不兼容：节点协议无法生成当前格式",
     output_too_large: "生成内容过大",
+    sync_busy: "本地正在同步，请稍后再试",
+    sync_requires_conversion: "请先在本地成功读取节点；不能把客户端直读外壳当作同步快照",
+    cloud_sync_unreachable: "同步未完成，云端保留之前的订阅；本地服务会在 15 分钟后重试",
+    cloud_sync_failed: "云端未接受同步，已有链接不变；请检查本地与云端是否已更新到支持同步的版本",
+    invalid_local_subscription: "请先用本地后端生成订阅，再同步到云端",
   };
   return messages[error.code] ?? error.message;
+}
+
+export async function publishLocalSubscription(localUrl: string): Promise<ConvertedSubscription> {
+  const url = new URL(localUrl);
+  if (url.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(url.hostname)) throw new Error("Not a local subscription");
+  const response = await fetch(`${url.origin}/api/local/subscriptions/publish`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: localUrl }),
+    signal: AbortSignal.timeout(90_000),
+  });
+  if (!response.ok) throw await apiError(response);
+  return await response.json() as ConvertedSubscription;
+}
+
+export type LocalSyncTask = { localId: string; name: string; url?: string; syncedAt?: string; nextAttemptAt: number; paused: boolean; error?: string };
+export async function localSyncTasks(backend: string, change?: { localId: string; paused: boolean }): Promise<LocalSyncTask[]> {
+  const endpoint = `${backend}/api/local/subscriptions/publish`;
+  if (change) {
+    const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change), signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw await apiError(response);
+  }
+  const response = await fetch(endpoint, { signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw await apiError(response);
+  return (await response.json() as { tasks: LocalSyncTask[] }).tasks;
 }

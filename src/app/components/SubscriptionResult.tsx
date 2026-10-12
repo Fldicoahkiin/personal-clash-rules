@@ -83,7 +83,7 @@ export function SubscriptionResult({
         <dl className="subscription-result-meta">
           <div>
             <dt>模式</dt>
-            <dd>{clientDirect ? "客户端直读" : localBackend ? "本地转换" : "Worker 转换"}</dd>
+            <dd>{result.sourceMode === "local-sync" ? "本地读取 · 云端分发" : clientDirect ? "客户端直读" : localBackend ? "本地转换" : "Worker 转换"}</dd>
           </div>
           <div>
             <dt>读取</dt>
@@ -116,7 +116,9 @@ export function SubscriptionResult({
             ) : null}
           </div>
         ) : null}
-        {!clientDirect ? <p>刷新失败时最多回用 24 小时内的完整有效配置，用量也可能是旧数据；不会用空节点覆盖。成功刷新会移除上游已撤回的节点。</p> : null}
+        {result.sourceMode === "local-sync"
+          ? <p>最近同步：{result.syncedAt ? new Date(result.syncedAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }) : "未知"}（UTC+8）。这是同步时的节点和用量，不是 CF 对机场的实时查询。云端刷新不会删除未同步的节点。</p>
+          : !clientDirect ? <p>有效来源缓存 5 分钟；刷新失败时最多回用 24 小时内的完整有效配置，用量也可能是旧数据。成功刷新会移除上游已撤回的节点。</p> : null}
         {result.usage.sources.length > 0 ? (
           <div className="subscription-usage">
             <div className="subscription-usage-total">

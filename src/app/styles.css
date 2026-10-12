@@ -1022,6 +1022,17 @@ summary:focus-visible {
   line-height: 1.45;
 }
 
+.subscription-sync-tasks,
+.subscription-cloud-sync {
+  min-width: 0;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.subscription-sync-tasks code {
+  overflow-wrap: anywhere;
+}
+
 .subscription-result-meta dt {
   color: var(--muted);
 }

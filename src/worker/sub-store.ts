@@ -3,6 +3,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 import { mihomoProxyGroups } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
+import { hashText } from "./secrets";
 import { createEgernProfile } from "./egern-profile";
 import { createLoonProfile } from "./loon-profile";
 import { createShadowrocketProfile } from "./shadowrocket-profile";
@@ -1672,6 +1673,8 @@ export type RemoteSubscriptionMetadata = {
   usageStatus: "available" | "missing" | "unavailable";
 };
 
+export type RemoteSubscriptionSource = { content: string; metadata: RemoteSubscriptionMetadata };
+
 function subscriptionProfileName(response: Response): string | undefined {
   const disposition = response.headers.get("content-disposition") ?? "";
   const encodedName = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/iu)?.[1];
@@ -1822,7 +1825,7 @@ export async function readRemoteSource(
   value: string,
   sourceUserAgent: string,
   byteLimit = maximumRemoteBytes,
-): Promise<{ content: string; metadata: RemoteSubscriptionMetadata }> {
+): Promise<RemoteSubscriptionSource> {
   const response = await requestRemoteSource(value, sourceUserAgent, "GET");
   const declaredLength = Number(response.headers.get("content-length") || 0);
   if (declaredLength > byteLimit) {
@@ -1864,12 +1867,57 @@ export async function probeRemoteSubscriptionMetadata(
   value: string,
   sourceUserAgent: string,
 ): Promise<RemoteSubscriptionMetadata> {
+  let head: RemoteSubscriptionMetadata | undefined;
   try {
     const response = await requestRemoteSource(value, sourceUserAgent, "HEAD");
-    return remoteSubscriptionMetadata(response);
-  } catch {
-    return { usageStatus: "unavailable" };
+    head = remoteSubscriptionMetadata(response);
+    if (head.usage) return head;
+  } catch (error) {
+    // Unsupported HEAD is a method difference, not permission to retry refusals or challenges.
+    if (!(error instanceof ApiError) || ![405, 501].includes(error.upstream?.status ?? 0)) {
+      return { usageStatus: "unavailable" };
+    }
   }
+  try {
+    const response = await requestRemoteSource(value, sourceUserAgent, "GET");
+    const metadata = remoteSubscriptionMetadata(response);
+    await response.body?.cancel();
+    return { ...head, ...metadata, ...(metadata.profileName || !head?.profileName ? {} : { profileName: head.profileName }) };
+  } catch { return head ?? { usageStatus: "unavailable" }; }
+}
+
+export async function loadRemoteSubscriptionSources(
+  env: SubscriptionEnv, urls: string[], userAgent: string, byteLimit = maximumRemoteBytes,
+): Promise<RemoteSubscriptionSource[]> {
+  if (urls.length > maximumRemoteSources) throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
+  const sources: RemoteSubscriptionSource[] = [];
+  for (const url of urls) {
+    const key = `source-cache:${await hashText(`${url}\n${userAgent}`)}`;
+    let source: RemoteSubscriptionSource | undefined;
+    if (env.SUBSCRIPTIONS) {
+      try {
+        const raw = await env.SUBSCRIPTIONS.get(key);
+        if (raw && raw.length <= 8 * maximumRemoteBytes) {
+          const cached = JSON.parse(raw) as { savedAt: number; source: RemoteSubscriptionSource };
+          if (Number.isFinite(cached.savedAt) && Date.now() >= cached.savedAt && Date.now() - cached.savedAt < 300_000
+            && typeof cached.source?.content === "string" && cached.source.metadata
+            && new TextEncoder().encode(cached.source.content).length <= byteLimit) source = cached.source;
+        }
+      } catch { console.warn(JSON.stringify({ event: "subscription_source_cache_unavailable", operation: "read" })); }
+    }
+    if (!source) {
+      source = await readRemoteSource(url, userAgent, byteLimit);
+      if (parseProxies(decodeMaybeBase64(source.content)).length === 0) {
+        throw new ApiError(422, "no_nodes_found", "A source returned no supported nodes; the combined profile was not replaced");
+      }
+      if (env.SUBSCRIPTIONS) {
+        try { await env.SUBSCRIPTIONS.put(key, JSON.stringify({ savedAt: Date.now(), source }), { expirationTtl: 300 }); }
+        catch { console.warn(JSON.stringify({ event: "subscription_source_cache_unavailable", operation: "write" })); }
+      }
+    }
+    sources.push(source);
+  }
+  return sources;
 }
 
 export function probeConverter(): "ready" {
@@ -1891,13 +1939,14 @@ export async function normalizeSources(
 export type SourceResourceLimits = { sourceBytes: number; nodes: number };
 
 export async function normalizeSourceBundle(
-  _env: SubscriptionEnv,
+  env: SubscriptionEnv,
   input: {
     profileName: string;
     sourceUserAgent?: string;
     subscriptionUrls: string[];
     nodes: string[];
     resourceLimits?: SourceResourceLimits;
+    resolvedSources?: RemoteSubscriptionSource[];
   },
 ): Promise<{
   inputNodeCount: number;
@@ -1910,11 +1959,8 @@ export async function normalizeSourceBundle(
   if (input.subscriptionUrls.length > maximumRemoteSources) {
     throw new ApiError(413, "too_many_sources", "A profile supports at most 10 remote sources");
   }
-  const remote: Awaited<ReturnType<typeof readRemoteSource>>[] = [];
-  // Do not hold several simultaneous upstream response buffers during conversion.
-  for (const url of input.subscriptionUrls) {
-    remote.push(await readRemoteSource(url, input.sourceUserAgent || "clash.meta", input.resourceLimits?.sourceBytes));
-  }
+  const remote = input.resolvedSources ?? await loadRemoteSubscriptionSources(env, input.subscriptionUrls, input.sourceUserAgent || "clash.meta", input.resourceLimits?.sourceBytes);
+  if (remote.length !== input.subscriptionUrls.length) throw new ApiError(400, "invalid_source_snapshot", "Source snapshot does not match the configuration");
   const parsed = [
     ...remote.map((source) => source.content),
     ...input.nodes,

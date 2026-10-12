@@ -13,6 +13,8 @@
   "include": [
     "src/local/rola.ts",
     "tests/worker.integration.ts",
+    "tests/*.worker.ts",
+    "tests/helpers/*.ts",
     "tests/worker.setup.ts",
     "vitest.worker.config.ts",
     "worker-configuration.d.ts",

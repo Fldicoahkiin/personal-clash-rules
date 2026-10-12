@@ -4,7 +4,7 @@ import { parseRolaSettings, prepareRolaProfile, rolaUpstreamChoices } from "../l
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store";
-import { buildSubscription, readRequestObject } from "./subscriptions";
+import { buildSubscription, buildSynchronizedSubscription, readRequestObject } from "./subscriptions";
 import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscription-recovery";
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
 
@@ -16,7 +16,7 @@ const previewTtl = 3600;
 const chainTtl = 90 * 86400;
 const encoder = new TextEncoder();
 type Built = Awaited<ReturnType<typeof buildSubscription>>;
-type Source = { kind: "convert"; config: Built["config"] } | { kind: "snapshot"; profile: string };
+type Source = { kind: "convert"; config: Built["config"] } | { kind: "snapshot"; profile: string } | { kind: "local-sync"; id: string };
 type Preview = { source: Source; target: OutputTarget; name: string; profile: string; userinfo: string | null; expiresAt: number };
 type Chain = { source: Source; target: OutputTarget; name: string; settings: Record<string, unknown>; revokeHash: string; expiresAt: number };
 
@@ -74,6 +74,22 @@ function profileResponse(chain: Chain, profile: string, userinfo: string | null)
   return new Response(profile, { headers });
 }
 
+function synchronizedBaseId(sources: unknown[], origin: string): string | null {
+  for (const source of sources) {
+    if (!source || typeof source !== "object" || !("type" in source) || source.type !== "subscription"
+      || !("value" in source) || typeof source.value !== "string") continue;
+    let link: URL;
+    try { link = new URL(source.value); } catch { continue; }
+    if (link.origin !== origin) continue;
+    const match = /^\/s\/([\w-]{16})(?:\/[\w-]+)?$/u.exec(link.pathname);
+    if (!match || link.search || link.hash || link.username || link.password || sources.length !== 1) {
+      throw new ApiError(400, "sync_base_required", "本站链接请先在本地合并并同步，再单独作为 Rola 基础订阅。");
+    }
+    return match[1];
+  }
+  return null;
+}
+
 export async function routeCloudRola(request: Request, url: URL, env: Env): Promise<Response | null> {
   if (!url.pathname.startsWith("/api/rola/") && !url.pathname.startsWith("/r/")) return null;
   try {
@@ -97,10 +113,12 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           source = { kind: "snapshot", profile };
         } else {
           if (!Array.isArray(input.sources) || input.sources.length > 3) throw new ApiError(413, "rola_too_many_sources", "Rola 串联最多支持 3 个机场来源。");
-          const built = await buildSubscription(env, { sources: input.sources, target: input.target, name: input.name, sourceUserAgent: input.sourceUserAgent,
+          const syncId = synchronizedBaseId(input.sources, url.origin);
+          const built = syncId ? await buildSynchronizedSubscription(env, syncId, input.target, { sourceBytes, nodes: nodeLimit })
+            : await buildSubscription(env, { sources: input.sources, target: input.target, name: input.name, sourceUserAgent: input.sourceUserAgent,
             fallbackMode: "error", dnsMode: "doh", dnsSettings: defaultDnsSettings, rulePreset: "flacier", updateIntervalHours: 6 }, { sourceBytes, nodes: nodeLimit });
           profile = built.generated.content;
-          source = { kind: "convert", config: built.config };
+          source = syncId ? { kind: "local-sync", id: syncId } : { kind: "convert", config: built.config };
           stats = built.generated.nodeStats;
           usage = built.generated.usage;
           name = built.profileName;
@@ -142,17 +160,30 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
     const match = /^\/r\/([\w-]{32})\.yaml$/u.exec(url.pathname);
     if (match && ["GET", "HEAD"].includes(request.method)) {
       const chain = await read<Chain>(env, "chain", match[1]);
+      let synchronized: Awaited<ReturnType<typeof buildSynchronizedSubscription>> | undefined;
       const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, `rola:${match[1]}`, async () => {
         let profile: string;
         let userinfo: string | null = null;
         if (chain.source.kind === "snapshot") profile = chain.source.profile;
         else {
-          const built = await buildSubscription(env, { ...chain.source.config, target: chain.target }, { sourceBytes, nodes: nodeLimit });
+          const built = chain.source.kind === "local-sync"
+            ? synchronized = await buildSynchronizedSubscription(env, chain.source.id, chain.target, { sourceBytes, nodes: nodeLimit })
+            : await buildSubscription(env, { ...chain.source.config, target: chain.target }, { sourceBytes, nodes: nodeLimit });
           profile = built.generated.content;
           if (built.generated.usage.combined) userinfo = formatSubscriptionUserinfo(built.generated.usage.combined);
         }
-        return profileResponse(chain, prepare(profile, chain.settings).profile, userinfo);
+        const rendered = profileResponse(chain, prepare(profile, chain.settings).profile, userinfo);
+        if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.syncedAt);
+        return rendered;
       });
+      const syncedAt = response.headers.get("X-Subscription-Synced-At");
+      if (syncedAt) response.headers.set("X-Subscription-Last-Success", syncedAt);
+      if (synchronized) {
+        if (Date.now() - Date.parse(synchronized.syncedAt) > synchronized.config.updateIntervalHours * 3_600_000) {
+          response.headers.set("X-Subscription-Refresh-Status", "sync-overdue");
+          response.headers.set("Warning", '110 - "Local synchronization is overdue; nodes and quota are from the last successful sync"');
+        }
+      }
       return request.method === "HEAD" ? new Response(null, { headers: response.headers }) : response;
     }
     throw new ApiError(404, "rola_not_found", "Rola 接口或请求方法不存在。");

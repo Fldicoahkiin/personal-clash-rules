@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rename, readdir } from "node:fs/promises";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Readable } from "node:stream";
@@ -27,6 +27,9 @@ await mkdir(data, { recursive: true, mode: 0o700 });
 const bundle = resolve(root, ".local/subscriptions.mjs");
 await build({ entryPoints: [resolve(root, "src/worker/subscriptions.ts")], outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external" });
 const { routeSubscriptionRequest } = await import(pathToFileURL(bundle).href);
+const syncBundle = resolve(root, ".local/subscription-sync.mjs");
+await build({ entryPoints: [resolve(root, "src/local/subscription-sync.ts")], outfile: syncBundle, bundle: true, platform: "node", format: "esm", packages: "external" });
+const { createSubscriptionSync } = await import(pathToFileURL(syncBundle).href);
 const rolaBundle = resolve(root, ".local/rola-server.mjs");
 await build({ entryPoints: [resolve(root, "src/local/rola-server.ts")], outfile: rolaBundle, bundle: true, platform: "node", format: "esm", packages: "external" });
 const { createRolaRouter, rolaRulePaths } = await import(pathToFileURL(rolaBundle).href);
@@ -38,7 +41,7 @@ setInterval(() => {
 }, 60000).unref();
 
 function keyPath(key) {
-  if (!/^(?:subscription:[\w-]{16}|last-good:[\w-]{43})$/.test(key)) throw new Error("Invalid subscription key");
+  if (!/^(?:(?:subscription|cloud-sync):[\w-]{16}|(?:last-good|source-cache):[\w-]{43})$/.test(key)) throw new Error("Invalid subscription key");
   return resolve(data, key.replace(":", "-") + ".json");
 }
 const env = {
@@ -73,6 +76,9 @@ const env = {
   },
 };
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".yaml": "text/yaml" };
+const sync = createSubscriptionSync({ env, origin, keys: async () => (await readdir(data))
+  .filter(name => /^cloud-sync-[\w-]{16}\.json$/.test(name)).map(name => `cloud-sync:${name.slice(11, -5)}`) });
+setInterval(() => { sync.refreshDue().catch(() => console.warn("Local subscription sync storage is unavailable")); }, 60000).unref();
 const routeRola = await createRolaRouter({
   directory: resolve(root, ".local/rola/web"), origin,
   ruleLists: await Promise.all(rolaRulePaths.map(path => readFile(resolve(root, "public", path), "utf8"))),
@@ -105,7 +111,7 @@ const server = createServer(async (incoming, outgoing) => {
     const request = new Request(url, { method: incoming.method, headers,
       ...(["GET", "HEAD"].includes(incoming.method) ? {} : { body: Readable.toWeb(incoming), duplex: "half" }),
     });
-    let response = await routeRola(request);
+    let response = await sync.route(request) ?? await routeRola(request);
     if (!response && url.pathname !== "/api/version") response = await routeSubscriptionRequest(request, url, env);
     if (!response && url.pathname === "/health") response = Response.json({ status: "ok", service: "personal-clash-rules", backend: "local" });
     if (!response && url.pathname === "/api/version") {

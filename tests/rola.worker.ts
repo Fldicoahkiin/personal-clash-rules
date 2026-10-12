@@ -1,6 +1,9 @@
 import { exports } from "cloudflare:workers";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { clearSourceCache } from "./helpers/source-cache";
 import { parse } from "yaml";
+
+beforeEach(clearSourceCache);
 
 const origin = "https://example.com";
 const uri = "trojan://airport-secret@airport.example:443#Airport";
@@ -29,6 +32,46 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it("reads a synchronized base internally and propagates its quota and overdue status to the chain", async () => {
+    const syncId = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
+    const syncedAt = new Date(Date.now() - 8 * 3_600_000).toISOString();
+    const synchronized = await post("/api/subscriptions/sync", {
+      id: syncId, managementToken: "test-token-".padEnd(32, "0"), target: "clash-party-config",
+      config: { sources: [{ type: "subscription", value: "https://airport.example/private-source" }] },
+      snapshot: { readAt: syncedAt, sources: [{ content: uri, metadata: { profileName: "Airport", usage: { upload: "10", download: "20", total: "100" } } }] },
+    });
+    expect(synchronized.status).toBe(201);
+    const link = await synchronized.json<{ url: string }>();
+    const spy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Must not fetch the same Worker or the airport"));
+    try {
+      const p = await preview({ sources: [{ type: "subscription", value: link.url }] });
+      expect(p.result.usage.combined).toMatchObject({ total: "100" });
+      const response = await post("/api/rola/chains", { baseId: p.baseId, exit, upstreamNode: p.nodes[0].name, rules, dns });
+      expect(response.status).toBe(201);
+      const { url } = await response.json<{ url: string }>();
+      const refreshed = await exports.default.fetch(url);
+      expect(refreshed.status).toBe(200);
+      expect(refreshed.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100");
+      expect(refreshed.headers.get("x-subscription-synced-at")).toBe(syncedAt);
+      expect(refreshed.headers.get("x-subscription-refresh-status")).toBe("sync-overdue");
+      expect(parse(await refreshed.text()).proxies.at(-1)).toMatchObject({ "dialer-proxy": "Airport", type: "socks5" });
+      const update = {
+        id: syncId, managementToken: "test-token-".padEnd(32, "0"), target: "clash-party-config",
+        config: { sources: [{ type: "subscription", value: "https://airport.example/private-source" }] },
+        snapshot: { readAt: new Date(Date.now() - 120_000).toISOString(), sources: [{ content: uri.replace("airport-secret", "updated-secret"), metadata: { profileName: "Airport", usage: { upload: "10", download: "40", total: "100" } } }] },
+      };
+      expect((await post("/api/subscriptions/sync", update)).status).toBe(200);
+      const updated = await exports.default.fetch(url);
+      expect(updated.headers.get("subscription-userinfo")).toContain("download=40");
+      expect(parse(await updated.text()).proxies[0].password).toBe("updated-secret");
+      update.snapshot.readAt = new Date().toISOString();
+      update.snapshot.sources[0].content = uri.replace("#Airport", "#Withdrawn");
+      expect((await post("/api/subscriptions/sync", update)).status).toBe(200);
+      expect((await exports.default.fetch(url)).status).toBe(422);
+      expect(spy).not.toHaveBeenCalled();
+    } finally { spy.mockRestore(); }
+  });
+
   it("returns safe upstream diagnostics through the preview API", async () => {
     const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("private upstream body", {
       status: 403, headers: { "CF-Mitigated": "challenge", "CF-Ray": "a4942df21d672617-NRT" },
@@ -51,6 +94,7 @@ describe("cloud Rola subscriptions", () => {
       expect(refreshed.status).toBe(200);
       expect(parse(await refreshed.text()).proxies).toHaveLength(2);
       spy.mockImplementation(async () => new Response("x".repeat(1_048_577)));
+      await clearSourceCache();
       const tooLarge = await post("/api/rola/preview", { sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }], target: "clash-party-config" });
       expect(tooLarge.status).toBe(413);
     } finally { spy.mockRestore(); }
@@ -83,11 +127,14 @@ describe("cloud Rola subscriptions", () => {
     try {
       const created = await create({ sources: [{ type: "subscription", name: "Airport", value: "https://provider.example/sub" }] });
       upload = 15;
+      await clearSourceCache();
       const refreshed = await exports.default.fetch(created.url);
       expect(refreshed.headers.get("subscription-userinfo")).toBe("upload=15; download=20; total=100; expire=0");
       content = uri.replace("#Airport", "#Changed");
+      await clearSourceCache();
       expect((await exports.default.fetch(created.url)).status).toBe(422);
       status = 403;
+      await clearSourceCache();
       const failed = await exports.default.fetch(created.url);
       expect(failed.status).toBe(200);
       expect(failed.headers.get("x-subscription-refresh-status")).toBe("last-good");

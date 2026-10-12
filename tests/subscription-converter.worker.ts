@@ -82,7 +82,7 @@ describe("native subscription converter", () => {
         headers: { "CF-Connecting-IP": "203.0.113.7" },
       }),
       new URL("https://rules.flacier.com/api/subscriptions"),
-      { SUBSCRIPTION_RATE_LIMITER: { limit } } as SubscriptionEnv,
+      { SUBSCRIPTIONS: { get: vi.fn(), put: vi.fn() }, SUBSCRIPTION_RATE_LIMITER: { limit } },
     );
 
     expect(limit).toHaveBeenCalledWith({ key: "api/subscriptions:203.0.113.7" });

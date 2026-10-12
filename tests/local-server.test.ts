@@ -49,6 +49,10 @@ it("serves the Rola web contract on loopback, rejects foreign origins and runs t
     expect((await request("/api/local/rola", { headers: { Origin: "https://untrusted.example" } })).status).toBe(403);
     expect((await request("/api/local/rola", { headers: { Origin: "null" } })).status).toBe(403);
     expect((await request("/api/local/rola", { headers: { "Sec-Fetch-Site": "cross-site" } })).status).toBe(403);
+    expect((await request("/api/local/subscriptions/publish", { headers: { Origin: "https://untrusted.example" } })).status).toBe(403);
+    expect((await request("/api/local/subscriptions/publish", { headers: { "Sec-Fetch-Site": "cross-site" } })).status).toBe(403);
+    expect(await (await request("/api/local/subscriptions/publish")).json()).toEqual({ tasks: [] });
+    expect((await post("/api/local/subscriptions/publish", { url: "https://untrusted.example/s/abcdefghijklmnop/mihomo-config" })).status).toBe(400);
     const cors = await request("/api/local/rola", { method: "OPTIONS", headers: { Origin: "https://rules.flacier.com", "Access-Control-Request-Private-Network": "true" } });
     expect(cors.headers.get("access-control-allow-origin")).toBe("https://rules.flacier.com");
     const setup = await request("/api/local/rola");
