@@ -54,6 +54,30 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it("separates Claude routing and protected DNS from Codex and other AI, including stored bases", () => {
+    const original = parse(createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]"));
+    original["proxy-groups"] = original["proxy-groups"].filter((group: { name: string }) => group.name !== "🧠 Claude");
+    original.rules = original.rules.map((rule: string) => rule.replaceAll("🧠 Claude", "🤖 AI"));
+    const codexRule = "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI";
+    original.rules = original.rules.filter((rule: string) => rule !== codexRule);
+    original.rules.splice(original.rules.findIndex((rule: string) => rule.startsWith("PROCESS-NAME-REGEX,(?i)^claude")), 0, codexRule);
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", policyGroup: "AI", rules: ["DOMAIN-SUFFIX,claude.ai", "DOMAIN,api.anthropic.com", "DOMAIN,anthropic.auth0.com", "DOMAIN-SUFFIX,openai.com", "DOMAIN-SUFFIX,notanthropic.com"] };
+    const output = parse(prepareRolaProfile(stringify(original), input).profile);
+    const groups = new Map<string, { proxies: string[] }>(output["proxy-groups"].map((group: { name: string; proxies: string[] }) => [group.name, group]));
+    expect(groups.get("🧠 Claude")?.proxies).toEqual(expect.arrayContaining(["🤖 AI", "🇺🇸 美国", "🇯🇵 日本", "ROLA"]));
+    for (const rule of input.rules.slice(0, 3)) expect(output.rules).toContain(`${rule},🧠 Claude`);
+    expect(output.rules).toContain("DOMAIN-SUFFIX,openai.com,🤖 AI");
+    expect(output.rules).toContain("DOMAIN-SUFFIX,notanthropic.com,🤖 AI");
+    expect(output.rules).toContain("RULE-SET,ai-anthropic,🧠 Claude");
+    expect(output.rules).toContain("RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve");
+    expect(output.rules).toContain("PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🧠 Claude");
+    expect(output.rules).toContain("PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI");
+    expect(output.rules.indexOf("RULE-SET,ai-anthropic,🧠 Claude")).toBeLessThan(output.rules.indexOf(codexRule));
+    expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(input.dns.map(url => `${url}#🧠 Claude`));
+    expect(output.dns["nameserver-policy"]["+.openai.com"]).toEqual(input.dns.map(url => `${url}#🤖 AI`));
+    const overlaid = runInNewContext(`${createRolaOverride(stringify(original), input)}; main(config)`, { config: original });
+    expect(overlaid).toEqual(output);
+  });
   it.each(["us", "jp"])("preserves two separate homes with %s country membership and stable DNS defaults", secondCountry => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const second = { authMode: "literal", protocol: "socks5", server: "198.51.100.2", port: 1081, account: "second", password: "second-pass", name: "Second US home", country: secondCountry };
@@ -84,7 +108,7 @@ describe("local Rola preparation", () => {
       `AND,((DOMAIN,${settings.server}),(DST-PORT,${settings.port})),DIRECT`,
       "AND,((IP-CIDR,198.51.100.2/32,no-resolve),(DST-PORT,1081)),DIRECT",
     ]);
-    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🤖 AI`));
+    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🧠 Claude`));
   });
 
   it("rejects duplicate, nested, nonliteral and chained additional exits without dropping nodes", () => {
@@ -392,12 +416,12 @@ describe("local Rola preparation", () => {
     expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
   });
 
-  it("migrates stored settings without a policy choice to AI so DNS follows later client exit changes", () => {
+  it("migrates stored settings to service selectors so Claude DNS follows its own exit", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽" };
     const output = parse(prepareRolaProfile(base, input).profile);
-    expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
-    expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🤖 AI`));
+    expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");
+    expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🧠 Claude`));
     expect(output.dns.nameserver).toEqual(parse(base).dns.nameserver);
     expect(JSON.stringify(output.dns["nameserver-policy"])).not.toContain(`#${input.groupName}`);
     const dedicated = parse(prepareRolaProfile(base, { ...input, policyGroup: "" }).profile);
@@ -405,16 +429,16 @@ describe("local Rola preparation", () => {
     expect(dedicated.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#${input.groupName}`));
   });
 
-  it("exposes residential in manual, global and AI while allowing the AI choice to control protected domains and DNS", () => {
+  it("exposes residential in manual, global, AI and Claude while keeping their DNS policies separate", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
-    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
+    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI", "🧠 Claude"]) {
       expect(output["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI").proxies[0]).toBe(input.groupName);
-    expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
-    expect(output.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#🤖 AI`);
+    expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");
+    expect(output.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#🧠 Claude`);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "♻️ 自动选择")["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
     expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
     expect(() => prepareRolaProfile(source, input)).toThrow("policy group");

@@ -64,7 +64,9 @@ Rola 动态住宅现有一个[本地准备入口](rola-residential.md)，按完�
 
 ### Claude 规则范围
 
-2026-10-10 核对官方网络文档后，Claude 主域名及内容域名继续交给 `AI`，包括认证、下载、浏览器桥接和 MCP 内容。补充用户提供的精确 CDN / 认证 / 内容地址，并加入官方列出的两个可选 Datadog 上报地址。Datadog 和 Fathom 地址属于共享服务；同一地址上的其他应用请求也会使用 `AI`，规则无法区分 HTTPS 请求中的租户。
+Claude 使用单独的 `🧠 Claude` 组，Codex／OpenAI、Gemini、Grok 和其他 AI 仍使用 `🤖 AI`。Claude 默认跟随 AI 的现有选择，也可以独立选择家宽、国家组或具体节点；不会自动切换当前设备出口。Claude 域名规则排在 Codex 进程规则之前，避免 Codex 启动的工具请求被进程规则抢先接管。旧的 Flacier 基础快照在叠加家宽时补入该组，并将 Claude 的保护域名和对应 DoH 一起交给 Claude；显式选择“只走家宽”的规则仍保持专用家宽策略。
+
+2026-10-10 核对官方网络文档后，规则覆盖 Claude 主域名及内容域名，包括认证、下载、浏览器桥接和 MCP 内容。补充用户提供的精确 CDN / 认证 / 内容地址，并加入官方列出的两个可选 Datadog 上报地址。Datadog 和 Fathom 地址属于共享服务；同一地址上的其他应用请求也会使用 Claude 组，规则无法区分 HTTPS 请求中的租户。
 
 不使用 `sentry.io`、`intercom.io`、`intercomcdn.com`、`statsigapi.net` 的整站规则，也不使用 `datadog` / `sift` 关键词。未命中的配套请求仍经 `DEFAULT` 默认代理，不会因此直连；可以按实际连接日志再补具体地址。当前官方 CLI 网络列表没有列出 Statsig，不把旧示例当作当前必需依赖。
 

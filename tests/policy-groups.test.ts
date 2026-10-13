@@ -11,9 +11,9 @@ describe("business policy choices", () => {
       const group = mihomoProxyGroups.find(group => group.name === name);
       expect(group, name).toMatchObject({ "include-all": true });
       expect(group, name).not.toHaveProperty("exclude-type");
-      expect(new Set(group?.proxies), name).toEqual(new Set(eligible));
+      expect(new Set(group?.proxies), name).toEqual(new Set(name === "CLAUDE" ? ["AI", ...eligible] : eligible));
       expect(group?.["exclude-filter"], name).toContain("剩余");
-      expect(group?.proxies?.[0], name).toBe(name === "ANIGAMER" ? "🇹🇼 台湾" : name === "BILIBILI" ? "DIRECT" : "GLOBAL");
+      expect(group?.proxies?.[0], name).toBe(name === "CLAUDE" ? "AI" : name === "ANIGAMER" ? "🇹🇼 台湾" : name === "BILIBILI" ? "DIRECT" : "GLOBAL");
     }
     const byName = new Map(mihomoProxyGroups.map(group => [group.name, group]));
     const visit = (name: string, path: string[] = []) => {

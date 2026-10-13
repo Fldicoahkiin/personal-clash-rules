@@ -63,7 +63,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 14)).toEqual([
+    expect(config["+rules"].slice(0, 16)).toEqual([
       "PROCESS-NAME,WeChat,DIRECT",
       "PROCESS-NAME,WeChatAppEx,DIRECT",
       "PROCESS-NAME,QQ,DIRECT",
@@ -76,8 +76,10 @@ describe("Clash Party override", () => {
       "RULE-SET,netease-music,DIRECT",
       "RULE-SET,apple-system,🍎 Apple",
       "RULE-SET,apple-services,🍎 Apple",
+      "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🧠 Claude",
+      "RULE-SET,ai-anthropic,🧠 Claude",
       "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI",
-      "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🤖 AI",
+      "RULE-SET,ai-openai,🤖 AI",
     ]);
     expect(config["+rules"]).toContain("RULE-SET,ai-xai,🤖 AI");
     expect(config["+rules"]).toContain("RULE-SET,steam,🎮 Steam");

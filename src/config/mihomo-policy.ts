@@ -48,7 +48,7 @@ export const mihomoRuleProviders = Object.fromEntries(
 export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 export const manualProxyGroupName = "🖐 手动选择";
 export const mihomoPolicyDisplayNames: Record<string, string> = {
-  GLOBAL: "🌐 全局", AUTO: "♻️ 自动选择", AI: "🤖 AI", APPLE: "🍎 Apple",
+  GLOBAL: "🌐 全局", AUTO: "♻️ 自动选择", AI: "🤖 AI", CLAUDE: "🧠 Claude", APPLE: "🍎 Apple",
   STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
   ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交", DEFAULT: "🐟 未匹配流量",
@@ -142,7 +142,7 @@ function countryGroup(name: string, filter: string) {
 }
 
 export const businessProxyGroupNames = [
-  "AI", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
+  "AI", "CLAUDE", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
   "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "TELEGRAM", "X", "REDDIT", "INSTAGRAM",
   "FACEBOOK", "LINKEDIN", "TIKTOK", "SOCIAL", "DEFAULT",
 ] as const;
@@ -215,6 +215,7 @@ export const mihomoProxyGroups = [
     "(?i)(🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇪🇺|英国|英國|United Kingdom|London|德国|德國|Germany|Frankfurt|法国|法國|France|Paris|荷兰|荷蘭|Netherlands|Amsterdam|意大利|Italy|西班牙|Spain|瑞士|Switzerland|(^|[ _-])(UK|GB|DE|FR|NL|IT|ES|CH|EU)([ _-]|$))",
   ),
   businessGroup("AI", "ai"),
+  businessGroup("CLAUDE", "ai", "AI"),
   businessGroup("APPLE", "apple"),
   businessGroup("STEAM", "steam"),
   businessGroup("STEAM-DOWNLOAD", "download"),
@@ -247,10 +248,10 @@ export const mihomoRules = [
   "RULE-SET,netease-music,DIRECT",
   "RULE-SET,apple-system,APPLE",
   "RULE-SET,apple-services,APPLE",
+  "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,CLAUDE",
+  "RULE-SET,ai-anthropic,CLAUDE",
   "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,AI",
-  "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,AI",
   "RULE-SET,ai-openai,AI",
-  "RULE-SET,ai-anthropic,AI",
   "RULE-SET,ai-xai,AI",
   "RULE-SET,ai-google,AI",
   "RULE-SET,ai-coding,AI",
@@ -271,7 +272,7 @@ export const mihomoRules = [
   "RULE-SET,linkedin,LINKEDIN",
   "RULE-SET,tiktok,TIKTOK",
   "RULE-SET,social,SOCIAL",
-  "RULE-SET,ai-anthropic-ip,AI,no-resolve",
+  "RULE-SET,ai-anthropic-ip,CLAUDE,no-resolve",
   "RULE-SET,china-domains,DIRECT",
   "GEOIP,CN,DIRECT,no-resolve",
   "MATCH,DEFAULT",

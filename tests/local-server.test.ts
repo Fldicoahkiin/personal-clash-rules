@@ -70,7 +70,7 @@ it("serves the Rola web contract on loopback, rejects foreign origins and runs t
     const chain = await chainResponse.json() as { url: string };
     const profile = parse(await (await request(new URL(chain.url).pathname)).text());
     expect(profile.proxies.at(-1)).toMatchObject({ "dialer-proxy": "Airport", username: "demo_test-country-us-sessiontime-10" });
-    expect(profile.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(profile.rules[1]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");
     expect((await request(new URL(chain.url).pathname, { method: "HEAD" })).status).toBe(200);
   } finally {
     server.kill("SIGTERM");

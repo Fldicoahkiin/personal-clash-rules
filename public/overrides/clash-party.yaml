@@ -320,6 +320,24 @@ rule-providers:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
+  - name: 🧠 Claude
+    type: select
+    proxies:
+      - 🤖 AI
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 🍎 Apple
     type: select
     proxies:
@@ -640,10 +658,10 @@ rule-providers:
   - RULE-SET,netease-music,DIRECT
   - RULE-SET,apple-system,🍎 Apple
   - RULE-SET,apple-services,🍎 Apple
+  - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,🧠 Claude
+  - RULE-SET,ai-anthropic,🧠 Claude
   - PROCESS-NAME-REGEX,(?i)^codex(\.exe)?$,🤖 AI
-  - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,🤖 AI
   - RULE-SET,ai-openai,🤖 AI
-  - RULE-SET,ai-anthropic,🤖 AI
   - RULE-SET,ai-xai,🤖 AI
   - RULE-SET,ai-google,🤖 AI
   - RULE-SET,ai-coding,🤖 AI
@@ -664,7 +682,7 @@ rule-providers:
   - RULE-SET,linkedin,💼 LinkedIn
   - RULE-SET,tiktok,🎵 TikTok
   - RULE-SET,social,💬 社交
-  - RULE-SET,ai-anthropic-ip,🤖 AI,no-resolve
+  - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
   - RULE-SET,china-domains,DIRECT
   - GEOIP,CN,DIRECT,no-resolve
   - MATCH,🐟 未匹配流量

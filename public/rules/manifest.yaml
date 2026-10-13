@@ -53,11 +53,11 @@ ruleSets:
     path: rules/ai/openai.list
   - id: ai-anthropic
     label: Claude
-    policy: AI
+    policy: CLAUDE
     path: rules/ai/anthropic.list
   - id: ai-anthropic-ip
     label: Claude API 地址
-    policy: AI
+    policy: CLAUDE
     path: rules/ai/anthropic-ip.list
   - id: ai-xai
     label: Grok

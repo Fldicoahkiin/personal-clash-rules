@@ -186,7 +186,7 @@ describe("cloud Rola subscriptions", () => {
     for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
       expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
-    expect(profile.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(profile.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");
     expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
     expect(profile["proxy-groups"][2]).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
     expect((await post("/api/rola/chains", { ...input, connectionMode: "automatic" })).status).toBe(422);
@@ -286,7 +286,7 @@ describe("cloud Rola subscriptions", () => {
     const profile = parse(await response.text());
     expect(profile.proxies.at(-1)).toMatchObject({ type: "socks5", username: exit.account, password: exit.password, "dialer-proxy": "Airport", udp: false });
     expect(profile.rules[0]).toBe("AND,((DOMAIN-SUFFIX,claude.ai),(NETWORK,UDP)),REJECT");
-    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(["https://1.1.1.1/dns-query#🤖 AI"]);
+    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(["https://1.1.1.1/dns-query#🧠 Claude"]);
     const head = await fetchClient(created.url, { method: "HEAD" });
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");

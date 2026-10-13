@@ -5,12 +5,14 @@
     "lib": ["ES2023", "WebWorker"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "strict": true,
     "types": ["node"],
     "skipLibCheck": true,
     "noEmit": true
   },
   "include": [
+    "public/rules/sing-box/ai-anthropic.json",
     "src/worker.ts",
     "src/worker/**/*.ts",
     "src/local/rola.ts",

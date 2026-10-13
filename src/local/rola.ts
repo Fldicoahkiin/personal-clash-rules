@@ -4,6 +4,7 @@ import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { defaultDnsSettings } from "../config/dns-settings";
 import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, metadataFilter, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
 import { dnsProxyGroupName } from "../worker/mihomo-dns";
+import claudeDomains from "../../public/rules/sing-box/ai-anthropic.json";
 
 const nodeName = "ROLA-RESIDENTIAL";
 const groupName = "ROLA";
@@ -43,6 +44,35 @@ export function createRolaTemplate(ruleLists: string[]) {
 function record(value: unknown, message: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(message);
   return value as Record<string, unknown>;
+}
+
+function claudePolicyMigration(base: Record<string, unknown>) {
+  const providers = base["rule-providers"] as Record<string, { url?: string }> | undefined;
+  if (providers?.["ai-anthropic"]?.url !== mihomoRuleProviders["ai-anthropic"].url) return null;
+  const groups = base["proxy-groups"] as Array<Record<string, unknown>>;
+  const ai = groups.find(group => ["AI", mihomoPolicyDisplayNames.AI].includes(String(group.name)) && group.type === "select");
+  if (!ai || !Array.isArray(ai.proxies)) return null;
+  const name = ai.name === "AI" ? "CLAUDE" : mihomoPolicyDisplayNames.CLAUDE;
+  const existing = groups.find(group => group.name === name);
+  if (existing && existing.type !== "select") throw new Error("Claude policy must be a selectable group");
+  const newGroup = existing ? null : { ...ai, name, proxies: [...new Set([ai.name, ...ai.proxies])], "default-selected": ai.name };
+  const ruleChanges = (base.rules as string[]).flatMap(rule => {
+    if (!/^(?:RULE-SET,ai-anthropic(?:-ip)?,|PROCESS-NAME-REGEX,\(\?i\)\^claude)/u.test(rule)) return [];
+    const parts = rule.split(",");
+    const index = parts.at(-1) === "no-resolve" ? parts.length - 2 : parts.length - 1;
+    if (parts[index] !== ai.name) return [];
+    parts[index] = name;
+    return [[rule, parts.join(",")]];
+  });
+  const priorityRules = [...(base.rules as string[]).map(rule => ruleChanges.find(([before]) => before === rule)?.[1] ?? rule)]
+    .filter(rule => /^(?:RULE-SET,ai-anthropic,|PROCESS-NAME-REGEX,\(\?i\)\^claude)/u.test(rule) && rule.endsWith(`,${name}`));
+  return { name, newGroup, ruleChanges, priorityRules };
+}
+
+function isClaudeProtectedRule(rule: string): boolean {
+  const [kind, host] = rule.toLowerCase().split(",");
+  return claudeDomains.rules.some(domains => domains.domain_suffix.some(suffix => host === suffix || host.endsWith(`.${suffix}`))
+    || (kind === "domain" && domains.domain.includes(host)));
 }
 
 function text(value: unknown, label: string, max = 255): string {
@@ -312,14 +342,30 @@ export function prepareRolaProfile(source: string, value: unknown) {
   if (!isSeq(proxies) || !isSeq(groups) || !isSeq(rules) || !isMap(dns) || dns.get("enable") !== true) {
     throw new Error("Use a complete Mihomo profile with inline nodes, groups, rules and working DNS; a provider-only or empty profile is insufficient");
   }
+  const claudePolicy = claudePolicyMigration(base);
+  if (claudePolicy?.newGroup) {
+    const aiIndex = groups.items.findIndex(group => isMap(group) && group.get("name") === claudePolicy.newGroup?.["default-selected"]);
+    groups.items.splice(aiIndex + 1, 0, document.createNode(claudePolicy.newGroup));
+  }
+  if (claudePolicy) for (const item of rules.items) {
+    if (!isScalar(item)) continue;
+    const replacement = claudePolicy.ruleChanges.find(([before]) => before === item.value);
+    if (replacement) item.value = replacement[1];
+  }
+  if (claudePolicy && rules.items.some(item => isScalar(item) && /^PROCESS-NAME-REGEX,\(\?i\)\^codex/u.test(String(item.value)))) {
+    const priority = rules.items.filter(item => isScalar(item) && claudePolicy.priorityRules.includes(String(item.value)));
+    rules.items = rules.items.filter(item => !priority.includes(item));
+    const codexIndex = rules.items.findIndex(item => isScalar(item) && /^PROCESS-NAME-REGEX,\(\?i\)\^codex/u.test(String(item.value)));
+    rules.items.splice(codexIndex, 0, ...priority);
+  }
   const aiGroup = ["AI", mihomoPolicyDisplayNames.AI].find(name => groups.items.some(group => isMap(group) && group.get("name") === name && group.get("type") === "select"));
-  // Old records did not store a policy choice. Follow the visible AI selector so changing
-  // its exit also changes protected DNS; an explicit empty choice still pins the house.
+  // Old records follow the visible service selectors; an explicit empty choice pins the house.
   const policyGroup = settings.policyGroup === undefined ? aiGroup ?? groupName
     : settings.policyGroup === "AI" ? aiGroup ?? "AI" : settings.policyGroup;
   if (policyGroup !== groupName && !groups.items.some(group => isMap(group) && group.get("name") === policyGroup && group.get("type") === "select")) {
     throw new Error("Selected policy group is missing from the base profile");
   }
+  const protectedPolicy = (rule: string) => claudePolicy && policyGroup === aiGroup && isClaudeProtectedRule(rule) ? claudePolicy.name : policyGroup;
   const names = new Set<string>();
   for (const item of [...proxies.items, ...groups.items]) {
     if (!isMap(item) || typeof item.get("name") !== "string") throw new Error("Unsupported proxy/group structure in base profile");
@@ -430,7 +476,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
   }
   const protectedRules = settings.rules.flatMap(rule => [
     `AND,((${rule}),(NETWORK,UDP)),REJECT`,
-    `${rule},${policyGroup}`,
+    `${rule},${protectedPolicy(rule)}`,
   ]);
   const gatewayRules = [...new Set(exits.flatMap(exit => rolaDirectGatewayRule(exit) ?? []))];
   if (gatewayRules.length) {
@@ -441,7 +487,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
   rules.items.unshift(...protectedRules.map(rule => document.createNode(rule)));
   const resolverPolicy = Object.fromEntries(settings.rules.map(rule => {
     const [kind, host] = rule.split(",");
-    return [kind === "DOMAIN-SUFFIX" ? `+.${host}` : host, settings.dns.map(url => `${url}#${policyGroup}`)];
+    return [kind === "DOMAIN-SUFFIX" ? `+.${host}` : host, settings.dns.map(url => `${url}#${protectedPolicy(rule)}`)];
   }));
   dns.set("nameserver-policy", document.createNode(resolverPolicy));
   dns.set("ipv6", false);
@@ -475,6 +521,7 @@ export function createRolaOverride(source: string, value: unknown) {
   const exits = [settings, ...settings.additionalExits];
   const gatewayRules = [...new Set(exits.flatMap(exit => rolaDirectGatewayRule(exit) ?? []))];
   const patch = {
+    claudeMigration: claudePolicyMigration(record(parseDocument(source).toJS({ maxAliasCount: 100 }), "Invalid base profile")),
     connectionMode: settings.connectionMode,
     upstream: settings.upstreamNode, nodes: output.proxies.slice(-exits.length), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
     rules: output.rules.slice(0, settings.rules.length * 2 + gatewayRules.length), domains: settings.rules, gatewayRules,
@@ -502,6 +549,20 @@ function main(config) {
   if (data.policyGroup !== data.group.name && !config['proxy-groups'].some(group => group.name === data.policyGroup && group.type === 'select')) throw new Error('Rola: selected policy group is missing');
   if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');
   const next = JSON.parse(JSON.stringify(config));
+  if (data.claudeMigration) {
+    if (data.claudeMigration.newGroup) {
+      if (next['proxy-groups'].some(group => group.name === data.claudeMigration.name)) throw new Error('Rola: Claude policy changed; regenerate the overlay');
+      const aiIndex = next['proxy-groups'].findIndex(group => group.name === data.claudeMigration.newGroup['default-selected']);
+      next['proxy-groups'].splice(aiIndex + 1, 0, data.claudeMigration.newGroup);
+    }
+    next.rules = next.rules.map(rule => data.claudeMigration.ruleChanges.find(pair => pair[0] === rule)?.[1] || rule);
+    if (next.rules.some(rule => /^PROCESS-NAME-REGEX,\\(\\?i\\)\\^codex/.test(rule))) {
+      const priority = next.rules.filter(rule => data.claudeMigration.priorityRules.includes(rule));
+      next.rules = next.rules.filter(rule => !priority.includes(rule));
+      const codexIndex = next.rules.findIndex(rule => /^PROCESS-NAME-REGEX,\\(\\?i\\)\\^codex/.test(rule));
+      next.rules.splice(codexIndex, 0, ...priority);
+    }
+  }
   const excludedNodePattern = data.exits.map(exit => exit.pattern).join('|');
   let preservedDnsDefault;
   for (const group of next['proxy-groups']) {

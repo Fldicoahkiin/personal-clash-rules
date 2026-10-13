@@ -5,12 +5,14 @@
     "lib": ["ES2023", "WebWorker"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["@cloudflare/vitest-plugin/types"]
   },
   "include": [
+    "public/rules/sing-box/ai-anthropic.json",
     "src/local/rola.ts",
     "tests/worker.integration.ts",
     "tests/*.worker.ts",

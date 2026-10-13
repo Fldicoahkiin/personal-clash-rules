@@ -5,6 +5,7 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -12,6 +13,7 @@
     "jsx": "react-jsx"
   },
   "include": [
+    "public/rules/sing-box/ai-anthropic.json",
     "vite.config.ts",
     "vitest.config.ts",
     "vitest.worker.config.ts",

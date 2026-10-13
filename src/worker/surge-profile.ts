@@ -104,7 +104,7 @@ function createProfile(
     "",
     "[Rule]",
     "PROCESS-NAME,codex,AI",
-    "PROCESS-NAME,claude,AI",
+    "PROCESS-NAME,claude,CLAUDE",
     ...surgeRules(updateIntervalSeconds),
     "",
   ];

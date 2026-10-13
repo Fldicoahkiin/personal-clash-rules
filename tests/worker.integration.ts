@@ -231,9 +231,14 @@ describe("Worker entrypoint", () => {
     const rules = preview.ruleSets.map(item => createRuleSet(item, item.content));
     const context = { processName: "Firefox", groups: preview.groups };
 
+    for (const host of ["claude.ai", "api.anthropic.com", "anthropic.auth0.com"]) {
+      expect(matchUrl(host, rules, { ...context, processName: "codex" }), host).toMatchObject({ matched: true, policy: "CLAUDE" });
+    }
+    expect(matchUrl("api.openai.com", rules, { ...context, processName: "codex" })).toMatchObject({ matched: true, policy: "AI" });
+
     for (const ip of ["160.79.104.0", "160.79.105.255"]) {
       expect(matchUrl(`https://${ip}`, rules, context), ip).toMatchObject({
-        matched: true, policy: "AI", rule: "IP-CIDR,160.79.104.0/23,no-resolve",
+        matched: true, policy: "CLAUDE", rule: "IP-CIDR,160.79.104.0/23,no-resolve",
       });
     }
     for (const ip of ["160.79.103.255", "160.79.106.0", "160.79.111.255"]) {
@@ -248,7 +253,7 @@ describe("Worker entrypoint", () => {
       matched: true, policy: "APPLE", rule: "DOMAIN,account.apple.com",
     });
     expect(preview.ruleSets.at(-4)).toMatchObject({
-      label: "ai-anthropic-ip", policy: "AI",
+      label: "ai-anthropic-ip", policy: "CLAUDE",
       content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
     });
   });
