@@ -1,6 +1,7 @@
 domain_set:
   - apd-pcdnwxlogin.teg.tencent-cloud.net
   - slife.xy-asia.com
+  - meeting.tencent.com
 domain_suffix_set:
   - qq.com
   - qq.com.cn

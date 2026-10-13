@@ -139,7 +139,7 @@ describe("Clash Party override", () => {
     expect(groups.get("🎮 Steam")?.proxies?.[0]).toBe("🌐 全局");
     expect(groups.get("📥 Steam 下载")?.proxies?.[0]).toBe("🌐 全局");
     expect(groups.get("🕹️ Steam 联机")?.proxies?.[0]).toBe("🌐 全局");
-    expect(groups.get("📺 哔哩哔哩")?.proxies?.[0]).toBe("🌐 全局");
+    expect(groups.get("📺 哔哩哔哩")?.proxies?.[0]).toBe("DIRECT");
     expect(groups.get("📺 巴哈姆特")?.proxies?.[0]).toBe("🇹🇼 台湾");
     expect(groups.get("💬 Discord")?.proxies).toContain("🌐 全局");
     expect(groups.get("🍎 Apple")?.proxies).toEqual(groups.get("🤖 AI")?.proxies);

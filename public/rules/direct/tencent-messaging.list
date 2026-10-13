@@ -4,6 +4,8 @@
 # Domain-only allowlist: intentionally excludes Tencent Cloud IP ranges and ASNs.
 DOMAIN,apd-pcdnwxlogin.teg.tencent-cloud.net
 DOMAIN,slife.xy-asia.com
+DOMAIN,meeting.tencent.com
+# qq.com below also covers observed mail/calendar/monitoring hosts: imap, dav and rmonitor.
 DOMAIN-SUFFIX,qq.com
 DOMAIN-SUFFIX,qq.com.cn
 DOMAIN-SUFFIX,imqq.com

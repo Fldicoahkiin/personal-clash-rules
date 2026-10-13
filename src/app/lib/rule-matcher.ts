@@ -104,6 +104,8 @@ function matches(hostname: string, rule: RuleEntry, context: { ip?: string; proc
   }
   if (rule.type === "DOMAIN-KEYWORD") return hostname.includes(rule.value);
   if (rule.type === "MATCH" || rule.type === "FINAL") return true;
+  if (rule.type === "GEOIP" && rule.source.endsWith(",no-resolve")
+    && !context.ip && ipv4ToNumber(hostname) === null && !hostname.includes(":")) return false;
   if (rule.type === "IP-CIDR" || rule.type === "IP-CIDR6") {
     const ip = context.ip || (ipv4ToNumber(hostname) !== null || hostname.includes(":") ? hostname : "");
     if (!ip) return rule.source.endsWith(",no-resolve") ? false : "此规则需要目标 IP；网页不会替你解析域名";

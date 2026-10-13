@@ -23,8 +23,8 @@ export function describePolicyRoute(policy: string): {
   }
 
   return {
-    mode: "代理",
+    mode: group.initial === "DIRECT" ? "直连" : "代理",
     route: `${group.name} → ${group.initial}`,
-    target: "PROXY",
+    target: group.initial === "DIRECT" ? "DIRECT" : "PROXY",
   };
 }

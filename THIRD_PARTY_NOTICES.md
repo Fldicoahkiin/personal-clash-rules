@@ -8,6 +8,10 @@ Copyright (c) 2018-2019 V2Ray
 
 Entries marked with `@ads` are not imported. Routing attributes such as `@cn` are removed when entries are converted to Mihomo classical format.
 
+The domestic dataset `public/rules/direct/china-domains.list` and its Egern/sing-box format derivatives adapt [`MetaCubeX/meta-rules-dat`](https://github.com/MetaCubeX/meta-rules-dat), distributed under GPL-3.0, with MIT-licensed v2fly app-domain supplements. These data artifacts are distributed under GPL-3.0; this does not replace the repository code license or relicense upstream data as MIT. The unchanged upstream license texts are included in [`public/rules/licenses/MetaCubeX-GPL-3.0.txt`](public/rules/licenses/MetaCubeX-GPL-3.0.txt) and [`public/rules/licenses/v2fly-MIT.txt`](public/rules/licenses/v2fly-MIT.txt).
+
+Flacier's modifications (2026-10-12): keep compiled `geolocation-cn` DOMAIN/DOMAIN-SUFFIX entries, omit regex with an explicit list in the artifact header, supplement Xiaohongshu/Amap excluding overseas/ad attributes, and select domestic app dependencies from ByteDance/Alibaba/JD without importing company-wide includes. Source URLs and SHA-256 content hashes are recorded in the artifact header. Synchronization and format-conversion source is in `scripts/sync-rules.mjs` and `scripts/build-rule-formats.mjs`; the published domain text remains the editable source for the derived formats. No warranty is provided by these rule datasets.
+
 ## Subscription converter
 
 The parser and target serializers in `src/worker/sub-store.ts` are adapted from [`realchendahuang/sub-store-cloudflare`](https://github.com/realchendahuang/sub-store-cloudflare), distributed under AGPL-3.0. This repository is distributed under the same license.

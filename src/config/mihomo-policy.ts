@@ -3,6 +3,7 @@ const publishedRuleFiles = {
   "private-ip": "local/private-ip.list",
   "tencent-messaging": "direct/tencent-messaging.list",
   "netease-music": "direct/netease-music.list",
+  "china-domains": "direct/china-domains.list",
   "apple-system": "apple/system.list",
   "apple-services": "apple/services.list",
   "ai-openai": "ai/openai.list",
@@ -211,7 +212,7 @@ export const mihomoProxyGroups = [
   businessGroup("DISCORD", "chat"),
   businessGroup("DEV", "code"),
   businessGroup("MEDIA", "play"),
-  businessGroup("BILIBILI", "play"),
+  businessGroup("BILIBILI", "play", "DIRECT"),
   businessGroup("ANIGAMER", "play", "TW"),
   businessGroup("SOCIAL", "chat"),
   businessGroup("DEFAULT", "route"),
@@ -247,6 +248,8 @@ export const mihomoRules = [
   "RULE-SET,media,MEDIA",
   "RULE-SET,social,SOCIAL",
   "RULE-SET,ai-anthropic-ip,AI,no-resolve",
+  "RULE-SET,china-domains,DIRECT",
+  "GEOIP,CN,DIRECT,no-resolve",
   "MATCH,DEFAULT",
 ] as const;
 

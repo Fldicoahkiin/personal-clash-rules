@@ -31,6 +31,16 @@ describe("Shadowrocket paired configuration", () => {
     expect(custom).toContain("proxy-dns-server = https://1.1.1.1/dns-query\n");
   });
 
+  it("shares domestic domain routing after explicit services and limits the China IP fallback to known addresses", () => {
+    const output = createShadowrocketProfile(["US-01"]);
+    const domestic = "RULE-SET,https://rules.flacier.com/rules/direct/china-domains.list,DIRECT";
+    expect(output).toContain(domestic);
+    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/developer/developer.list,🛠 开发服务")).toBeLessThan(output.indexOf(domestic));
+    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/ai/openai.list,🤖 AI")).toBeLessThan(output.indexOf(domestic));
+    expect(output).toContain("GEOIP,CN,DIRECT,no-resolve\nFINAL,🐟 未匹配流量");
+    expect(output).toContain("📺 Bilibili = select, DIRECT,");
+  });
+
   it("rejects missing nodes, INI injection and incompatible inherited DNS instead of guessing", () => {
     expect(() => createShadowrocketProfile([])).toThrow();
     expect(() => createShadowrocketProfile(["US, DIRECT"])).toThrow();

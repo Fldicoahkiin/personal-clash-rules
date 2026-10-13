@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import { createRuleSet, matchUrl } from "../src/app/lib/rule-matcher";
+import { mihomoRules } from "../src/config/mihomo-policy";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -13,17 +14,33 @@ async function read(relativePath: string): Promise<string> {
 }
 
 describe("published rule sets", () => {
-  it("directs QQ, WeChat images and NetEase Music without a blanket China or cloud allowlist", async () => {
+  it("keeps explicit QQ, WeChat images, observed Tencent services and NetEase Music coverage", async () => {
     const rules = await Promise.all(["tencent-messaging", "netease-music"].map(async id => createRuleSet({
       id, label: id, path: `rules/direct/${id}.list`, policy: "DIRECT",
     }, await read(`public/rules/direct/${id}.list`))));
-    for (const host of ["weixin.qq.com", "res.wx.qq.com", "thirdwx.qlogo.cn", "mmbiz.qpic.cn", "gchat.qpic.cn", "qzonestyle.gtimg.cn", "iot-tencent.com", "device.iot-tencent.com", "music.163.com", "p1.music.126.net", "m7.music.126.net"]) {
+    for (const host of ["meeting.tencent.com", "rmonitor.qq.com", "dav.qq.com", "imap.qq.com", "weixin.qq.com", "res.wx.qq.com", "thirdwx.qlogo.cn", "mmbiz.qpic.cn", "gchat.qpic.cn", "qzonestyle.gtimg.cn", "iot-tencent.com", "device.iot-tencent.com", "music.163.com", "p1.music.126.net", "m7.music.126.net"]) {
       expect(matchUrl(host, rules), host).toMatchObject({ matched: true, policy: "DIRECT" });
     }
     for (const host of ["api.openai.com", "api.anthropic.com", "example.cn", "cloud.tencent.com", "cos.ap-guangzhou.myqcloud.com", "qpic.cn.example.org", "iot-tencent.com.example.org", "news.163.com"]) {
       expect(matchUrl(host, rules), host).toMatchObject({ matched: false, policy: "DEFAULT" });
     }
     expect(rules.flatMap(set => set.rules).every(rule => ["DOMAIN", "DOMAIN-SUFFIX"].includes(rule.type))).toBe(true);
+  });
+
+  it("covers domestic video, shopping and daily apps without classifying overseas services as domestic", async () => {
+    const rules = [createRuleSet({ id: "china-domains", label: "国内服务", policy: "DIRECT", path: "rules/direct/china-domains.list" }, await read("public/rules/direct/china-domains.list"))];
+    for (const host of ["www.douyin.com", "v3.douyinvod.com", "p3.douyinpic.com", "aweme.snssdk.com", "p3.pstatp.com", "www.kuaishou.com", "sns-webpic.xhscdn.com", "www.xiaohongshu.com", "www.taobao.com", "www.alipay.com", "img.alicdn.com", "img.360buyimg.com", "www.jd.com", "www.meituan.com", "www.amap.com", "www.12306.cn"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ matched: true, policy: "DIRECT" });
+    }
+    for (const host of ["api.openai.com", "api.anthropic.com", "github.com", "raw.githubusercontent.com", "www.tiktok.com", "v16.byteoversea.com", "www.rednote.com", "assets.oss-us-west-1.aliyuncs.com", "douyin.com.example.org"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ matched: false, policy: "DEFAULT" });
+    }
+    expect(rules[0].rules.every(rule => ["DOMAIN", "DOMAIN-SUFFIX"].includes(rule.type))).toBe(true);
+    const domestic = mihomoRules.indexOf("RULE-SET,china-domains,DIRECT");
+    for (const explicit of ["RULE-SET,ai-openai,AI", "RULE-SET,ai-coding,AI", "RULE-SET,developer,DEV", "RULE-SET,social,SOCIAL"]) {
+      expect(mihomoRules.indexOf(explicit as typeof mihomoRules[number])).toBeLessThan(domestic);
+    }
+    expect(mihomoRules.slice(-2)).toEqual(["GEOIP,CN,DIRECT,no-resolve", "MATCH,DEFAULT"]);
   });
   it("keeps Claude authentication, content and specific intake hosts on the AI policy", async () => {
     const rules = [createRuleSet({

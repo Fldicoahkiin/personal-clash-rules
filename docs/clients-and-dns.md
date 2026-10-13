@@ -100,7 +100,9 @@ pnpm start:local
 
 Flacier 分流、ACL4SSR 默认、多国分组、无自动测速，以及自定义 HTTPS INI。远程模板在订阅刷新时读取；目前支持 `ruleset`、`custom_proxy_group`、`enable_rule_generator=true`、`overwrite_original_rules=true`。不支持的指令会报错，不会被忽略。
 
-Flacier 默认把 Apple、Steam、Bilibili 等业务流量及未命中流量交给代理；只保留本地网络直连，`DIRECT` 仍可手动选择。Mihomo 策略组为空时使用 `REJECT`，不悄悄直连。ACL4SSR 和自定义模板保留其明确写出的直连规则，不把第三方方案改写成 Flacier 的策略。
+Flacier 默认把 AI、开发、Apple、Steam 等业务流量及未知流量交给对应代理组；QQ／微信、网易云音乐和国内服务域名直连，Bilibili 组默认直连但仍能手动换出口。国内域名集合位于显式业务规则之后，随后用 `GEOIP,CN,DIRECT,no-resolve` 覆盖已有 IP 的国内连接，最后仍是 `MATCH,DEFAULT` 代理。CN IP 依赖客户端自己的 GeoIP 数据，不会为此额外发起 DNS 查询，也不改变代理 DoH 设置。详见 [国内白名单来源及客户端边界](rola-residential.md#国内应用直连白名单)。Mihomo 策略组为空时使用 `REJECT`，不悄悄直连。ACL4SSR 和自定义模板保留其明确写出的规则，不改成 Flacier 的策略。
+
+手机 Shadowrocket 需要更新并选中配套 `.conf`，全局路由选择「配置」；只刷新首页节点订阅或处于全局「代理」模式，不会应用国内直连规则。分组仍可手动选择家宽或机场，规则模式和节点选择是两件事。
 
 “全局代理 / 直连”由客户端运行模式控制，新规则列表不再把它们列为分流模板。旧“全局直连”链接与“代理 DoH”冲突时会明确报错；应选择系统或上游 DNS，不能同时要求没有代理节点且 DNS 必须经过代理。
 

@@ -204,7 +204,7 @@ describe("Worker entrypoint", () => {
     const privateIpRules = preview.ruleSets.find(item => item.label === "private-ip");
     expect(privateIpRules).toMatchObject({ policy: "DIRECT" });
     expect(privateIpRules?.content).toContain("IP-CIDR,192.168.0.0/16,no-resolve");
-    for (const label of ["tencent-messaging", "netease-music"]) {
+    for (const label of ["tencent-messaging", "netease-music", "china-domains"]) {
       expect(preview.ruleSets.find(item => item.label === label)).toMatchObject({ policy: "DIRECT" });
     }
     expect(preview.ruleSets.find(item => item.label === "apple-system")).toMatchObject({ policy: "APPLE" });
@@ -213,8 +213,11 @@ describe("Worker entrypoint", () => {
       matched: true, policy: "DIRECT", rule: "PROCESS-NAME,WeChat",
     });
     expect(matchUrl("203.0.113.1", rules, { processName: "Firefox" })).toMatchObject({
-      matched: false, policy: "DEFAULT",
+      matched: false, policy: "DIRECT", rule: "GEOIP,CN,no-resolve", uncertain: expect.stringContaining("GEOIP"),
     });
+    for (const host of ["www.douyin.com", "v3.douyinvod.com", "sns-webpic.xhscdn.com"]) {
+      expect(matchUrl(host, rules, { processName: "Mobile" }), host).toMatchObject({ matched: true, policy: "DIRECT" });
+    }
   });
 
   it("uses Anthropic inbound IPs only as a no-resolve fallback after domain policies", async () => {
@@ -233,7 +236,7 @@ describe("Worker entrypoint", () => {
     }
     for (const ip of ["160.79.103.255", "160.79.106.0", "160.79.111.255"]) {
       expect(matchUrl(`https://${ip}`, rules, context), ip).toMatchObject({
-        matched: false, policy: "DEFAULT", destination: { mode: "代理" },
+        matched: false, policy: "DIRECT", rule: "GEOIP,CN,no-resolve", uncertain: expect.stringContaining("GEOIP"),
       });
     }
     expect(matchUrl("unclassified.example", rules, context)).toMatchObject({
@@ -242,7 +245,7 @@ describe("Worker entrypoint", () => {
     expect(matchUrl("account.apple.com", rules, { ...context, ip: "160.79.104.1" })).toMatchObject({
       matched: true, policy: "APPLE", rule: "DOMAIN,account.apple.com",
     });
-    expect(preview.ruleSets.at(-2)).toMatchObject({
+    expect(preview.ruleSets.at(-4)).toMatchObject({
       label: "ai-anthropic-ip", policy: "AI",
       content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
     });

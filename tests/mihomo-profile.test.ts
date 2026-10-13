@@ -50,11 +50,12 @@ describe("createMihomoProfile", () => {
     })).toThrow("DNS dependency");
   });
 
-  it("keeps empty groups closed and makes built-in service groups proxy-first", () => {
+  it("keeps empty groups closed and makes only the domestic media group direct-first", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: US, type: ss}]"));
     for (const group of profile["proxy-groups"]) {
       expect(group["empty-fallback"]).toBe("REJECT");
-      expect(group.proxies?.[0]).not.toBe("DIRECT");
+      if (group.name === "📺 哔哩哔哩") expect(group.proxies?.[0]).toBe("DIRECT");
+      else expect(group.proxies?.[0]).not.toBe("DIRECT");
     }
     expect(profile.rules).not.toContain("RULE-SET,apple-system,DIRECT");
   });

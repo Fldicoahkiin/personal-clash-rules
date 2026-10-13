@@ -72,6 +72,19 @@ const ruleSets = [
 ];
 
 describe("matchUrl", () => {
+  it("skips a no-resolve GEOIP rule without an address but does not guess an address's country", () => {
+    const rules = [createRuleSet(definitions[0], "GEOIP,CN,no-resolve\nDOMAIN-SUFFIX,example.com")];
+    expect(matchUrl("www.example.com", rules)).toMatchObject({ matched: true, rule: "DOMAIN-SUFFIX,example.com" });
+    expect(matchUrl("www.example.com", rules, { ip: "203.0.113.1" })).toMatchObject({
+      matched: false, rule: "GEOIP,CN,no-resolve", uncertain: expect.stringContaining("GEOIP"),
+    });
+    for (const address of ["203.0.113.1", "[2001:db8::1]"]) {
+      expect(matchUrl(address, rules)).toMatchObject({
+        matched: false, rule: "GEOIP,CN,no-resolve", uncertain: expect.stringContaining("GEOIP"),
+      });
+    }
+  });
+
   it("does not silently skip an earlier rule that needs client data", () => {
     const rules = [createRuleSet(definitions[0], "GEOIP,CN\nDOMAIN-SUFFIX,openai.com")];
     expect(matchUrl("api.openai.com", rules)).toMatchObject({ rule: "GEOIP,CN", matched: false, uncertain: expect.stringContaining("GEOIP") });

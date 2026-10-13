@@ -30,6 +30,13 @@ rule-providers:
     url: https://rules.flacier.com/rules/direct/netease-music.list
     path: ./ruleset/personal/netease-music.list
     interval: 86400
+  china-domains:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/direct/china-domains.list
+    path: ./ruleset/personal/china-domains.list
+    interval: 86400
   apple-system:
     type: http
     behavior: classical
@@ -386,6 +393,7 @@ rule-providers:
   - name: 📺 哔哩哔哩
     type: select
     proxies:
+      - DIRECT
       - 🌐 全局
       - 🖐 手动选择
       - ♻️ 自动选择
@@ -396,7 +404,6 @@ rule-providers:
       - 🇹🇼 台湾
       - 🇰🇷 韩国
       - 🇪🇺 欧洲
-      - DIRECT
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
@@ -483,4 +490,6 @@ rule-providers:
   - RULE-SET,media,🎬 流媒体
   - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🤖 AI,no-resolve
+  - RULE-SET,china-domains,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
   - MATCH,🐟 未匹配流量

@@ -2,6 +2,13 @@ import { ArrowUpRight } from "@phosphor-icons/react";
 
 const catalog = [
   {
+    category: "国内服务",
+    coverage: "抖音、快手、小红书、电商、支付、出行等国内服务域名；明确业务规则优先",
+    strategy: "DIRECT",
+    href: "/rules/direct/china-domains.list",
+    count: "1 个",
+  },
+  {
     category: "QQ / 微信",
     coverage: "登录、图片、头像、文件与小程序相关域名",
     strategy: "DIRECT",
@@ -53,7 +60,7 @@ const catalog = [
   {
     category: "Bilibili",
     coverage: "视频、直播、漫画与相关服务",
-    strategy: "BILIBILI",
+    strategy: "BILIBILI / 默认直连",
     href: "/rules/media/bilibili.list",
     count: "1 个",
   },

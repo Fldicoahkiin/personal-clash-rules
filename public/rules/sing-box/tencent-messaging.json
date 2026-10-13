@@ -4,7 +4,8 @@
     {
       "domain": [
         "apd-pcdnwxlogin.teg.tencent-cloud.net",
-        "slife.xy-asia.com"
+        "slife.xy-asia.com",
+        "meeting.tencent.com"
       ],
       "domain_suffix": [
         "qq.com",

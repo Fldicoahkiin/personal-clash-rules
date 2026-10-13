@@ -13,7 +13,7 @@ describe("business policy choices", () => {
       expect(group, name).not.toHaveProperty("exclude-type");
       expect(new Set(group?.proxies), name).toEqual(new Set(eligible));
       expect(group?.["exclude-filter"], name).toContain("剩余");
-      expect(group?.proxies?.[0], name).toBe(name === "ANIGAMER" ? "🇹🇼 台湾" : "GLOBAL");
+      expect(group?.proxies?.[0], name).toBe(name === "ANIGAMER" ? "🇹🇼 台湾" : name === "BILIBILI" ? "DIRECT" : "GLOBAL");
     }
     const byName = new Map(mihomoProxyGroups.map(group => [group.name, group]));
     const visit = (name: string, path: string[] = []) => {
@@ -60,6 +60,14 @@ describe("describePolicyRoute", () => {
       mode: "代理",
       route: "🎮 Steam → 🌐 全局",
       target: "PROXY",
+    });
+  });
+
+  it("shows the domestic media group's direct default without hiding its selectable policy", () => {
+    expect(describePolicyRoute("BILIBILI")).toEqual({
+      mode: "直连",
+      route: "📺 哔哩哔哩 → DIRECT",
+      target: "DIRECT",
     });
   });
 });
