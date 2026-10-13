@@ -274,7 +274,7 @@ export const mihomoRules = [
   "RULE-SET,social,SOCIAL",
   "RULE-SET,ai-anthropic-ip,CLAUDE,no-resolve",
   "RULE-SET,china-domains,DIRECT",
-  "GEOIP,CN,DIRECT,no-resolve",
+  "GEOIP,CN,DIRECT",
   "MATCH,DEFAULT",
 ] as const;
 

@@ -40,7 +40,7 @@ describe("published rule sets", () => {
     for (const explicit of ["RULE-SET,ai-openai,AI", "RULE-SET,ai-coding,AI", "RULE-SET,developer,DEV", "RULE-SET,social,SOCIAL"]) {
       expect(mihomoRules.indexOf(explicit as typeof mihomoRules[number])).toBeLessThan(domestic);
     }
-    expect(mihomoRules.slice(-2)).toEqual(["GEOIP,CN,DIRECT,no-resolve", "MATCH,DEFAULT"]);
+    expect(mihomoRules.slice(-2)).toEqual(["GEOIP,CN,DIRECT", "MATCH,DEFAULT"]);
   });
 
   it("routes DingTalk services and subdomains directly without accepting lookalike suffixes", async () => {

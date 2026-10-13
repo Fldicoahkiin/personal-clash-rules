@@ -215,7 +215,7 @@ describe("Worker entrypoint", () => {
       matched: true, policy: "DIRECT", rule: "PROCESS-NAME,WeChat",
     });
     expect(matchUrl("203.0.113.1", rules, { processName: "Firefox" })).toMatchObject({
-      matched: false, policy: "DIRECT", rule: "GEOIP,CN,no-resolve", uncertain: expect.stringContaining("GEOIP"),
+      matched: false, policy: "DIRECT", rule: "GEOIP,CN", uncertain: expect.stringContaining("GEOIP"),
     });
     for (const host of ["www.douyin.com", "v3.douyinvod.com", "sns-webpic.xhscdn.com"]) {
       expect(matchUrl(host, rules, { processName: "Mobile" }), host).toMatchObject({ matched: true, policy: "DIRECT" });
@@ -243,11 +243,14 @@ describe("Worker entrypoint", () => {
     }
     for (const ip of ["160.79.103.255", "160.79.106.0", "160.79.111.255"]) {
       expect(matchUrl(`https://${ip}`, rules, context), ip).toMatchObject({
-        matched: false, policy: "DIRECT", rule: "GEOIP,CN,no-resolve", uncertain: expect.stringContaining("GEOIP"),
+        matched: false, policy: "DIRECT", rule: "GEOIP,CN", uncertain: expect.stringContaining("GEOIP"),
       });
     }
     expect(matchUrl("unclassified.example", rules, context)).toMatchObject({
-      matched: false, rule: "MATCH", policy: "DEFAULT", destination: { mode: "代理" },
+      matched: false, rule: "GEOIP,CN", policy: "DIRECT", uncertain: expect.stringContaining("GEOIP"),
+    });
+    expect(matchUrl("github.com", rules, { ...context, ip: "223.5.5.5" })).toMatchObject({
+      matched: true, policy: "DEV",
     });
     expect(matchUrl("account.apple.com", rules, { ...context, ip: "160.79.104.1" })).toMatchObject({
       matched: true, policy: "APPLE", rule: "DOMAIN,account.apple.com",

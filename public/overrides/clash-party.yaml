@@ -684,5 +684,5 @@ rule-providers:
   - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
   - RULE-SET,china-domains,DIRECT
-  - GEOIP,CN,DIRECT,no-resolve
+  - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量

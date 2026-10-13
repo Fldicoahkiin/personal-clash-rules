@@ -7,6 +7,25 @@ import {
 } from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
+  it("resolves unlisted domains at the China IP fallback while keeping explicit services and proxy DNS first", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
+    expect(profile.rules.slice(-3)).toEqual([
+      "RULE-SET,china-domains,DIRECT",
+      "GEOIP,CN,DIRECT",
+      "MATCH,🐟 未匹配流量",
+    ]);
+    const domestic = profile.rules.indexOf("RULE-SET,china-domains,DIRECT");
+    for (const rule of ["RULE-SET,ai-openai,🤖 AI", "RULE-SET,developer,🛠️ 开发服务", "RULE-SET,social,💬 社交"]) {
+      expect(profile.rules.indexOf(rule)).toBeGreaterThanOrEqual(0);
+      expect(profile.rules.indexOf(rule)).toBeLessThan(domestic);
+    }
+    expect(profile.dns).toMatchObject({
+      "enhanced-mode": "fake-ip",
+      nameserver: ["https://1.1.1.1/dns-query#DNS-PROXY", "https://8.8.8.8/dns-query#DNS-PROXY"],
+      "direct-nameserver": ["https://1.1.1.1/dns-query#DNS-PROXY", "https://8.8.8.8/dns-query#DNS-PROXY"],
+    });
+  });
+
   it("prepends exact domestic-app rules for IP-only connections without exempting other processes", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     expect(profile.rules.filter((rule: string) => rule.startsWith("PROCESS-NAME,"))).toEqual([
