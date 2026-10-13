@@ -9,6 +9,8 @@ const labels: Record<string, string> = {
   ...countryGroupNames,
   APPLE: "🍎 Apple", STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🎮 Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 Bilibili", ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交",
+  TELEGRAM: "✈️ Telegram", X: "💬 X", REDDIT: "🗨️ Reddit", INSTAGRAM: "📷 Instagram",
+  FACEBOOK: "👥 Facebook", LINKEDIN: "💼 LinkedIn", TIKTOK: "🎵 TikTok",
 };
 
 type Group = {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { describePolicyRoute } from "../src/app/lib/policy-groups";
-import { mihomoProxyGroups } from "../src/config/mihomo-policy";
+import { businessProxyGroupNames, mihomoProxyGroups } from "../src/config/mihomo-policy";
 
 describe("business policy choices", () => {
   it("offers the same complete exits for every business policy without selector cycles", () => {
-    const business = ["AI", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD", "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "SOCIAL", "DEFAULT"];
+    const business = businessProxyGroupNames;
     const eligible = ["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT"];
     for (const name of business) {
       const group = mihomoProxyGroups.find(group => group.name === name);

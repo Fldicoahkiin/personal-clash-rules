@@ -21,6 +21,13 @@ const publishedRuleFiles = {
   media: "media/media.list",
   bilibili: "media/bilibili.list",
   anigamer: "media/anigamer.list",
+  telegram: "social/telegram.list",
+  x: "social/x.list",
+  reddit: "social/reddit.list",
+  instagram: "social/instagram.list",
+  facebook: "social/facebook.list",
+  linkedin: "social/linkedin.list",
+  tiktok: "social/tiktok.list",
   social: "social/social.list",
 } as const;
 
@@ -45,6 +52,8 @@ export const mihomoPolicyDisplayNames: Record<string, string> = {
   STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
   ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交", DEFAULT: "🐟 未匹配流量",
+  TELEGRAM: "✈️ Telegram", X: "💬 X", REDDIT: "🗨️ Reddit", INSTAGRAM: "📷 Instagram",
+  FACEBOOK: "👥 Facebook", LINKEDIN: "💼 LinkedIn", TIKTOK: "🎵 TikTok",
 };
 
 export function displayMihomoGroup(group: { name: string; proxies?: readonly string[]; icon?: string }) {
@@ -134,7 +143,8 @@ function countryGroup(name: string, filter: string) {
 
 export const businessProxyGroupNames = [
   "AI", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
-  "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "SOCIAL", "DEFAULT",
+  "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "TELEGRAM", "X", "REDDIT", "INSTAGRAM",
+  "FACEBOOK", "LINKEDIN", "TIKTOK", "SOCIAL", "DEFAULT",
 ] as const;
 
 function businessGroup(name: typeof businessProxyGroupNames[number], icon: string, initial = "GLOBAL") {
@@ -214,6 +224,13 @@ export const mihomoProxyGroups = [
   businessGroup("MEDIA", "play"),
   businessGroup("BILIBILI", "play", "DIRECT"),
   businessGroup("ANIGAMER", "play", "TW"),
+  businessGroup("TELEGRAM", "chat"),
+  businessGroup("X", "chat"),
+  businessGroup("REDDIT", "chat"),
+  businessGroup("INSTAGRAM", "chat"),
+  businessGroup("FACEBOOK", "chat"),
+  businessGroup("LINKEDIN", "chat"),
+  businessGroup("TIKTOK", "play"),
   businessGroup("SOCIAL", "chat"),
   businessGroup("DEFAULT", "route"),
 ].map(group => ({
@@ -246,6 +263,13 @@ export const mihomoRules = [
   "RULE-SET,bilibili,BILIBILI",
   "RULE-SET,anigamer,ANIGAMER",
   "RULE-SET,media,MEDIA",
+  "RULE-SET,telegram,TELEGRAM",
+  "RULE-SET,x,X",
+  "RULE-SET,reddit,REDDIT",
+  "RULE-SET,instagram,INSTAGRAM",
+  "RULE-SET,facebook,FACEBOOK",
+  "RULE-SET,linkedin,LINKEDIN",
+  "RULE-SET,tiktok,TIKTOK",
   "RULE-SET,social,SOCIAL",
   "RULE-SET,ai-anthropic-ip,AI,no-resolve",
   "RULE-SET,china-domains,DIRECT",

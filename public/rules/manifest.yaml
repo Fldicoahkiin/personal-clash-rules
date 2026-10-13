@@ -107,6 +107,34 @@ ruleSets:
     label: 流媒体
     policy: MEDIA
     path: rules/media/media.list
+  - id: telegram
+    label: Telegram
+    policy: TELEGRAM
+    path: rules/social/telegram.list
+  - id: x
+    label: X / Twitter
+    policy: X
+    path: rules/social/x.list
+  - id: reddit
+    label: Reddit
+    policy: REDDIT
+    path: rules/social/reddit.list
+  - id: instagram
+    label: Instagram / Threads
+    policy: INSTAGRAM
+    path: rules/social/instagram.list
+  - id: facebook
+    label: Facebook
+    policy: FACEBOOK
+    path: rules/social/facebook.list
+  - id: linkedin
+    label: LinkedIn
+    policy: LINKEDIN
+    path: rules/social/linkedin.list
+  - id: tiktok
+    label: TikTok
+    policy: TIKTOK
+    path: rules/social/tiktok.list
   - id: social
     label: 社交服务
     policy: SOCIAL

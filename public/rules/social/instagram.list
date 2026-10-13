@@ -1,0 +1,4 @@
+# Instagram and Threads share this selectable policy.
+DOMAIN-SUFFIX,instagram.com
+DOMAIN-SUFFIX,cdninstagram.com
+DOMAIN-SUFFIX,threads.net

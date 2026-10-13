@@ -156,6 +156,55 @@ rule-providers:
     url: https://rules.flacier.com/rules/media/anigamer.list
     path: ./ruleset/personal/anigamer.list
     interval: 86400
+  telegram:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/telegram.list
+    path: ./ruleset/personal/telegram.list
+    interval: 86400
+  x:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/x.list
+    path: ./ruleset/personal/x.list
+    interval: 86400
+  reddit:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/reddit.list
+    path: ./ruleset/personal/reddit.list
+    interval: 86400
+  instagram:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/instagram.list
+    path: ./ruleset/personal/instagram.list
+    interval: 86400
+  facebook:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/facebook.list
+    path: ./ruleset/personal/facebook.list
+    interval: 86400
+  linkedin:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/linkedin.list
+    path: ./ruleset/personal/linkedin.list
+    interval: 86400
+  tiktok:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/social/tiktok.list
+    path: ./ruleset/personal/tiktok.list
+    interval: 86400
   social:
     type: http
     behavior: classical
@@ -424,6 +473,125 @@ rule-providers:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
+  - name: ✈️ Telegram
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: 💬 X
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: 🗨️ Reddit
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: 📷 Instagram
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: 👥 Facebook
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: 💼 LinkedIn
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
+  - name: 🎵 TikTok
+    type: select
+    proxies:
+      - 🌐 全局
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
+    empty-fallback: REJECT
   - name: 💬 社交
     type: select
     proxies:
@@ -488,6 +656,13 @@ rule-providers:
   - RULE-SET,bilibili,📺 哔哩哔哩
   - RULE-SET,anigamer,📺 巴哈姆特
   - RULE-SET,media,🎬 流媒体
+  - RULE-SET,telegram,✈️ Telegram
+  - RULE-SET,x,💬 X
+  - RULE-SET,reddit,🗨️ Reddit
+  - RULE-SET,instagram,📷 Instagram
+  - RULE-SET,facebook,👥 Facebook
+  - RULE-SET,linkedin,💼 LinkedIn
+  - RULE-SET,tiktok,🎵 TikTok
   - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🤖 AI,no-resolve
   - RULE-SET,china-domains,DIRECT

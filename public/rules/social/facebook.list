@@ -1,0 +1,4 @@
+# Shared fbcdn resources use the Facebook policy, regardless of the calling app.
+DOMAIN-SUFFIX,facebook.com
+DOMAIN-SUFFIX,facebook.net
+DOMAIN-SUFFIX,fbcdn.net

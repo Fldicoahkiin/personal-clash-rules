@@ -108,6 +108,14 @@ Flacier 默认把 AI、开发、Apple、Steam 等业务流量及未知流量交�
 
 规则测试与转换共用模板编译器，可以选择上述方案，也会跟随转换区的方案选择。网页按加载的规则快照顺序模拟：需要 IP 或进程名时提示补充；遇到 GEOIP、GEOSITE、未知进程正则等无法计算的前置规则，显示“无法确定”，不略过后宣称命中或默认代理。测试结果是配置默认策略，不是客户端当前选中的节点，也不代表连接可用。
 
+### 社交应用的独立策略
+
+Telegram、X / Twitter、Reddit、Instagram / Threads、Facebook、LinkedIn、TikTok 分别有独立策略组，默认跟随全局代理；Discord 保持原独立组。每组均可选择手动、自动、国家、机场节点、已合并的家宽和 DIRECT，不会把整个社交类别改为直连。QQ／微信继续命中前置直连白名单，国内抖音走国内服务规则，与 TikTok 分开。
+
+这次把已有 `social.list` 的域名逐一分配到对应应用，保留汇总文件和 SOCIAL 组兼容旧链接；独立应用规则排在汇总之前。它不是所有应用端点的完整清单，新增遗漏需要根据实际请求补充。`cdninstagram.com` 与 `threads.net` 跟随 Instagram，`fbcdn.net` 统一归 Facebook；域名规则不能区分同一共享 CDN 的调用应用，如果需要 Meta 应用出口一致，请让 Facebook 和 Instagram 选择相同出口。
+
+Mihomo 订阅、Clash Party 覆写、Shadowrocket 配套配置、Egern / sing-box 规则文件和网页规则测试来自同一规则注册表；手机需刷新并启用配套配置，单独刷新节点列表不会更新策略组。
+
 ## 页面版本信息
 
 页脚分别显示前端构建时间、提交 hash 和 Cloudflare Worker 版本创建时间。版本创建时间不等于流量切换完成时间，也不会用构建时间冒充。版本接口遇到网络错误、超时、429 或 5xx 时最多尝试 3 次；恢复联网后重新读取，失败时保留已读到的版本并提示重试。

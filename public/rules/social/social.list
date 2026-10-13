@@ -1,4 +1,4 @@
-# Common social platforms
+# Compatibility aggregate: app-specific policies run before this fallback.
 DOMAIN-SUFFIX,x.com
 DOMAIN-SUFFIX,twitter.com
 DOMAIN-SUFFIX,twimg.com
