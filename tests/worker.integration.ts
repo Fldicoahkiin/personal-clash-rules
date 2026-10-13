@@ -149,7 +149,9 @@ describe("Worker entrypoint", () => {
       expect(data.nodeUrl).toBe(`${data.universalUrl}/shadowrocket`);
       const config = await exports.default.fetch(data.url);
       expect(config.headers.get("content-disposition")).toContain(".conf");
-      expect(await config.text()).toContain("🇺🇸 美国 = select, 🇺🇸 US-01");
+      const pairedConfig = await config.text();
+      expect(pairedConfig).toContain("FINAL,PROXY");
+      expect(pairedConfig).not.toContain("[Proxy Group]");
       const nodes = await exports.default.fetch(data.nodeUrl!);
       expect(nodes.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100; expire=0");
       expect(nodes.headers.get("content-disposition")).toContain(".txt");

@@ -58,13 +58,12 @@ describe("per-app social policies", () => {
     }
   });
 
-  it("renders the same app policies in Shadowrocket paired configuration", () => {
+  it("keeps app rule coverage while letting Shadowrocket use its homepage node", () => {
     const output = createShadowrocketProfile(["US-01", "JP-01"]);
     for (const id of apps) {
-      const label = mihomoPolicyDisplayNames[id.toUpperCase()];
-      expect(output).toContain(`${label} = select, 🚀 节点选择`);
-      expect(output).toContain(`RULE-SET,https://rules.flacier.com/rules/social/${id}.list,${label}`);
+      expect(output).toContain(`RULE-SET,https://rules.flacier.com/rules/social/${id}.list,PROXY`);
     }
+    expect(output).not.toContain("[Proxy Group]");
     expect(output).toContain("RULE-SET,https://rules.flacier.com/rules/direct/tencent-messaging.list,DIRECT");
   });
 });

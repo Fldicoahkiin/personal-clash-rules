@@ -3,14 +3,12 @@ import { defaultDnsSettings } from "../src/config/dns-settings";
 import { createShadowrocketProfile } from "../src/worker/shadowrocket-profile";
 
 describe("Shadowrocket paired configuration", () => {
-  it("routes unknown traffic through proxy policies with explicit imported nodes and country flags", () => {
+  it("uses the homepage node for proxy traffic without creating policy groups or pinning node names", () => {
     const output = createShadowrocketProfile(["US-01", "JP-01"]);
-    expect(output).toContain("🇺🇸 美国 = select, US-01");
-    expect(output).toContain("🇯🇵 日本 = select, JP-01");
-    expect(output).toContain("🇭🇰 香港 = select, REJECT");
-    expect(output).toContain("FINAL,🐟 未匹配流量");
-    expect(output).toContain("🐟 未匹配流量 = select, 🚀 节点选择");
-    expect(output).toContain("RULE-SET,https://rules.flacier.com/rules/ai/anthropic.list,🤖 AI");
+    expect(output).toContain("FINAL,PROXY");
+    expect(output).toContain("RULE-SET,https://rules.flacier.com/rules/ai/anthropic.list,PROXY");
+    expect(output).not.toContain("[Proxy Group]");
+    expect(output).not.toMatch(/US-01|JP-01| = select,| = url-test,/);
     expect(output).not.toContain("PROCESS-NAME");
     expect(output).not.toContain("COMPATIBLE");
     expect(output).not.toContain("[MITM]");
@@ -35,10 +33,24 @@ describe("Shadowrocket paired configuration", () => {
     const output = createShadowrocketProfile(["US-01"]);
     const domestic = "RULE-SET,https://rules.flacier.com/rules/direct/china-domains.list,DIRECT";
     expect(output).toContain(domestic);
-    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/developer/developer.list,🛠 开发服务")).toBeLessThan(output.indexOf(domestic));
-    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/ai/openai.list,🤖 AI")).toBeLessThan(output.indexOf(domestic));
-    expect(output).toContain("GEOIP,CN,DIRECT,no-resolve\nFINAL,🐟 未匹配流量");
-    expect(output).toContain("📺 Bilibili = select, DIRECT,");
+    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/developer/developer.list,PROXY")).toBeLessThan(output.indexOf(domestic));
+    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/ai/openai.list,PROXY")).toBeLessThan(output.indexOf(domestic));
+    expect(output).toContain("GEOIP,CN,DIRECT,no-resolve\nFINAL,PROXY");
+    expect(output).toContain("RULE-SET,https://rules.flacier.com/rules/media/bilibili.list,DIRECT");
+  });
+
+  it("preserves explicit direct and reject rules while mapping inherited node and group policies to the homepage", () => {
+    const output = createShadowrocketProfile(["US-01"], "flacier", "doh", defaultDnsSettings, {
+      groups: [], providers: {}, bootstrap: ["system"], rules: [
+        "DOMAIN-SUFFIX,dingtalk.com,DIRECT", "DOMAIN-SUFFIX,blocked.example,REJECT",
+        "DOMAIN-SUFFIX,claude.ai,Home", "DOMAIN,other.example,US-01", "MATCH,GLOBAL",
+      ],
+    });
+    expect(output).toContain("DOMAIN-SUFFIX,dingtalk.com,DIRECT");
+    expect(output).toContain("DOMAIN-SUFFIX,blocked.example,REJECT");
+    expect(output).toContain("DOMAIN-SUFFIX,claude.ai,PROXY");
+    expect(output).toContain("DOMAIN,other.example,PROXY");
+    expect(output).toContain("FINAL,PROXY");
   });
 
   it("rejects missing nodes, INI injection and incompatible inherited DNS instead of guessing", () => {

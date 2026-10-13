@@ -65,7 +65,8 @@ describe("cloud Rola subscriptions", () => {
     const paired = await fetchClient(created.shadowrocketConfigUrl);
     expect(paired.status).toBe(200);
     const config = await paired.text();
-    expect(config).toContain("Homes = select, First US Home, Second US Home");
+    expect(config).not.toContain("[Proxy Group]");
+    expect(config).toContain("FINAL,PROXY");
     expect(config).not.toMatch(/DST-PORT|second-pass|test-password/);
   });
 
@@ -96,7 +97,10 @@ describe("cloud Rola subscriptions", () => {
     expect(await phone.text()).toContain(`#${encodeURIComponent(name)}`);
     const paired = await fetchClient(created.shadowrocketConfigUrl);
     expect(paired.status).toBe(200);
-    expect(await paired.text()).toContain(`ROLA = select, ${name}`);
+    const pairedConfig = await paired.text();
+    expect(pairedConfig).not.toContain(name);
+    expect(pairedConfig).not.toContain("[Proxy Group]");
+    expect(pairedConfig).toContain("FINAL,PROXY");
     const invalid = await post("/api/rola/chains", { ...input, exit: { ...exit, exitIp: metadata.exitIp } });
     expect(invalid.status).toBe(400);
     expect(await invalid.json()).toMatchObject({ error: "invalid_rola_exit_metadata", message: "出口 IP 和区域需同时填写；都留空时保留原备注。" });
@@ -134,11 +138,10 @@ describe("cloud Rola subscriptions", () => {
       const config = await fetchClient(created.shadowrocketConfigUrl);
       expect(config.status).toBe(200);
       const conf = await config.text();
-      expect(conf).toContain("[Proxy Group]");
-      expect(conf).toContain("🇺🇸 美国家宽 = select, US Home");
-      expect(conf).toContain("🇺🇸 美国 = select, US Home");
-      expect(conf).toContain("🤖 AI = select, 🇺🇸 美国家宽");
-      expect(conf).toContain("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+      expect(conf).not.toContain("[Proxy Group]");
+      expect(conf).not.toContain("US Home");
+      expect(conf).toContain("DOMAIN-SUFFIX,claude.ai,PROXY");
+      expect(conf).toContain("FINAL,PROXY");
       expect(conf).toContain("AND,((DOMAIN-SUFFIX,claude.ai),(PROTOCOL,UDP)),REJECT");
       for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {
         expect(conf.split("\n").find(line => line.startsWith(`${key} =`)))

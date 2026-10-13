@@ -29,7 +29,7 @@ const prepared = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies
 const profile = prepared.profile;
 
 describe("residential mobile rendering resource budget", () => {
-  it("keeps two house nodes in mobile groups but strips both desktop-only gateway exceptions", async () => {
+  it("keeps both house nodes in the subscription and uses the homepage node in the paired rules", async () => {
     const extra = { ...settings, name: "Second US Home", server: "198.51.100.2", port: 1081, account: "second-account", password: "second-password" };
     const input = { ...settings, additionalExits: [extra] };
     const prepared = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies: airportNodes })), input);
@@ -38,8 +38,9 @@ describe("residential mobile rendering resource budget", () => {
     expect(nodes).toContain("#US%20Home");
     expect(nodes).toContain("#Second%20US%20Home");
     const config = await renderRolaTarget(env, prepared, input, "shadowrocket-config");
-    expect(config).toContain("Home = select, US Home, Second US Home");
-    expect(config).toContain("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(config).not.toContain("[Proxy Group]");
+    expect(config).toContain("DOMAIN-SUFFIX,claude.ai,PROXY");
+    expect(config).toContain("FINAL,PROXY");
     expect(config).not.toMatch(/DST-PORT|fixture-password|second-password|fixture-airport-secret/);
   });
 
@@ -50,7 +51,7 @@ describe("residential mobile rendering resource budget", () => {
         .toBe(`${key} = https://1.1.1.1/dns-query#proxy`);
     }
     expect(config).toContain("proxy-dns-server = system\n");
-    expect(config).toContain("Home = select, US Home");
+    expect(config).not.toContain("[Proxy Group]");
     expect(config).not.toContain("#proxy=");
   });
 
@@ -77,16 +78,15 @@ describe("residential mobile rendering resource budget", () => {
       const nodes = await renderRolaTarget(env, prepared, settings, "shadowrocket");
       expect(nodes.split("\n")).toHaveLength(69);
       const config = await renderRolaTarget(env, prepared, settings, "shadowrocket-config");
-      for (const node of airportNodes) expect(config).toContain(node.name);
-      expect(config).toContain("Home = select, US Home");
-      expect(config).toContain("🇺🇸 美国 = select, US Airport 1");
-      expect(config).toContain("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+      for (const node of airportNodes) expect(config).not.toContain(node.name);
+      expect(config).not.toContain("[Proxy Group]");
+      expect(config).toContain("DOMAIN-SUFFIX,claude.ai,PROXY");
       expect(config).not.toMatch(/fixture-password|fixture-airport-secret/);
       expect(serialize).not.toHaveBeenCalled();
     } finally { serialize.mockClear(); }
   });
 
-  it("compiles each group filter once, not once per node", () => {
+  it("does not compile unused group filters for homepage routing", () => {
     const source = yaml.parse(profile);
     const OriginalRegExp = RegExp;
     let compilations = 0;
@@ -100,9 +100,9 @@ describe("residential mobile rendering resource budget", () => {
       const config = createShadowrocketProfile(source.proxies.map((node: { name: string }) => node.name), "flacier", "doh", defaultDnsSettings, {
         groups: source["proxy-groups"], rules: ["MATCH,🌐 全局"], providers: {}, bootstrap: ["system"],
       });
-      expect(config).toContain("🇺🇸 美国 = select, US Airport 1");
-      expect(config).toContain("Home = select, US Home");
-      expect(compilations).toBeLessThanOrEqual(source["proxy-groups"].length * 2);
+      expect(config).not.toContain("[Proxy Group]");
+      expect(config).toContain("FINAL,PROXY");
+      expect(compilations).toBe(0);
     } finally { vi.unstubAllGlobals(); }
   });
 
@@ -111,6 +111,7 @@ describe("residential mobile rendering resource budget", () => {
       groups: [{ name: "Home", type: "select", proxies: ["US Home"], filter: "[", "exclude-filter": "[" }],
       rules: ["MATCH,Home"], providers: {}, bootstrap: ["system"],
     });
-    expect(output).toContain("Home = select, US Home");
+    expect(output).not.toContain("[Proxy Group]");
+    expect(output).toContain("FINAL,PROXY");
   });
 });

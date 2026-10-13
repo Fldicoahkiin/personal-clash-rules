@@ -138,8 +138,8 @@ HTTP/SOCKS5 还可能把目标域名交给 Rola 服务端解析。本地 DoH 策
 
 - Clash Party、Clash Verge 和 FlClash 使用同一 Mihomo 候选 YAML，但各客户端的全局覆写仍需检查；不替换当前可用订阅。
 - 云端返回 `universalUrl`（`/r/随机令牌`）。请求 UA 为 Clash Party / Clash Verge / FlClash 时返回完整 Mihomo；Shadowrocket 返回同一来源的机场和住宅节点 URI。`url` 的 `.yaml` 后缀仍是固定 Mihomo 下载地址；不把 YAML 冒充手机适配。
-- 对直接家宽，`shadowrocketConfigUrl`（同一链接加 `?target=shadowrocket-config`）返回配套 `.conf`。先把通用链接添加到 Shadowrocket 首页的订阅，再把配套链接添加到配置页。两者共享节点名、手动／全局／AI／家宽分组和域名规则；节点名或来源改变后，两份资源都应刷新。
-- 手机配套文件关闭 IPv6，拒绝不支持的 UDP，业务、直连规则和备用 DNS 均使用 IP 地址 DoH 加 `#proxy`，跟随 **Shadowrocket 首页的默认节点**，不再固定绑定家宽。它不等同于 Mihomo 按域名跟随 AI 组的 DNS 策略：只切换 AI／全局策略组不会切换手机的 DNS 出口，家宽不可用时需在首页选择可用节点。此语义来自 [Shadowrocket 官方 2.2.62 说明](https://t.me/s/shadowrocketnews?before=890)，不将任意策略组名当作受支持的 DNS 节点名。节点主机名保留独立引导 DNS，业务 DNS 失败不会自动退回直连解析；配置文件不含密码，但配套订阅包含凭据。节点缺失或改名时，两份资源都需刷新。
+- 对直接家宽，`shadowrocketConfigUrl`（同一链接加 `?target=shadowrocket-config`）返回配套 `.conf`。先把通用链接添加到 Shadowrocket 首页的订阅，再把配套链接添加到配置页并启用。手机配置不生成手动／全局／AI／家宽策略组：国内白名单直连，其余代理流量和代理 DoH 跟随首页当前节点。节点新增或改名不需要同步配置中的节点引用；分流规则或 DNS 改动后刷新配套配置。
+- 手机配套文件关闭 IPv6，拒绝不支持的 UDP，业务、直连规则和备用 DNS 均使用 IP 地址 DoH 加 `#proxy`，跟随 **Shadowrocket 首页的默认节点**。家宽不可用时需在首页选择可用节点。此语义来自 [Shadowrocket 官方 2.2.62 说明](https://t.me/s/shadowrocketnews?before=890)，不将任意策略组名当作受支持的 DNS 节点名。节点主机名保留独立引导 DNS，业务 DNS 失败不会自动退回直连解析；配置文件不含密码，但配套订阅包含凭据。节点改名或新增后刷新首页订阅即可；分流与 DNS 的修改另行刷新配套配置。
 - 机场前置串联不输出手机 URI，返回 `rola_mobile_chain_unsupported`；不会丢掉第一跳后假装转换成功。其他不支持的客户端、无法保留的节点／代理链／规则也明确报错。每种输出独立保存最近成功结果，避免手机刷新失败时拿到旧 YAML。
 - iPhone 上的实际导入、网络出口和 DNS 仍需验收；服务端测试只证明输出和元数据一致，不代表手机已连接。
 
