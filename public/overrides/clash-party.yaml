@@ -229,7 +229,7 @@ rule-providers:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
-  - name: 🌐 全局
+  - name: GLOBAL
     type: select
     proxies:
       - 🖐 手动选择
@@ -306,7 +306,7 @@ rule-providers:
   - name: 🤖 AI
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -324,7 +324,7 @@ rule-providers:
     type: select
     proxies:
       - 🤖 AI
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -341,7 +341,7 @@ rule-providers:
   - name: 🍎 Apple
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -358,7 +358,7 @@ rule-providers:
   - name: 🎮 Steam
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -375,7 +375,7 @@ rule-providers:
   - name: 📥 Steam 下载
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -392,7 +392,7 @@ rule-providers:
   - name: 🕹️ Steam 联机
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -409,7 +409,7 @@ rule-providers:
   - name: 💬 Discord
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -426,7 +426,7 @@ rule-providers:
   - name: 🛠️ 开发服务
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -443,7 +443,7 @@ rule-providers:
   - name: 🎬 流媒体
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -461,7 +461,7 @@ rule-providers:
     type: select
     proxies:
       - DIRECT
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -478,7 +478,7 @@ rule-providers:
     type: select
     proxies:
       - 🇹🇼 台湾
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -494,7 +494,7 @@ rule-providers:
   - name: ✈️ Telegram
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -511,7 +511,7 @@ rule-providers:
   - name: 💬 X
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -528,7 +528,7 @@ rule-providers:
   - name: 🗨️ Reddit
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -545,7 +545,7 @@ rule-providers:
   - name: 📷 Instagram
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -562,7 +562,7 @@ rule-providers:
   - name: 👥 Facebook
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -579,7 +579,7 @@ rule-providers:
   - name: 💼 LinkedIn
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -596,7 +596,7 @@ rule-providers:
   - name: 🎵 TikTok
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -613,7 +613,7 @@ rule-providers:
   - name: 💬 社交
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
@@ -630,7 +630,7 @@ rule-providers:
   - name: 🐟 未匹配流量
     type: select
     proxies:
-      - 🌐 全局
+      - GLOBAL
       - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国

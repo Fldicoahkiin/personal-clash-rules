@@ -48,7 +48,7 @@ export const mihomoRuleProviders = Object.fromEntries(
 export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 export const manualProxyGroupName = "🖐 手动选择";
 export const mihomoPolicyDisplayNames: Record<string, string> = {
-  GLOBAL: "🌐 全局", AUTO: "♻️ 自动选择", AI: "🤖 AI", CLAUDE: "🧠 Claude", APPLE: "🍎 Apple",
+  GLOBAL: "GLOBAL", AUTO: "♻️ 自动选择", AI: "🤖 AI", CLAUDE: "🧠 Claude", APPLE: "🍎 Apple",
   STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
   ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交", DEFAULT: "🐟 未匹配流量",

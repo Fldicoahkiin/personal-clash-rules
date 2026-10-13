@@ -1,5 +1,5 @@
 import { isIP } from "node:net";
-import { isMap, isScalar, isSeq, parseDocument } from "yaml";
+import { isMap, isScalar, isSeq, parseDocument, visit } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
 import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, metadataFilter, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
@@ -44,6 +44,21 @@ export function createRolaTemplate(ruleLists: string[]) {
 function record(value: unknown, message: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(message);
   return value as Record<string, unknown>;
+}
+
+function needsGlobalMigration(base: Record<string, unknown>): boolean {
+  const providers = base["rule-providers"] as Record<string, { url?: string }> | undefined;
+  if (providers?.["ai-anthropic"]?.url !== mihomoRuleProviders["ai-anthropic"].url) return false;
+  const groups = base["proxy-groups"] as Array<Record<string, unknown>>;
+  if (!groups.some(group => group.name === "🌐 全局" && group.type === "select")) return false;
+  if (groups.some(group => group.name === "GLOBAL") || (base.proxies as Array<Record<string, unknown>>).some(node => node.name === "GLOBAL")) {
+    throw new Error("GLOBAL already exists; resolve the legacy global group conflict before migration");
+  }
+  return true;
+}
+
+function globalPolicyValue(value: unknown): unknown {
+  return typeof value === "string" ? value.replace(/(^|[,#])🌐 全局(?=,no-resolve$|$)/u, "$1GLOBAL") : value;
 }
 
 function claudePolicyMigration(base: Record<string, unknown>) {
@@ -363,6 +378,12 @@ export function prepareRolaProfile(source: string, value: unknown) {
   if (!isSeq(proxies) || !isSeq(groups) || !isSeq(rules) || !isMap(dns) || dns.get("enable") !== true) {
     throw new Error("Use a complete Mihomo profile with inline nodes, groups, rules and working DNS; a provider-only or empty profile is insufficient");
   }
+  if (needsGlobalMigration(base)) {
+    for (const section of [groups, rules, dns]) visit(section, {
+      Scalar(_key, node) { node.value = globalPolicyValue(node.value); },
+    });
+    base = record(document.toJS({ maxAliasCount: 100 }), "Invalid migrated base profile");
+  }
   const claudePolicy = claudePolicyMigration(base);
   if (claudePolicy?.newGroup) {
     const aiIndex = groups.items.findIndex(group => isMap(group) && group.get("name") === claudePolicy.newGroup?.["default-selected"]);
@@ -545,8 +566,17 @@ export function createRolaOverride(source: string, value: unknown) {
   const output = parseDocument(prepared.profile).toJS({ maxAliasCount: 100 });
   const exits = [settings, ...settings.additionalExits];
   const gatewayRules = [...new Set(exits.flatMap(exit => rolaDirectGatewayRule(exit) ?? []))];
+  const migrationBase = parseDocument(source);
+  const globalMigration = needsGlobalMigration(record(migrationBase.toJS({ maxAliasCount: 100 }), "Invalid base profile"));
+  if (globalMigration) for (const field of ["proxy-groups", "rules", "dns"]) {
+    const section = migrationBase.get(field, true);
+    if (isSeq(section) || isMap(section)) visit(section, {
+      Scalar(_key, node) { node.value = globalPolicyValue(node.value); },
+    });
+  }
   const patch = {
-    claudeMigration: claudePolicyMigration(record(parseDocument(source).toJS({ maxAliasCount: 100 }), "Invalid base profile")),
+    globalMigration,
+    claudeMigration: claudePolicyMigration(record(migrationBase.toJS({ maxAliasCount: 100 }), "Invalid base profile")),
     connectionMode: settings.connectionMode,
     residentialNodeNames: settings.residentialNodeNames,
     upstream: settings.upstreamNode, nodes: output.proxies.slice(-exits.length), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
@@ -564,6 +594,13 @@ export function createRolaOverride(source: string, value: unknown) {
 const privateRola = ${JSON.stringify(patch)};
 function main(config) {
   const data = privateRola;
+  if (data.globalMigration) {
+    const rename = ${globalPolicyValue.toString()};
+    const migrate = value => Array.isArray(value) ? value.map(migrate)
+      : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, migrate(item)])) : rename(value);
+    if (config['proxy-groups']?.some(group => group.name === 'GLOBAL')) throw new Error('Rola: global policy changed; regenerate the overlay');
+    config = { ...config, 'proxy-groups': migrate(config['proxy-groups']), rules: migrate(config.rules), dns: migrate(config.dns) };
+  }
   const safe = ${encryptedUpstream.toString()};
   const validateReferences = ${validateResidentialReferences.toString()};
   const overlaps = ${protectedHost.toString()};

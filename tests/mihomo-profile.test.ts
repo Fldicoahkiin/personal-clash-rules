@@ -14,6 +14,21 @@ import {
 import { defaultNodeSettings } from "../src/worker/node-transforms";
 
 describe("createMihomoProfile", () => {
+  it("uses one visible built-in GLOBAL in the original global position without business-group cycles", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
+    const groups = profile["proxy-groups"];
+    expect(groups.filter((group: { name: string }) => group.name === "GLOBAL")).toHaveLength(1);
+    expect(groups.find((group: { name: string }) => group.name === "GLOBAL")).toMatchObject({
+      type: "select", "include-all": true,
+      proxies: expect.arrayContaining(["🖐 手动选择", "DIRECT"]),
+    });
+    expect(groups[1].name).toBe("GLOBAL");
+    expect(groups[1].hidden).not.toBe(true);
+    expect(groups[1].proxies).not.toContain("GLOBAL");
+    expect(groups[1].proxies).not.toContain("🧠 Claude");
+    expect(JSON.stringify(groups)).not.toContain("🌐 全局");
+    expect(groups.find((group: { name: string }) => group.name === "🧠 Claude").hidden).not.toBe(true);
+  });
   it("resolves unlisted domains at the China IP fallback while keeping explicit services and proxy DNS first", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     expect(profile.rules.slice(-3)).toEqual([
@@ -50,7 +65,7 @@ describe("createMihomoProfile", () => {
   });
   it("puts manual selection before global and excludes quota notices from DNS choices", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}, {name: '剩余流量：1 TB', type: ss}]"));
-    expect(profile["proxy-groups"].slice(0, 2).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "🌐 全局"]);
+    expect(profile["proxy-groups"].slice(0, 2).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "GLOBAL"]);
     expect(profile["proxy-groups"][0]).toMatchObject({ type: "select", "include-all": true, proxies: expect.arrayContaining(["♻️ 自动选择", "🇺🇸 美国"]) });
     expect(profile["proxy-groups"][1].proxies[0]).toBe("🖐 手动选择");
     const dns = profile["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
@@ -118,7 +133,7 @@ proxies:
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["🌐 全局", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾", "DIRECT"]), "include-all": true }),
+      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾", "DIRECT"]), "include-all": true }),
       expect.objectContaining({ name: "📥 Steam 下载", proxies: expect.arrayContaining(["DIRECT"]) }),
       expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
     ]));
@@ -244,7 +259,7 @@ proxies:
         "include-all-providers": true,
         use: ["订阅 1"],
       }),
-      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["🌐 全局"]) }),
+      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["GLOBAL"]) }),
     ]));
     expect(config["proxy-groups"].find((group) => group.name === "🇺🇸 美国")).toHaveProperty(
       "empty-fallback", "REJECT",
@@ -322,7 +337,7 @@ proxies:
     expect(config.rules).toEqual([
       "GEOSITE,private,DIRECT",
       "GEOIP,private,DIRECT,no-resolve",
-      "MATCH,🌐 全局",
+      "MATCH,GLOBAL",
     ]);
   });
 

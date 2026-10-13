@@ -54,6 +54,29 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it("migrates legacy global references in place and keeps generated overrides equivalent", () => {
+    const text = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]").replaceAll("GLOBAL", "🌐 全局");
+    const base = parse(text);
+    const output = parse(prepareRolaProfile(text, settings).profile);
+    expect(output["proxy-groups"].find((group: { name: string }) => group.name === "GLOBAL")).toMatchObject({
+      proxies: expect.arrayContaining([parseRolaSettings(settings).groupName, "🖐 手动选择"]),
+    });
+    expect(output["proxy-groups"][1].name).toBe("GLOBAL");
+    expect(output["proxy-groups"].filter((group: { name: string }) => group.name === "GLOBAL")).toHaveLength(1);
+    expect(JSON.stringify(output)).not.toContain("🌐 全局");
+    expect(runInNewContext(`${createRolaOverride(text, settings)}; main(config)`, { config: base })).toEqual(output);
+  });
+  it("preserves legacy default selections and rejects conflicting global groups", () => {
+    const text = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]").replaceAll("GLOBAL", "🌐 全局");
+    const base = parse(text);
+    base["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI")["default-selected"] = "🌐 全局";
+    const source = stringify(base);
+    const prepared = prepareRolaProfile(source, settings);
+    expect(parse(prepared.profile)["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI")["default-selected"]).toBe("GLOBAL");
+    expect(runInNewContext(`${createRolaOverride(source, settings)}; main(config)`, { config: base })).toEqual(parse(prepared.profile));
+    base["proxy-groups"].push({ name: "GLOBAL", type: "select", proxies: ["DIRECT"] });
+    expect(() => prepareRolaProfile(stringify(base), settings)).toThrow("GLOBAL already exists");
+  });
   it("keeps explicitly referenced encrypted residential nodes in the house group across refresh without classifying lookalikes", () => {
     const residentialNodeNames = ["[Rola] 美国 · 203.0.113.10", "[Rola] 美国 Las Vegas · 203.0.113.11"];
     const relay = { type: "vless", server: "203.0.113.20", port: 443, uuid: "00000000-0000-4000-8000-000000000000", tls: true, network: "tcp", flow: "xtls-rprx-vision", "reality-opts": { "public-key": "example", "short-id": "12345678" } };
@@ -170,7 +193,7 @@ describe("local Rola preparation", () => {
     expect(candidates("♻️ 自动选择")).toEqual(["Airport"]);
     expect(candidates("DNS-PROXY")).toEqual(["Airport", input.name, second.name]);
     expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY")["default-selected"]).toBe("Airport");
-    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
+    for (const name of ["🖐 手动选择", "GLOBAL", "🤖 AI"]) {
       expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain("ROLA");
     }
     expect(profile.rules.slice(0, 2)).toEqual([
@@ -290,7 +313,7 @@ describe("local Rola preparation", () => {
     const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
     expect(dns.proxies).toEqual(["JP Airport", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "US Home"]);
     expect(dns["default-selected"]).toBe("US Airport");
-    for (const forbidden of ["DIRECT", "🌐 全局", "🖐 手动选择", "🤖 AI", "🐟 未匹配流量", "DNS-PROXY"]) expect(dns.proxies).not.toContain(forbidden);
+    for (const forbidden of ["DIRECT", "GLOBAL", "🖐 手动选择", "🤖 AI", "🐟 未匹配流量", "DNS-PROXY"]) expect(dns.proxies).not.toContain(forbidden);
     expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
   });
 
@@ -469,7 +492,7 @@ describe("local Rola preparation", () => {
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
     const businessNames = ["🤖 AI", "🍎 Apple", "🎮 Steam", "📥 Steam 下载", "🕹️ Steam 联机", "💬 Discord", "🛠️ 开发服务", "🎬 流媒体", "📺 哔哩哔哩", "📺 巴哈姆特", "💬 社交", "🐟 未匹配流量"];
-    const eligible = ["🌐 全局", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
+    const eligible = ["GLOBAL", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
     for (const name of businessNames) {
       const group = output["proxy-groups"].find((group: { name: string }) => group.name === name);
       expect(new Set(group.proxies), name).toEqual(new Set(eligible));
@@ -481,7 +504,7 @@ describe("local Rola preparation", () => {
       expect(group.proxies ?? []).not.toContain(input.groupName);
       expect(group["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
     }
-    expect(output["proxy-groups"].slice(0, 3).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "🌐 全局", input.groupName]);
+    expect(output["proxy-groups"].slice(0, 3).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "GLOBAL", input.groupName]);
     expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
   });
 
@@ -502,7 +525,7 @@ describe("local Rola preparation", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
-    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI", "🧠 Claude"]) {
+    for (const name of ["🖐 手动选择", "GLOBAL", "🤖 AI", "🧠 Claude"]) {
       expect(output["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI").proxies[0]).toBe(input.groupName);

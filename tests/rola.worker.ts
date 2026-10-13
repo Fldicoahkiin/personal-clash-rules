@@ -228,7 +228,7 @@ describe("cloud Rola subscriptions", () => {
     const response = await fetchClient(data.url);
     expect(response.status).toBe(200);
     const profile = parse(await response.text());
-    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
+    for (const name of ["🖐 手动选择", "GLOBAL", "🤖 AI"]) {
       expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
     expect(profile.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");

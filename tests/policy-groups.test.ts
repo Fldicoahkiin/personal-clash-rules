@@ -50,7 +50,7 @@ describe("describePolicyRoute", () => {
   it("labels proxy-first groups with their initial route", () => {
     expect(describePolicyRoute("AI")).toEqual({
       mode: "代理",
-      route: "🤖 AI → 🌐 全局",
+      route: "🤖 AI → GLOBAL",
       target: "PROXY",
     });
   });
@@ -58,7 +58,7 @@ describe("describePolicyRoute", () => {
   it("keeps Steam proxy-first while allowing manual direct selection", () => {
     expect(describePolicyRoute("STEAM")).toEqual({
       mode: "代理",
-      route: "🎮 Steam → 🌐 全局",
+      route: "🎮 Steam → GLOBAL",
       target: "PROXY",
     });
   });

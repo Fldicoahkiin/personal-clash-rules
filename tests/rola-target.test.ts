@@ -98,7 +98,7 @@ describe("residential mobile rendering resource budget", () => {
     });
     try {
       const config = createShadowrocketProfile(source.proxies.map((node: { name: string }) => node.name), "flacier", "doh", defaultDnsSettings, {
-        groups: source["proxy-groups"], rules: ["MATCH,🌐 全局"], providers: {}, bootstrap: ["system"],
+        groups: source["proxy-groups"], rules: ["MATCH,GLOBAL"], providers: {}, bootstrap: ["system"],
       });
       expect(config).not.toContain("[Proxy Group]");
       expect(config).toContain("FINAL,PROXY");

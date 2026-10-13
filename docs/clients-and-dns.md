@@ -116,6 +116,8 @@ Flacier 默认把 AI、开发、Apple、Steam 等业务流量及未知流量交�
 
 ### 社交应用的独立策略
 
+桌面 Flacier 分流只使用一个 `GLOBAL`：位于“手动选择”之后，接替原来的“🌐 全局”，候选节点和默认跟随关系不变。显式配置内置名称后，Mihomo 不再追加第二个全局组。旧 Flacier 家宽订阅刷新时同步迁移组名及引用；其他模板不做这项旧配置迁移。客户端的全局运行模式与规则模式仍是独立开关，合并显示不等于切到全局代理。
+
 Telegram、X / Twitter、Reddit、Instagram / Threads、Facebook、LinkedIn、TikTok 分别有独立策略组，默认跟随全局代理；Discord 保持原独立组。每组均可选择手动、自动、国家、机场节点、已合并的家宽和 DIRECT，不会把整个社交类别改为直连。QQ／微信继续命中前置直连白名单，国内抖音走国内服务规则，与 TikTok 分开。
 
 这次把已有 `social.list` 的域名逐一分配到对应应用，保留汇总文件和 SOCIAL 组兼容旧链接；独立应用规则排在汇总之前。它不是所有应用端点的完整清单，新增遗漏需要根据实际请求补充。`cdninstagram.com` 与 `threads.net` 跟随 Instagram，`fbcdn.net` 统一归 Facebook；域名规则不能区分同一共享 CDN 的调用应用，如果需要 Meta 应用出口一致，请让 Facebook 和 Instagram 选择相同出口。

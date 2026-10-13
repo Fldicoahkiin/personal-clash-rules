@@ -38,7 +38,7 @@ describe("createRouteSteps", () => {
       expect.objectContaining({
         label: "处理结果",
         value: "代理",
-        detail: "🤖 AI → 🌐 全局",
+        detail: "🤖 AI → GLOBAL",
         machine: false,
       }),
     ]);
@@ -66,7 +66,7 @@ describe("createRouteSteps", () => {
       expect.objectContaining({
         label: "处理结果",
         value: "代理",
-        detail: "🐟 未匹配流量 → 🌐 全局",
+        detail: "🐟 未匹配流量 → GLOBAL",
       }),
     ]);
   });
@@ -93,7 +93,7 @@ describe("createRouteSteps", () => {
       expect.objectContaining({
         label: "处理结果",
         value: "代理",
-        detail: "🍎 Apple → 🌐 全局",
+        detail: "🍎 Apple → GLOBAL",
       }),
     ]);
   });
