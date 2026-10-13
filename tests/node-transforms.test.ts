@@ -121,6 +121,16 @@ describe("applyNodeTransforms", () => {
     }]);
   });
 
+  it("keeps explicit platform prefixes first while leaving ordinary country flag naming unchanged", () => {
+    const names = ["[Rola] 美国 · 203.0.113.10 · VPS", "[Example ISP] 美国 Las Vegas · 203.0.113.11 · VPS",
+      "[平台 A-1_test.io] Japan 1", "US-LAX-01", "🇯🇵 JP 2", "Custom", "[Bad/Label] 美国 1"];
+    expect(applyNodeTransforms(names.map(name => ({ name, type: "vless" })), defaultNodeSettings).map(node => node.name)).toEqual([
+      ...names.slice(0, 3), "🇺🇸 US-LAX-01", "🇯🇵 JP 2", "Custom", "🇺🇸 [Bad/Label] 美国 1",
+    ]);
+    expect(applyNodeTransforms([{ name: names[0], type: "vless" }], { ...defaultNodeSettings, showNodeType: true })[0].name)
+      .toBe("[Rola] [VLESS] 美国 · 203.0.113.10 · VPS");
+  });
+
   it("enables XUDP only for VMess and VLESS nodes", () => {
     const nodes = [
       { name: "VMess", type: "vmess" },

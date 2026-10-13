@@ -277,8 +277,8 @@ function readSources(value: unknown): SubscriptionSource[] {
     }
     if (type === "subscription") {
       parseRemoteSubscriptionUrl(normalizedValue);
-    } else if (!nodeScheme.test(normalizedValue)) {
-      throw new ApiError(400, "invalid_node_uri", "Node source uses an unsupported URI scheme");
+    } else if (!nodeScheme.test(normalizedValue) && !/^proxies\s*:/u.test(normalizedValue)) {
+      throw new ApiError(400, "invalid_node_uri", "Node source must use a supported URI or a proxies YAML document");
     }
     const sourceName = typeof name === "string" && name.trim()
       ? name.trim().slice(0, 64)

@@ -19,7 +19,7 @@ type Exit = {
   account: string; password: string; country: string; sessionId: string; sessionMinutes: number;
   exitIp?: string; region?: string; platform?: string;
 };
-type Chain = { baseId: string; target: string; exit: Exit; additionalExits?: Exit[]; connectionMode?: unknown; groupName?: unknown; policyGroup?: unknown; upstreamNode: string; rules: string[]; dns: string[] };
+type Chain = { baseId: string; target: string; exit: Exit; additionalExits?: Exit[]; residentialNodeNames?: unknown; connectionMode?: unknown; groupName?: unknown; policyGroup?: unknown; upstreamNode: string; rules: string[]; dns: string[] };
 const idPattern = /^[A-Za-z0-9_-]{16}$/u;
 const targets = new Set(["clash-party-config", "clash-verge-config", "flclash-config", "mihomo-config"]);
 
@@ -91,7 +91,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
     return convert(new Request(`${origin}/s/${id(baseId)}/${target}`));
   }
   async function candidate(base: Response, chain: Chain) {
-    try { return prepareRolaProfile(await base.text(), { ...chain.exit, additionalExits: chain.additionalExits, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns }); }
+    try { return prepareRolaProfile(await base.text(), { ...chain.exit, additionalExits: chain.additionalExits, residentialNodeNames: chain.residentialNodeNames, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns }); }
     catch (error) {
       if (error instanceof RolaExitMetadataError) throw new LocalError(400, "invalid_rola_exit_metadata", error.message);
       throw new LocalError(422, "rola_profile_rejected", "无法生成串联配置：请确认所选前置节点仍存在、启用加密和证书验证，域名规则有效且 DNS 不与网关形成循环。不会返回空节点或直连替代配置。");
@@ -162,7 +162,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         const exit = await read<Exit>("exit", id(input.exitId));
         const additionalExits = await Promise.all(additionalIds.map(value => read<Exit>("exit", value)));
         const chain: Chain = { baseId: id(input.baseId), target: String(input.target), exit, additionalExits, connectionMode: input.connectionMode, groupName: input.groupName, policyGroup: input.policyGroup,
-          upstreamNode: input.upstreamNode as string, rules: input.rules as string[], dns: input.dns as string[] };
+          residentialNodeNames: input.residentialNodeNames, upstreamNode: input.upstreamNode as string, rules: input.rules as string[], dns: input.dns as string[] };
         const base = await renderBase(chain.baseId, chain.target);
         if (!base.ok) return base;
         const generated = await candidate(base, chain);
@@ -179,7 +179,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         const headers = new Headers(base.headers);
         const scriptSource = match[2] === "js" ? await base.clone().text() : null;
         const generated = await candidate(base, chain);
-        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, additionalExits: chain.additionalExits, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
+        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, additionalExits: chain.additionalExits, residentialNodeNames: chain.residentialNodeNames, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
         headers.delete("ETag");
         headers.set("Cache-Control", "no-store");
         headers.set("Content-Type", script ? "application/javascript; charset=utf-8" : "text/yaml; charset=utf-8");

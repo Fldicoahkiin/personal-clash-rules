@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 
 import { createRolaRouter } from "../src/local/rola-server";
 import { createRolaCloudBase, requestRola, rolaLocalOrigin } from "../src/app/features/subscriptions/rola-api";
@@ -45,6 +45,39 @@ async function fixture() {
 }
 
 describe("local Rola web workflow", () => {
+  it("persists exact residential node references for YAML and override refreshes and rejects missing references", async () => {
+    const f = await fixture();
+    const residentialNodeNames = ["[Rola] 美国 · 203.0.113.10", "[Rola] 美国 Las Vegas · 203.0.113.11"];
+    const original = parse(base);
+    original.proxies.push(...residentialNodeNames.map(name => ({ name, type: "vless", server: "203.0.113.20", port: 443,
+      uuid: "00000000-0000-4000-8000-000000000000", tls: true, network: "tcp" })));
+    f.setBase(stringify(original));
+    const saved = await (await f.call("/api/local/rola/exits", exit)).json() as { id: string };
+    const input = { baseId, target: "clash-party-config", exitId: saved.id, connectionMode: "direct", residentialNodeNames,
+      groupName: "Homes", rules: ["DOMAIN-SUFFIX,claude.ai"], dns: ["https://1.1.1.1/dns-query"] };
+    const response = await f.call("/api/local/rola/chains", input);
+    expect(response.status).toBe(201);
+    const created = await response.json() as { url: string; overrideUrl: string };
+    const chainFile = (await readdir(f.directory)).find(name => name.startsWith("chain-"))!;
+    expect(JSON.parse(await readFile(resolve(f.directory, chainFile), "utf8")).residentialNodeNames).toEqual(residentialNodeNames);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      original.proxies[0].name = `Airport ${attempt}`;
+      f.setBase(stringify(original));
+      const refreshed = await f.call(new URL(created.url).pathname);
+      expect(refreshed.status).toBe(200);
+      const profile = parse(await refreshed.text());
+      expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies).toEqual([exit.name, ...residentialNodeNames]);
+      const script = await (await f.call(new URL(created.overrideUrl).pathname)).text();
+      expect(runInNewContext(`${script}; main(config)`, { config: original })).toEqual(profile);
+    }
+    expect((await f.call("/api/local/rola/chains", { ...input, residentialNodeNames: null })).status).toBe(400);
+    expect((await f.call("/api/local/rola/chains", { ...input, residentialNodeNames: ["Missing"] })).status).toBe(422);
+    original.proxies.pop();
+    f.setBase(stringify(original));
+    for (const url of [created.url, created.overrideUrl]) expect((await f.call(new URL(url).pathname)).status).toBe(422);
+    expect((await readdir(f.directory)).filter(name => name.startsWith("chain-"))).toHaveLength(1);
+  });
+
   it("snapshots two saved exits and refreshes both YAML and private override without dropping either", async () => {
     const f = await fixture();
     const first = await (await f.call("/api/local/rola/exits", { ...exit, authMode: "literal" })).json() as { id: string };

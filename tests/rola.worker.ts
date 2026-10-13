@@ -1,7 +1,7 @@
 import { env, exports } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSourceCache } from "./helpers/source-cache";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 
 let testClient = 0;
 beforeEach(async () => {
@@ -41,6 +41,51 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it("persists explicit encrypted residential references and retains them in cloud and mobile refreshes", async () => {
+    const sourceNames = ["[Rola] 美国 · 203.0.113.10", "[Rola] 美国 Las Vegas · 203.0.113.11"];
+    const relays = sourceNames.map((name, index) => ({ name, type: "vless", server: "203.0.113.20", port: 443,
+      uuid: `00000000-0000-4000-8000-00000000000${index + 1}`, tls: true, "skip-cert-verify": false,
+      network: "tcp", flow: "xtls-rprx-vision", servername: "example.com", "client-fingerprint": "chrome",
+      "reality-opts": { "public-key": "example", "short-id": "12345678", "support-x25519mlkem768": true } }));
+    const p = await preview({ sources: [{ type: "node", name: "Airport", value: uri },
+      { type: "node", name: "Residential VPS", value: stringify({ proxies: relays }) }] });
+    const residentialNodeNames = p.nodes.filter(node => node.name !== "Airport").map(node => node.name);
+    expect(residentialNodeNames).toEqual(sourceNames);
+    const input = { baseId: p.baseId, exit, connectionMode: "direct", groupName: "Homes", residentialNodeNames, rules, dns };
+    const response = await post("/api/rola/chains", input);
+    expect(response.status).toBe(201);
+    const created = await response.json<{ url: string; universalUrl: string; shadowrocketConfigUrl: string }>();
+    const chainId = new URL(created.universalUrl).pathname.split("/").at(-1);
+    const saved = await env.SUBSCRIPTIONS.get<{ settings: { residentialNodeNames: string[] } }>(`rola:chain:${chainId}`, "json");
+    expect(saved?.settings.residentialNodeNames).toEqual(residentialNodeNames);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const refreshed = await fetchClient(created.url);
+      expect(refreshed.status).toBe(200);
+      const profile = parse(await refreshed.text());
+      expect(profile.proxies.find((node: { name: string }) => node.name === "Airport")["reality-opts"]).toBeUndefined();
+      for (const relay of relays) expect(profile.proxies.find((node: { name: string }) => node.name === relay.name)).toMatchObject(relay);
+      expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies).toEqual(["ROLA-RESIDENTIAL", ...residentialNodeNames]);
+      const auto = profile["proxy-groups"].find((group: { name: string }) => group.name === "♻️ 自动选择");
+      for (const name of residentialNodeNames) {
+        expect(profile.proxies.filter((node: { name: string }) => node.name === name)).toHaveLength(1);
+        expect(new RegExp(auto["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(true);
+      }
+      const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
+      expect(phone.status).toBe(200);
+      const nodes = await phone.text();
+      for (const name of residentialNodeNames) expect(nodes).toContain(`#${encodeURIComponent(name)}`);
+      expect(nodes).toContain("vless://");
+      expect(nodes).not.toMatch(/support-x25519mlkem768|allowInsecure=1/);
+    }
+    const paired = await fetchClient(created.shadowrocketConfigUrl);
+    const config = await paired.text();
+    expect(paired.status).toBe(200);
+    expect(config).not.toContain("[Proxy Group]");
+    expect(config).toContain("FINAL,PROXY");
+    expect((await post("/api/rola/chains", { ...input, residentialNodeNames: null })).status).toBe(400);
+    expect((await post("/api/rola/chains", { ...input, residentialNodeNames: ["Missing"] })).status).toBe(422);
+  });
+
   it("keeps two distinct homes in refreshes, country choices and paired mobile resources", async () => {
     const p = await preview();
     const first = { ...exit, name: "First US Home" };
@@ -246,6 +291,51 @@ describe("cloud Rola subscriptions", () => {
       expect((await fetchClient(url)).status).toBe(422);
       expect(spy).not.toHaveBeenCalled();
     } finally { spy.mockRestore(); }
+  });
+
+  it("refreshes the same cached synchronized URL when residential settings change", async () => {
+    const relayName = "Relay";
+    const syncedAt = new Date(Date.now() - 120_000).toISOString();
+    const synchronized = await post("/api/subscriptions/sync", {
+      id: crypto.randomUUID().replaceAll("-", "").slice(0, 16), managementToken: "test-token-".padEnd(32, "0"), target: "clash-party-config",
+      config: { sources: [{ type: "subscription", value: "https://airport.example/private-source" }] },
+      snapshot: { readAt: syncedAt, sources: [{ content: `${uri}\ntrojan://relay-secret@relay.example:443#${encodeURIComponent(relayName)}`, metadata: {} }] },
+    });
+    expect(synchronized.status).toBe(201);
+    const link = await synchronized.json<{ url: string }>();
+    const p = await preview({ sources: [{ type: "subscription", value: link.url }] });
+    const response = await post("/api/rola/chains", {
+      baseId: p.baseId, exit, connectionMode: "direct", groupName: "Homes", residentialNodeNames: [], rules, dns,
+    });
+    expect(response.status).toBe(201);
+    const { url } = await response.json<{ url: string }>();
+    const first = await fetchClient(url);
+    expect(first.status).toBe(200);
+    expect(parse(await first.text())["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies)
+      .toEqual(["ROLA-RESIDENTIAL"]);
+    expect((await fetchClient(url)).headers.get("x-subscription-render-cache")).toBe("hit");
+
+    const chainId = new URL(url).pathname.split("/").at(-1)!.replace(/\.yaml$/u, "");
+    const key = `rola:chain:${chainId}`;
+    const chain = await env.SUBSCRIPTIONS.get<{ settings: Record<string, unknown> }>(key, "json");
+    expect(chain).not.toBeNull();
+    chain!.settings.residentialNodeNames = [relayName];
+    await env.SUBSCRIPTIONS.put(key, JSON.stringify(chain));
+
+    const updated = await fetchClient(url);
+    expect(updated.status).toBe(200);
+    expect(parse(await updated.text())["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies)
+      .toEqual(["ROLA-RESIDENTIAL", relayName]);
+    expect(updated.headers.get("x-subscription-render-cache")).toBeNull();
+    expect(updated.headers.get("x-subscription-synced-at")).toBe(syncedAt);
+    const cached = await fetchClient(url);
+    expect(cached.headers.get("x-subscription-render-cache")).toBe("hit");
+    expect(parse(await cached.text())["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies)
+      .toEqual(["ROLA-RESIDENTIAL", relayName]);
+
+    chain!.settings.residentialNodeNames = ["Missing"];
+    await env.SUBSCRIPTIONS.put(key, JSON.stringify(chain));
+    expect((await fetchClient(url)).status).toBe(422);
   });
 
   it("returns safe upstream diagnostics through the preview API", async () => {

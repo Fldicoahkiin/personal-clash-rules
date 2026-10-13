@@ -199,7 +199,17 @@ export function parseRolaSettings(value: unknown) {
     names.add(exit.name);
     credentials.add(identity);
   }
-  return { ...settings, additionalExits };
+  const references = input.residentialNodeNames === undefined ? [] : input.residentialNodeNames;
+  if (!Array.isArray(references) || references.length > 8) throw new RolaExitMetadataError("Residential node references must be a list of at most 8 names");
+  const residentialNodeNames = references.map(value => {
+    const name = text(value, "residential node name");
+    if (!name.trim() || names.has(name) || ["DIRECT", "REJECT", "COMPATIBLE", settings.groupName].includes(name)) {
+      throw new RolaExitMetadataError("Duplicate or reserved residential node reference");
+    }
+    names.add(name);
+    return name;
+  });
+  return { ...settings, additionalExits, residentialNodeNames };
 }
 
 function encryptedUpstream(node: Record<string, unknown>): boolean {
@@ -207,6 +217,16 @@ function encryptedUpstream(node: Record<string, unknown>): boolean {
   if (["vless", "http", "socks5"].includes(String(node.type))) return node.tls === true;
   if (["ss", "vmess"].includes(String(node.type))) return typeof node.cipher === "string" && !["none", "zero", "dummy", ""].includes(node.cipher);
   return ["trojan", "hysteria2", "tuic", "anytls", "snell", "wireguard", "ssh"].includes(String(node.type));
+}
+
+function validateResidentialReferences(nodes: Array<Record<string, unknown>>, names: string[], encrypted: (node: Record<string, unknown>) => boolean) {
+  for (const name of names) {
+    const matches = nodes.filter(node => node.name === name);
+    const node = matches[0];
+    if (matches.length !== 1 || typeof node.server !== "string" || !Number.isInteger(node.port) || !encrypted(node)) {
+      throw new Error("Residential node reference must match one existing independent encrypted node");
+    }
+  }
 }
 
 export function rolaUpstreamChoices(source: string) {
@@ -236,7 +256,7 @@ export function rolaDirectGatewayRule(settings: ReturnType<typeof parseRolaExitS
   return `AND,((${endpoint}),(DST-PORT,${settings.port})),DIRECT`;
 }
 
-function residentialCountryGroups(settings: ReturnType<typeof parseRolaExitSettings>): string[] {
+function residentialCountryGroups(settings: { country: string; name: string }): string[] {
   return Object.entries(countryGroupNames).flatMap(([code, name]) => {
     const group = mihomoProxyGroups.find(group => group.name === name);
     if (!group || !("filter" in group) || !group.filter) return [];
@@ -325,9 +345,10 @@ export function prepareRolaProfile(source: string, value: unknown) {
   const nodeName = settings.name;
   const groupName = settings.groupName;
   const exits = [settings, ...settings.additionalExits];
-  const residentialNames = exits.map(exit => exit.name);
+  const residentialExits = [...exits, ...settings.residentialNodeNames.map(name => ({ name, country: "" }))];
+  const residentialNames = residentialExits.map(exit => exit.name);
   if (residentialNames.some(name => ["DIRECT", "REJECT", "COMPATIBLE", groupName].includes(name))) throw new Error("Rola node name is reserved");
-  const exitPatterns = exits.map(exit => `^${exit.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`);
+  const exitPatterns = residentialExits.map(exit => `^${exit.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`);
   const nodePattern = exitPatterns.join("|");
   const document = parseDocument(source, { prettyErrors: false, uniqueKeys: true });
   if (document.errors.length || !isMap(document.contents)) throw new Error("Base profile is not valid YAML");
@@ -370,11 +391,12 @@ export function prepareRolaProfile(source: string, value: unknown) {
   for (const item of [...proxies.items, ...groups.items]) {
     if (!isMap(item) || typeof item.get("name") !== "string") throw new Error("Unsupported proxy/group structure in base profile");
     const name = String(item.get("name"));
-    if (names.has(name) || [...residentialNames, groupName].includes(name)) throw new Error("Duplicate or reserved Rola name in base profile; regenerate from the original base");
+    if (names.has(name) || exits.some(exit => exit.name === name) || name === groupName) throw new Error("Duplicate or reserved Rola name in base profile; regenerate from the original base");
     names.add(name);
   }
+  validateResidentialReferences(base.proxies as Array<Record<string, unknown>>, settings.residentialNodeNames, encryptedUpstream);
   const node = Array.isArray(base.proxies) ? base.proxies.find(item => item?.name === settings.upstreamNode) : undefined;
-  if (settings.connectionMode === "chain" && (!node || ["DIRECT", "REJECT", "COMPATIBLE", nodeName, groupName].includes(settings.upstreamNode) || !encryptedUpstream(node))) {
+  if (settings.connectionMode === "chain" && (!node || ["DIRECT", "REJECT", "COMPATIBLE", nodeName, groupName, ...settings.residentialNodeNames].includes(settings.upstreamNode) || !encryptedUpstream(node))) {
     throw new Error("Choose one concrete encrypted upstream node, with certificate verification enabled and no existing dialer-proxy; groups and DIRECT are not allowed");
   }
   if (exits.some(exit => protectedHost(exit.server.toLowerCase(), settings.rules)) || (node && protectedHost(String(node.server).toLowerCase(), settings.rules))) {
@@ -416,20 +438,22 @@ export function prepareRolaProfile(source: string, value: unknown) {
   const dnsDefaults = dnsGroup ? residentialNodes.map(node => residentialDnsDefault(dnsGroup, base.proxies as Array<Record<string, unknown>>, node)) : [];
   const dnsDefault = dnsDefaults[0] && dnsDefaults.every(value => value === dnsDefaults[0]) ? dnsDefaults[0] : undefined;
   for (const node of residentialNodes) proxies.add(document.createNode(node));
-  // Region membership follows geography; other include-all pools must not start testing the metered exit.
+  // Region membership follows geography; exclude residential exits from other include-all selection pools.
   for (const group of groups.items) {
     if (!isMap(group)) continue;
     if (group.get("name") === dnsProxyGroupName && dnsDefault) {
       group.set("default-selected", dnsDefault);
       continue;
     }
-    const countryExits = exits.map((exit, index) => ({ exit, pattern: exitPatterns[index] }))
+    const countryExits = residentialExits.map((exit, index) => ({ exit, pattern: exitPatterns[index] }))
       .filter(({ exit }) => residentialCountryGroups(exit).includes(String(group.get("name"))));
     if (countryExits.length) {
       if (!group.get("include-all") && !group.get("include-all-proxies")) {
         const members = group.get("proxies", true);
         if (members !== undefined && !isSeq(members)) throw new Error("Invalid country policy group");
-        if (isSeq(members)) for (const { exit } of countryExits) members.add(exit.name);
+        if (isSeq(members)) for (const { exit } of countryExits) {
+          if (!members.items.some(member => isScalar(member) && member.value === exit.name)) members.add(exit.name);
+        }
         else group.set("proxies", document.createNode(countryExits.map(({ exit }) => exit.name)));
       }
       const filter = group.get("filter");
@@ -443,7 +467,8 @@ export function prepareRolaProfile(source: string, value: unknown) {
       }
       continue;
     }
-    if (!group.get("include-all") && !group.get("include-all-proxies")) continue;
+    if (!group.get("include-all") && !group.get("include-all-proxies")
+      && !(settings.residentialNodeNames.length && ["url-test", "fallback", "load-balance"].includes(String(group.get("type"))))) continue;
     const filter = group.get("exclude-filter");
     if (filter !== undefined && typeof filter !== "string") throw new Error("Invalid group exclude-filter");
     group.set("exclude-filter", filter ? `${filter}|${nodePattern}` : nodePattern);
@@ -523,11 +548,13 @@ export function createRolaOverride(source: string, value: unknown) {
   const patch = {
     claudeMigration: claudePolicyMigration(record(parseDocument(source).toJS({ maxAliasCount: 100 }), "Invalid base profile")),
     connectionMode: settings.connectionMode,
+    residentialNodeNames: settings.residentialNodeNames,
     upstream: settings.upstreamNode, nodes: output.proxies.slice(-exits.length), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
     rules: output.rules.slice(0, settings.rules.length * 2 + gatewayRules.length), domains: settings.rules, gatewayRules,
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
-    exits: exits.map(exit => ({ name: exit.name, pattern: `^${exit.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`, countryGroups: residentialCountryGroups(exit) })),
+    exits: [...exits, ...settings.residentialNodeNames.map(name => ({ name, country: "" }))]
+      .map(exit => ({ name: exit.name, pattern: `^${exit.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`, countryGroups: residentialCountryGroups(exit) })),
     dnsGroupName: dnsProxyGroupName,
     dnsGroupChoices: [...Object.keys(countryGroupNames), ...Object.values(countryGroupNames), settings.groupName], metadataFilter,
     selectableGroups: residentialSelectableGroups, policyGroup: prepared.summary.policyGroup,
@@ -538,14 +565,16 @@ const privateRola = ${JSON.stringify(patch)};
 function main(config) {
   const data = privateRola;
   const safe = ${encryptedUpstream.toString()};
+  const validateReferences = ${validateResidentialReferences.toString()};
   const overlaps = ${protectedHost.toString()};
   const dnsDefault = ${residentialDnsDefault.toString()};
   const dnsGroupChoices = ${residentialDnsGroupChoices.toString()};
   if (config.mode !== 'rule' || !Array.isArray(config.proxies) || !Array.isArray(config['proxy-groups']) || !Array.isArray(config.rules) || !config.dns?.enable) throw new Error('Rola: complete rule-mode base required');
   const nodes = config.proxies.filter(node => node.name === data.upstream);
-  if (data.connectionMode === 'chain' && (nodes.length !== 1 || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains))) throw new Error('Rola: selected first hop is missing or unsafe');
+  if (data.connectionMode === 'chain' && (nodes.length !== 1 || data.residentialNodeNames.includes(data.upstream) || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains))) throw new Error('Rola: selected first hop is missing or unsafe');
   const names = config.proxies.concat(config['proxy-groups']).map(item => item.name);
   if (new Set(names).size !== names.length || data.nodes.some(node => names.includes(node.name)) || names.includes(data.group.name)) throw new Error('Rola: duplicate names or overlay already applied');
+  validateReferences(config.proxies, data.residentialNodeNames, safe);
   if (data.policyGroup !== data.group.name && !config['proxy-groups'].some(group => group.name === data.policyGroup && group.type === 'select')) throw new Error('Rola: selected policy group is missing');
   if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');
   const next = JSON.parse(JSON.stringify(config));
@@ -574,7 +603,7 @@ function main(config) {
     if (countryExits.length) {
       if (!group['include-all'] && !group['include-all-proxies']) {
         if (group.proxies !== undefined && !Array.isArray(group.proxies)) throw new Error('Rola: invalid country policy group');
-        group.proxies = [...(group.proxies || []), ...countryExits.map(exit => exit.name)];
+        group.proxies = [...new Set([...(group.proxies || []), ...countryExits.map(exit => exit.name)])];
       }
       if (group.filter !== undefined && typeof group.filter !== 'string') throw new Error('Rola: invalid country group filter');
       if (group.filter) group.filter += '|' + countryExits.map(exit => exit.pattern).join('|');
@@ -585,7 +614,7 @@ function main(config) {
       }
       continue;
     }
-    if (!group['include-all'] && !group['include-all-proxies']) continue;
+    if (!group['include-all'] && !group['include-all-proxies'] && !(data.residentialNodeNames.length && ['url-test', 'fallback', 'load-balance'].includes(group.type))) continue;
     if (group['exclude-filter'] !== undefined && typeof group['exclude-filter'] !== 'string') throw new Error('Rola: invalid group filter');
     group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|' + excludedNodePattern : excludedNodePattern;
   }

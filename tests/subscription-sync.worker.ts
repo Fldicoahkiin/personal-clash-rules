@@ -1,6 +1,6 @@
 import { exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 
 function input() {
   return {
@@ -16,11 +16,37 @@ function input() {
     }] },
   };
 }
-const post = (body: unknown) => exports.default.fetch("https://example.com/api/subscriptions/sync", {
-  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+const post = (body: unknown, clientIp?: string) => exports.default.fetch("https://example.com/api/subscriptions/sync", {
+  method: "POST", headers: { "Content-Type": "application/json", ...(clientIp ? { "CF-Connecting-IP": clientIp } : {}) }, body: JSON.stringify(body),
 });
 
 describe("locally read, cloud distributed subscriptions", () => {
+  it("persists inline Reality YAML fields across managed refreshes without changing airport nodes", async () => {
+    const body = input();
+    const relays = ["203.0.113.10", "203.0.113.11"].map((ip, index) => ({
+      name: `[Rola] 美国 · ${ip} · VPS`, type: "vless", server: "203.0.113.20", port: 443,
+      uuid: `00000000-0000-4000-8000-00000000000${index + 1}`, tls: true, "skip-cert-verify": false,
+      network: "tcp", flow: "xtls-rprx-vision", servername: "tls.example", "client-fingerprint": "chrome",
+      "reality-opts": { "public-key": "example", "short-id": "12345678", "support-x25519mlkem768": true },
+    }));
+    body.config.sources.push({ type: "node", value: stringify({ proxies: relays }) });
+    const sync = () => post(body, "192.0.2.200");
+    const created = await sync();
+    expect(created.status).toBe(201);
+    const { url } = await created.json<{ url: string }>();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      body.snapshot.readAt = new Date(Date.now() - (1 - attempt) * 61_000).toISOString();
+      expect((await sync()).status).toBe(200);
+      const profile = parse(await (await exports.default.fetch(url)).text());
+      expect(profile.proxies).toHaveLength(4);
+      for (const relay of relays) expect(profile.proxies.find((node: { name: string }) => node.name === relay.name)).toMatchObject(relay);
+      expect(profile.proxies.find((node: { type: string }) => node.type === "trojan")["reality-opts"]).toBeUndefined();
+    }
+    body.config.sources.at(-1)!.value = "proxies: []";
+    expect((await sync()).status).toBe(422);
+    expect(parse(await (await exports.default.fetch(url)).text()).proxies).toHaveLength(4);
+  });
+
   it("uses one protected link for nodes, quota and later updates without fetching the airport from CF", async () => {
     const spy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("CF must not read this source"));
     try {

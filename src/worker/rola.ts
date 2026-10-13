@@ -145,7 +145,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         const additions = input.additionalExits === undefined ? [] : input.additionalExits;
         if (!Array.isArray(additions) || additions.length > 7) throw new ApiError(400, "invalid_rola_additional_exits", "其他家宽必须是最多 7 项的列表。");
         const settings = { ...exitFields(input.exit), additionalExits: additions.map(exitFields), connectionMode: input.connectionMode,
-          groupName: input.groupName, policyGroup: input.policyGroup, upstreamNode: input.upstreamNode, rules: input.rules, dns: input.dns };
+          groupName: input.groupName, policyGroup: input.policyGroup, residentialNodeNames: input.residentialNodeNames, upstreamNode: input.upstreamNode, rules: input.rules, dns: input.dns };
         const generated = prepare(preview.profile, settings);
         // Only validated, explicitly selected fields can enter a persistent cloud record.
         parseRolaSettings(settings);
@@ -185,7 +185,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       // new nodes must invalidate the fast path even during its short freshness window.
       const synchronized = chain.source.kind === "local-sync" ? await readSynchronizedSubscription(env, chain.source.id) : undefined;
       const freshOutput = synchronized ? { freshForMs: 6 * 3_600_000,
-        revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, synchronized])) } : undefined;
+        revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, chain.settings, synchronized])) } : undefined;
       const recoveryId = `rola:${match[1]}${target === "mihomo-config" ? "" : `:${target}`}`;
       const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, recoveryId, async () => {
         let profile: string;

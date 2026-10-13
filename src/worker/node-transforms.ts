@@ -46,6 +46,7 @@ export const defaultNodeSettings: NodeSettings = {
 const maximumFilterLength = 256;
 const maximumRenameLength = 128;
 const maximumRenameRules = 12;
+const platformNamePrefix = /^\[[\p{L}\p{N}._-][\p{L}\p{N} ._-]{0,23}\]\s+/u;
 const sortModes = new Set<NodeSortMode>(["source", "name-asc", "name-desc"]);
 const nameCollator = new Intl.Collator("en", {
   numeric: true,
@@ -135,7 +136,7 @@ export function parseNodeSettings(input: Record<string, unknown>): NodeSettings 
 }
 
 function withCountryFlag(name: string): string {
-  if (/^\p{Regional_Indicator}{2}\s*/u.test(name)) {
+  if (/^\p{Regional_Indicator}{2}\s*/u.test(name) || platformNamePrefix.test(name)) {
     return name;
   }
   const match = countryFlagRules.find((rule) => new RegExp(rule.filter, "iu").test(name));
@@ -146,6 +147,8 @@ function withNodeType(name: string, type: unknown): string {
   if (typeof type !== "string" || !type.trim()) {
     return name;
   }
+  const platform = name.match(platformNamePrefix);
+  if (platform) return `${platform[0]}[${type.toUpperCase()}] ${name.slice(platform[0].length)}`;
   const flag = name.match(/^(\p{Regional_Indicator}{2})\s*/u);
   const withoutFlag = flag ? name.slice(flag[0].length) : name;
   const typed = `[${type.toUpperCase()}] ${withoutFlag}`;
