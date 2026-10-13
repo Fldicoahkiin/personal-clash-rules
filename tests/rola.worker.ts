@@ -1,4 +1,4 @@
-import { exports } from "cloudflare:workers";
+import { env, exports } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSourceCache } from "./helpers/source-cache";
 import { parse } from "yaml";
@@ -214,6 +214,10 @@ describe("cloud Rola subscriptions", () => {
       expect(refreshed.headers.get("x-subscription-synced-at")).toBe(syncedAt);
       expect(refreshed.headers.get("x-subscription-refresh-status")).toBe("sync-overdue");
       expect(parse(await refreshed.text()).proxies.at(-1)).toMatchObject({ "dialer-proxy": "Airport", type: "socks5" });
+      const cachedOverdue = await fetchClient(url);
+      expect(cachedOverdue.headers.get("x-subscription-render-cache")).toBe("hit");
+      expect(cachedOverdue.headers.get("x-subscription-refresh-status")).toBe("sync-overdue");
+      expect(cachedOverdue.headers.get("x-subscription-last-success")).toBe(syncedAt);
       const update = {
         id: syncId, managementToken: "test-token-".padEnd(32, "0"), target: "clash-party-config",
         config: { sources: [{ type: "subscription", value: "https://airport.example/private-source" }] },
@@ -223,6 +227,16 @@ describe("cloud Rola subscriptions", () => {
       const updated = await fetchClient(url);
       expect(updated.headers.get("subscription-userinfo")).toContain("download=40");
       expect(parse(await updated.text()).proxies[0].password).toBe("updated-secret");
+      const cached = await fetchClient(url, { method: "HEAD" });
+      expect(cached.headers.get("x-subscription-refresh-status")).toBe("cached");
+      expect(cached.headers.get("subscription-userinfo")).toContain("download=40");
+      expect(await cached.text()).toBe("");
+      const sourceKey = `subscription:${syncId}`;
+      const sourceRecord = await env.SUBSCRIPTIONS.get(sourceKey);
+      expect(sourceRecord).not.toBeNull();
+      await env.SUBSCRIPTIONS.delete(sourceKey);
+      expect((await fetchClient(url)).status).toBe(404);
+      await env.SUBSCRIPTIONS.put(sourceKey, sourceRecord!);
       update.snapshot.readAt = new Date().toISOString();
       update.snapshot.sources[0].content = uri.replace("#Airport", "#Withdrawn");
       expect((await post("/api/subscriptions/sync", update)).status).toBe(200);

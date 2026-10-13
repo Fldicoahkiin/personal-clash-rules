@@ -4,7 +4,7 @@ import { parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstr
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store";
-import { buildSubscription, buildSynchronizedSubscription, readRequestObject } from "./subscriptions";
+import { buildSubscription, buildSynchronizedSubscription, readRequestObject, readSynchronizedSubscription } from "./subscriptions";
 import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscription-recovery";
 import { renderRolaTarget, requireRolaTarget, rolaRequestTarget, type RolaTarget } from "./rola-target";
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
@@ -181,29 +181,33 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       const chain = await read<Chain>(env, "chain", match[1]);
       const target = rolaRequestTarget(request, url);
       requireRolaTarget(chain.settings, target);
-      let synchronized: Awaited<ReturnType<typeof buildSynchronizedSubscription>> | undefined;
+      // Validate the source before consulting rendered output: removal, quota changes and
+      // new nodes must invalidate the fast path even during its short freshness window.
+      const synchronized = chain.source.kind === "local-sync" ? await readSynchronizedSubscription(env, chain.source.id) : undefined;
+      const freshOutput = synchronized ? { freshForMs: 6 * 3_600_000,
+        revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, synchronized])) } : undefined;
       const recoveryId = `rola:${match[1]}${target === "mihomo-config" ? "" : `:${target}`}`;
       const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, recoveryId, async () => {
         let profile: string;
         let userinfo: string | null = null;
         if (chain.source.kind === "snapshot") profile = chain.source.profile;
         else {
-          const built = chain.source.kind === "local-sync"
-            ? synchronized = await buildSynchronizedSubscription(env, chain.source.id, chain.target, { sourceBytes, nodes: nodeLimit })
-            : await buildSubscription(env, { ...chain.source.config, target: chain.target }, { sourceBytes, nodes: nodeLimit });
+          const config = chain.source.kind === "convert" ? chain.source.config : synchronized?.config;
+          if (!config) throw new ApiError(400, "sync_base_required", "同步基础订阅不存在。");
+          const built = await buildSubscription(env, { ...config, target: chain.target }, { sourceBytes, nodes: nodeLimit }, synchronized?.localSync.sources);
           profile = built.generated.content;
           if (built.generated.usage.combined) userinfo = formatSubscriptionUserinfo(built.generated.usage.combined);
         }
         const content = await renderRolaTarget(env, prepare(profile, chain.settings), chain.settings, target);
         if (encoder.encode(content).length > requestBytes) throw new ApiError(413, "rola_output_too_large", "家宽输出不能超过 512 KiB，请减少节点或规则。");
         const rendered = profileResponse(chain, content, userinfo, target);
-        if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.syncedAt);
+        if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.localSync.readAt);
         return rendered;
-      });
+      }, freshOutput);
       const syncedAt = response.headers.get("X-Subscription-Synced-At");
       if (syncedAt) response.headers.set("X-Subscription-Last-Success", syncedAt);
       if (synchronized) {
-        if (Date.now() - Date.parse(synchronized.syncedAt) > synchronized.config.updateIntervalHours * 3_600_000) {
+        if (Date.now() - Date.parse(synchronized.localSync.readAt) > synchronized.config.updateIntervalHours * 3_600_000) {
           response.headers.set("X-Subscription-Refresh-Status", "sync-overdue");
           response.headers.set("Warning", '110 - "Local synchronization is overdue; nodes and quota are from the last successful sync"');
         }

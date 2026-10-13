@@ -632,9 +632,14 @@ async function readSubscriptionConfig(
   }
 }
 
-export async function buildSynchronizedSubscription(env: SubscriptionEnv, id: string, target: OutputTarget, resourceLimits?: SourceResourceLimits) {
+export async function readSynchronizedSubscription(env: SubscriptionEnv, id: string) {
   const { config, localSync } = await readSubscriptionConfig(id, env);
   if (!localSync) throw new ApiError(400, "sync_base_required", "This base must be a locally synchronized subscription");
+  return { config, localSync };
+}
+
+export async function buildSynchronizedSubscription(env: SubscriptionEnv, id: string, target: OutputTarget, resourceLimits?: SourceResourceLimits) {
+  const { config, localSync } = await readSynchronizedSubscription(env, id);
   const generated = await generateTarget(env, config, target, resourceLimits, localSync.sources);
   return { config, generated, target, profileName: displayProfileName(config, generated.inheritedName), syncedAt: localSync.readAt };
 }
