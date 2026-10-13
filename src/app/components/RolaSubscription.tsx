@@ -3,11 +3,11 @@ import { type FC, type FormEvent, useReducer, useState } from "react";
 import { RolaCloudSubscription } from "./RolaCloudSubscription";
 
 import { SubscriptionApiError, subscriptionErrorText, type ConvertedSubscription, type OutputTarget } from "../features/subscriptions/api";
-import { additionalRolaExitError, createRolaCloudBase, maxAdditionalRolaExits, requestRola, rolaExitLabel, rolaLocalOrigin, type RolaExitDraft, type RolaPreview, type RolaResult, type RolaSetup } from "../features/subscriptions/rola-api";
+import { additionalRolaExitError, createRolaCloudBase, maxAdditionalRolaExits, requestRola, rolaExitLabel, rolaLocalOrigin, rolaPlatformError, type RolaExitDraft, type RolaPreview, type RolaResult, type RolaSetup } from "../features/subscriptions/rola-api";
 import { parseSubscriptionInput } from "../lib/subscription-input";
 import styles from "./RolaSubscription.module.css";
 
-const blankExit: RolaExitDraft = { authMode: "literal", name: "", protocol: "socks5", server: "", port: 1080, account: "", password: "", country: "", sessionId: "main", sessionMinutes: 120 };
+const blankExit: RolaExitDraft = { authMode: "literal", name: "", platform: "Rola", protocol: "socks5", server: "", port: 1080, account: "", password: "", country: "", sessionId: "main", sessionMinutes: 120 };
 type State = {
   setup: RolaSetup | null; busy: string; error: string; notice: string;
   source: string; name: string; target: OutputTarget; userAgent: string; preview: RolaPreview | null;
@@ -59,6 +59,8 @@ const LocalRolaSubscription: FC = () => {
   async function saveExit() {
     await run("保存出口", async () => {
       if (!state.draft || !state.setup) return;
+      const invalidPlatform = rolaPlatformError(state.draft.platform);
+      if (invalidPlatform) throw new Error(invalidPlatform);
       const exit = await requestRola<RolaSetup["exits"][number]>("/exits", state.draft);
       patch({ setup: { ...state.setup, exits: [...state.setup.exits.filter(item => item.id !== exit.id), exit] }, exitId: exit.id, additionalExitIds: state.additionalExitIds.filter(id => id !== exit.id), draft: null, notice: "出口已保存在本机；账号密码输入已清空。已生成的旧订阅不会随之改变。" });
     });
@@ -88,6 +90,7 @@ const LocalRolaSubscription: FC = () => {
   const selectedExit = state.setup?.exits.find(exit => exit.id === state.exitId);
   const selectableCount = state.preview?.nodes.filter(node => node.selectable).length || 0;
   const extrasError = additionalRolaExitError(state.connectionMode, state.additionalExitIds.length);
+  const platformError = rolaPlatformError(state.draft?.platform);
   return <div className={styles.workspace}>
     <div className={styles.privacy}>
       <LockKey aria-hidden="true" size={22} />
@@ -125,6 +128,7 @@ const LocalRolaSubscription: FC = () => {
           {state.draft ? <div className={styles.editor}>
             <div className={styles.grid}>
               <label className="field"><span>账号格式</span><select value={state.draft.authMode} onChange={event => editExit({ authMode: event.target.value as "literal" | "dynamic", country: event.target.value === "dynamic" ? "us" : "" })}><option value="literal">现成节点 · 用户名原样使用</option><option value="dynamic">Rola 动态住宅 · 拼接国家与会话</option></select></label>
+              <label className="field"><span>平台（留空默认 Rola）</span><input value={state.draft.platform ?? "Rola"} maxLength={24} autoComplete="off" spellCheck={false} aria-invalid={Boolean(platformError)} onChange={event => editExit({ platform: event.target.value })} /></label>
               <label className="field"><span>出口 IP（可选）</span><input value={state.draft.exitIp ?? ""} onChange={event => editExit({ exitIp: event.target.value })} maxLength={45} autoComplete="off" spellCheck={false} placeholder="供应商或检测显示的出口 IP" /></label>
               <label className="field"><span>出口区域（与 IP 一起填写）</span><input value={state.draft.region ?? ""} onChange={event => editExit({ region: event.target.value })} maxLength={32} placeholder="例如：美国 Las Vegas" /></label>
               <label className="field"><span>备用备注（未填 IP／区域时使用）</span><input value={state.draft.name} onChange={event => editExit({ name: event.target.value })} maxLength={64} /></label>
@@ -137,9 +141,10 @@ const LocalRolaSubscription: FC = () => {
               {state.draft.authMode === "dynamic" ? <><label className="field"><span>会话标识</span><input value={state.draft.sessionId} onChange={event => editExit({ sessionId: event.target.value })} maxLength={32} /></label>
               <label className="field"><span>会话保持分钟数</span><input type="number" min={1} max={120} value={state.draft.sessionMinutes} onChange={event => editExit({ sessionMinutes: Number(event.target.value) })} /></label></> : null}
             </div>
+            {platformError ? <p className="field-error" role="alert">{platformError}</p> : null}
             <p className={styles.note}>节点名称：{Boolean(state.draft.exitIp) !== Boolean(state.draft.region) ? "请补齐出口 IP 和区域" : rolaExitLabel(state.draft)}。出口 IP 只用于备注，不会替代下方接入网关；请填写实际检测或供应商确认的信息，不自动推断地区。旧订阅不会自动改名。</p>
             <p className={styles.note}>{state.draft.authMode === "literal" ? "现成节点的账号与密码原样使用，不追加国家或会话后缀，也不据此推断是否为固定、独享 IP。" : "填动态住宅的基础账号，不带国家或会话后缀。相同会话会尽量保持出口，1–120 分钟，不代表固定或独享 IP。"}保存不测试 Rola 连通性，也不扣 Rola 测试流量。</p>
-            <div className={styles.actions}><button className="button" type="button" onClick={() => void saveExit()}>保存到本机</button><button className="button" type="button" onClick={() => change({ draft: null })}>取消编辑</button></div>
+            <div className={styles.actions}><button className="button" type="button" disabled={Boolean(platformError)} onClick={() => void saveExit()}>保存到本机</button><button className="button" type="button" onClick={() => change({ draft: null })}>取消编辑</button></div>
           </div> : null}
           <div className={styles.editor} role="group" aria-label="附加家宽出口">
             <h3>附加家宽出口（{state.additionalExitIds.length}/{maxAdditionalRolaExits}）</h3>

@@ -18,6 +18,7 @@ export const rolaRulePaths = ["ai-anthropic", "ai-openai"].map(
 
 export function createRolaTemplate(ruleLists: string[]) {
   return {
+    platform: "Rola",
     authMode: "dynamic",
     protocol: "socks5",
     server: "",
@@ -68,6 +69,14 @@ function ipDoh(value: unknown): value is string {
 
 function parseRolaExitSettings(value: unknown) {
   const input = record(value, "Rola settings must be an object");
+  const platformInput = input.platform === undefined ? "Rola" : input.platform;
+  if (typeof platformInput !== "string" || /[\u0000-\u001f\u007f]/u.test(platformInput)) {
+    throw new RolaExitMetadataError("平台名称需为文字、数字、空格、点、下划线或连字符，不能包含控制字符。");
+  }
+  const platform = platformInput.trim() || "Rola";
+  if (platform.length > 24 || !/^[\p{L}\p{N} ._-]+$/u.test(platform)) {
+    throw new RolaExitMetadataError("平台名称最多 24 字，仅支持文字、数字、空格、点、下划线和连字符。");
+  }
   const exitIp = input.exitIp === undefined || input.exitIp === "" ? undefined : input.exitIp;
   const region = input.region === undefined || input.region === "" ? undefined : input.region;
   if ((exitIp === undefined) !== (region === undefined)) throw new RolaExitMetadataError("出口 IP 和区域需同时填写；都留空时保留原备注。");
@@ -118,7 +127,8 @@ function parseRolaExitSettings(value: unknown) {
     groupName: selectedGroup,
     policyGroup: input.policyGroup === undefined ? undefined : input.policyGroup === "AI" ? "AI" : selectedGroup,
     authMode,
-    name: exitIp && exitRegion ? `${exitIp} · ${exitRegion}` : input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
+    name: exitIp && exitRegion ? `[${platform}] ${exitRegion} · ${exitIp}` : input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
+    platform,
     exitIp: typeof exitIp === "string" ? exitIp : undefined,
     region: exitRegion,
     protocol: input.protocol,

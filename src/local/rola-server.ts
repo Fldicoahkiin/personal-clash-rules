@@ -17,7 +17,7 @@ type Exit = {
   authMode?: "literal" | "dynamic";
   id: string; name: string; protocol: "http" | "socks5"; server: string; port: number;
   account: string; password: string; country: string; sessionId: string; sessionMinutes: number;
-  exitIp?: string; region?: string;
+  exitIp?: string; region?: string; platform?: string;
 };
 type Chain = { baseId: string; target: string; exit: Exit; additionalExits?: Exit[]; connectionMode?: unknown; groupName?: unknown; policyGroup?: unknown; upstreamNode: string; rules: string[]; dns: string[] };
 const idPattern = /^[A-Za-z0-9_-]{16}$/u;
@@ -53,7 +53,7 @@ async function body(request: Request) {
 function metadata(exit: Exit) {
   // Account and password are write-only. The browser cannot read saved credentials back.
   const { id, name, protocol, server, port, country, sessionId, sessionMinutes, exitIp, region } = exit;
-  return { id, name, protocol, server, port, country, sessionId, sessionMinutes, exitIp, region, authMode: exit.authMode ?? "dynamic" };
+  return { id, name, protocol, server, port, country, sessionId, sessionMinutes, exitIp, region, platform: exit.platform ?? "Rola", authMode: exit.authMode ?? "dynamic" };
 }
 function json(value: unknown, status = 200) { return Response.json(value, { status, headers: { "Cache-Control": "no-store" } }); }
 
@@ -123,7 +123,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         const exit: Exit = {
           authMode: value.authMode === "literal" ? "literal" : "dynamic",
           id: existing?.id || randomBytes(12).toString("base64url"), name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : validated.name,
-          exitIp: validated.exitIp, region: validated.region,
+          exitIp: validated.exitIp, region: validated.region, platform: validated.platform,
           protocol: value.protocol as Exit["protocol"], server: String(value.server), port: Number(value.port),
           account: String(value.account), password: String(value.password), country: String(value.country ?? "").toLowerCase(),
           sessionId: String(value.sessionId ?? ""), sessionMinutes: Number(value.sessionMinutes ?? 0),

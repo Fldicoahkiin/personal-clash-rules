@@ -82,15 +82,15 @@ describe("cloud Rola subscriptions", () => {
     expect((await post("/api/rola/chains", { ...input, connectionMode: "chain", upstreamNode: "Airport", additionalExits: [second] })).status).toBe(400);
   });
 
-  it("preserves IP and region names in cloud refreshes and the paired phone config", async () => {
+  it.each([undefined, "Example ISP"])("preserves platform %s, region and IP names in cloud refreshes and the paired phone config", async platform => {
     const p = await preview();
-    const metadata = { exitIp: "203.0.113.24", region: "美国 Las Vegas" };
+    const metadata = { exitIp: "203.0.113.24", region: "美国 Las Vegas", platform };
     const input = { baseId: p.baseId, exit: { ...exit, ...metadata }, connectionMode: "direct", rules, dns };
     const response = await post("/api/rola/chains", input);
     expect(response.status).toBe(201);
     const created = await response.json<{ url: string; universalUrl: string; shadowrocketConfigUrl: string }>();
     const profile = parse(await (await fetchClient(created.url)).text());
-    const name = "203.0.113.24 · 美国 Las Vegas";
+    const name = `[${platform ?? "Rola"}] 美国 Las Vegas · 203.0.113.24`;
     expect(profile.proxies.at(-1)).toMatchObject({ name, server: exit.server, port: exit.port });
     const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
     expect(await phone.text()).toContain(`#${encodeURIComponent(name)}`);
@@ -100,6 +100,9 @@ describe("cloud Rola subscriptions", () => {
     const invalid = await post("/api/rola/chains", { ...input, exit: { ...exit, exitIp: metadata.exitIp } });
     expect(invalid.status).toBe(400);
     expect(await invalid.json()).toMatchObject({ error: "invalid_rola_exit_metadata", message: "出口 IP 和区域需同时填写；都留空时保留原备注。" });
+    const unsafe = await post("/api/rola/chains", { ...input, exit: { ...exit, ...metadata, platform: "Bad[Rule]" } });
+    expect(unsafe.status).toBe(400);
+    expect(await unsafe.json()).toMatchObject({ error: "invalid_rola_exit_metadata" });
   });
 
   // Twelve sequential Worker requests exercise KV-backed rendering, recovery and revocation in one lifecycle.

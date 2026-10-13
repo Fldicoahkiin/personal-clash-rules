@@ -36,7 +36,7 @@ function exitFields(value: unknown) {
     throw new ApiError(400, "invalid_rola_additional_exits", "家宽出口不能嵌套或单独指定机场串联；接入方式由整份订阅统一选择。");
   }
   return { name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
-    country: exit.country, sessionId: exit.sessionId, sessionMinutes: exit.sessionMinutes, exitIp: exit.exitIp, region: exit.region };
+    country: exit.country, sessionId: exit.sessionId, sessionMinutes: exit.sessionMinutes, exitIp: exit.exitIp, region: exit.region, platform: exit.platform };
 }
 function boundedProfile(profile: string) {
   if (encoder.encode(profile).length > profileBytes) throw new ApiError(413, "rola_profile_too_large", "上传快照或转换后的基础配置不能超过 256 KiB，请减少节点或规则。");

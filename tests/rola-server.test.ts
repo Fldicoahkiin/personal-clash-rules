@@ -75,7 +75,7 @@ describe("local Rola web workflow", () => {
 
   it("round-trips exit metadata without exposing credentials or changing the gateway", async () => {
     const f = await fixture();
-    const metadata = { exitIp: "203.0.113.24", region: "美国 Las Vegas" };
+    const metadata = { exitIp: "203.0.113.24", region: "美国 Las Vegas", platform: "Example ISP" };
     const saved = await (await f.call("/api/local/rola/exits", { ...exit, ...metadata })).json() as { id: string };
     expect(saved).toMatchObject({ ...metadata, name: exit.name, server: exit.server });
     expect(JSON.stringify(saved)).not.toMatch(/privateaccount|privatepassword/);
@@ -87,10 +87,13 @@ describe("local Rola web workflow", () => {
     expect(result.status).toBe(201);
     const { url } = await result.json() as { url: string };
     const profile = parse(await (await f.call(new URL(url).pathname)).text());
-    expect(profile.proxies.at(-1)).toMatchObject({ name: "203.0.113.24 · 美国 Las Vegas", server: exit.server });
+    expect(profile.proxies.at(-1)).toMatchObject({ name: "[Example ISP] 美国 Las Vegas · 203.0.113.24", server: exit.server });
     const invalid = await f.call("/api/local/rola/exits", { ...exit, exitIp: metadata.exitIp });
     expect(invalid.status).toBe(400);
     expect(await invalid.json()).toMatchObject({ error: "invalid_rola_exit_metadata", message: "出口 IP 和区域需同时填写；都留空时保留原备注。" });
+    const unsafe = await f.call("/api/local/rola/exits", { ...exit, ...metadata, platform: "Bad[Rule]" });
+    expect(unsafe.status).toBe(400);
+    expect(await unsafe.json()).toMatchObject({ error: "invalid_rola_exit_metadata" });
   });
 
   it("persists explicit direct access and a private group in both YAML and local override", async () => {

@@ -97,9 +97,9 @@ describe("local Rola preparation", () => {
     expect(() => parseRolaSettings({ ...first, connectionMode: "chain", upstreamNode: "Airport", additionalExits: [second] })).toThrow("直接接入");
   });
 
-  it.each(["203.0.113.24", "2001:db8::24"])("uses exit IP %s and region consistently without replacing the gateway", exitIp => {
-    const input = { ...settings, connectionMode: "direct", upstreamNode: "", name: "Existing note", exitIp, region: " 美国 Las Vegas " };
-    const expectedName = `${exitIp} · 美国 Las Vegas`;
+  it.each([["203.0.113.24", undefined], ["2001:db8::24", "Example ISP"]])("uses platform, region and exit IP %s consistently without replacing the gateway", (exitIp, platform) => {
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", name: "Existing note", exitIp, region: " 美国 Las Vegas ", platform };
+    const expectedName = `[${platform ?? "Rola"}] 美国 Las Vegas · ${exitIp}`;
     const profile = parse(prepareRolaProfile(source, input).profile);
     expect(profile.proxies.at(-1)).toMatchObject({ name: expectedName, server: settings.server, port: settings.port, "dialer-proxy": "DIRECT" });
     expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([expectedName]);
@@ -107,6 +107,19 @@ describe("local Rola preparation", () => {
     const overlaid = runInNewContext(`${createRolaOverride(source, input)}; main(config)`, { config: parse(source) });
     expect(overlaid.proxies.at(-1)).toEqual(profile.proxies.at(-1));
     expect(parseRolaSettings({ ...settings, name: "Existing note" }).name).toBe("Existing note");
+    expect(parseRolaSettings({ ...settings, name: "Existing note", platform: "Example ISP" }).name).toBe("Existing note");
+  });
+
+  it.each(["x".repeat(25), "Rola[US]", "Rola]\n[Rule]", "Rola, DIRECT", "Rola=direct", "Rola#route", "Rola;note", "Rola\"quote", "Rola'quote", "Rola&route", "Rola/US", "\nRola", 123])("rejects unsafe residential platform metadata %#", platform => {
+    expect(() => parseRolaSettings({ ...settings, platform, exitIp: "203.0.113.24", region: "美国" })).toThrow("平台");
+  });
+
+  it("defaults the platform and trims custom platform names without changing legacy node names", () => {
+    expect(parseRolaSettings(settings).platform).toBe("Rola");
+    expect(parseRolaSettings({ ...settings, platform: " " }).platform).toBe("Rola");
+    expect(parseRolaSettings({ ...settings, platform: "", name: "Existing note" }).name).toBe("Existing note");
+    expect(parseRolaSettings({ ...settings, platform: " Example ISP ", exitIp: "203.0.113.24", region: "美国" }).name).toBe("[Example ISP] 美国 · 203.0.113.24");
+    expect(parseRolaSettings({ ...settings, platform: "示例.住宅_2-ISP" }).platform).toBe("示例.住宅_2-ISP");
   });
 
   it.each([
