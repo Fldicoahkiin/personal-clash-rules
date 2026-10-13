@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
+import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, metadataFilter, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
 import { dnsProxyGroupName } from "../worker/mihomo-dns";
 
 const nodeName = "ROLA-RESIDENTIAL";
@@ -66,8 +66,18 @@ function ipDoh(value: unknown): value is string {
   } catch { return false; }
 }
 
-export function parseRolaSettings(value: unknown) {
+function parseRolaExitSettings(value: unknown) {
   const input = record(value, "Rola settings must be an object");
+  const exitIp = input.exitIp === undefined || input.exitIp === "" ? undefined : input.exitIp;
+  const region = input.region === undefined || input.region === "" ? undefined : input.region;
+  if ((exitIp === undefined) !== (region === undefined)) throw new RolaExitMetadataError("出口 IP 和区域需同时填写；都留空时保留原备注。");
+  if (exitIp !== undefined && (typeof exitIp !== "string" || !isIP(exitIp) || exitIp.includes("%"))) {
+    throw new RolaExitMetadataError("出口 IP 必须是完整 IPv4 或 IPv6 地址，不带端口、协议或网卡标识；不会替代接入网关。");
+  }
+  if (region !== undefined && (typeof region !== "string" || !region.trim() || region.length > 32 || /[\u0000-\u001f\u007f,=#;"'&]/u.test(region))) {
+    throw new RolaExitMetadataError("区域需为 1–32 字的地区名称，不能包含换行或逗号、等号等配置分隔符。");
+  }
+  const exitRegion = typeof region === "string" ? region.trim() : undefined;
   const connectionMode = input.connectionMode ?? "chain";
   if (connectionMode !== "chain" && connectionMode !== "direct") throw new Error("Choose chain or direct Rola access explicitly");
   if (connectionMode === "direct" && input.upstreamNode) throw new Error("Direct Rola access must not select an airport first hop");
@@ -108,7 +118,9 @@ export function parseRolaSettings(value: unknown) {
     groupName: selectedGroup,
     policyGroup: input.policyGroup === undefined ? undefined : input.policyGroup === "AI" ? "AI" : selectedGroup,
     authMode,
-    name: input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
+    name: exitIp && exitRegion ? `${exitIp} · ${exitRegion}` : input.name === undefined || input.name === "" ? nodeName : text(input.name, "Rola node name", 64),
+    exitIp: typeof exitIp === "string" ? exitIp : undefined,
+    region: exitRegion,
     protocol: input.protocol,
     server,
     port: Number(input.port),
@@ -120,6 +132,34 @@ export function parseRolaSettings(value: unknown) {
     country,
     sessionMinutes: authMode === "literal" ? null : Number(input.sessionMinutes),
   };
+}
+
+export class RolaExitMetadataError extends Error {}
+
+export function parseRolaSettings(value: unknown) {
+  const input = record(value, "Rola settings must be an object");
+  const settings = parseRolaExitSettings(input);
+  const additions = input.additionalExits === undefined ? [] : input.additionalExits;
+  if (!Array.isArray(additions) || additions.length > 7) throw new RolaExitMetadataError("最多可添加 7 个其他家宽出口。");
+  if (additions.length && settings.connectionMode !== "direct") throw new RolaExitMetadataError("多个家宽出口目前仅支持直接接入，不能与机场前置串联混用。");
+  const additionalExits = additions.map(value => {
+    const exit = record(value, "Additional Rola exit must be an object");
+    if (exit.authMode !== "literal" || exit.additionalExits !== undefined || (exit.connectionMode !== undefined && exit.connectionMode !== "direct")) {
+      throw new RolaExitMetadataError("其他家宽出口仅支持原样账号及直接接入，不能嵌套出口。");
+    }
+    return parseRolaExitSettings({ ...exit, connectionMode: "direct", upstreamNode: "", groupName: input.groupName,
+      policyGroup: input.policyGroup, rules: settings.rules, dns: settings.dns });
+  });
+  const names = new Set<string>();
+  const credentials = new Set<string>();
+  for (const exit of [settings, ...additionalExits]) {
+    const identity = JSON.stringify([exit.server.toLowerCase(), exit.port, exit.username, exit.password]);
+    if (names.has(exit.name)) throw new RolaExitMetadataError("家宽出口名称重复，请使用各自的出口 IP 和区域。");
+    if (credentials.has(identity)) throw new RolaExitMetadataError("家宽接入网关和凭据重复，未添加重复节点。");
+    names.add(exit.name);
+    credentials.add(identity);
+  }
+  return { ...settings, additionalExits };
 }
 
 function encryptedUpstream(node: Record<string, unknown>): boolean {
@@ -148,7 +188,7 @@ function protectedHost(host: string, rules: string[]) {
   });
 }
 
-export function rolaDirectGatewayRule(settings: ReturnType<typeof parseRolaSettings>): string | undefined {
+export function rolaDirectGatewayRule(settings: ReturnType<typeof parseRolaExitSettings>): string | undefined {
   if (settings.connectionMode !== "direct") return undefined;
   const endpoint = isIP(settings.server) === 4
     ? `IP-CIDR,${settings.server}/32,no-resolve`
@@ -156,7 +196,7 @@ export function rolaDirectGatewayRule(settings: ReturnType<typeof parseRolaSetti
   return `AND,((${endpoint}),(DST-PORT,${settings.port})),DIRECT`;
 }
 
-function residentialCountryGroups(settings: ReturnType<typeof parseRolaSettings>): string[] {
+function residentialCountryGroups(settings: ReturnType<typeof parseRolaExitSettings>): string[] {
   return Object.entries(countryGroupNames).flatMap(([code, name]) => {
     const group = mihomoProxyGroups.find(group => group.name === name);
     if (!group || !("filter" in group) || !group.filter) return [];
@@ -199,12 +239,56 @@ function residentialDnsDefault(group: Record<string, unknown>, nodes: Array<Reco
   } catch { return undefined; }
 }
 
+function residentialDnsGroupChoices(profile: Record<string, unknown>, names: string[], metadataPattern: string, originalDefault: string): string[] {
+  const nodes = profile.proxies as Array<Record<string, unknown>>;
+  const groups = profile["proxy-groups"] as Array<Record<string, unknown>>;
+  const pattern = (value: unknown) => {
+    if (value === undefined || value === "") return undefined;
+    if (typeof value !== "string" || value.includes("`")) throw new Error("Unknown proxy filter");
+    return new RegExp(value.replace(/^\(\?i\)/u, ""), value.startsWith("(?i)") ? "iu" : "u");
+  };
+  const metadata = pattern(metadataPattern);
+  const independent = (name: unknown, seen = new Set<string>()): boolean => {
+    if (name === "REJECT") return true;
+    if (typeof name !== "string" || name === "DIRECT" || metadata?.test(name) || seen.has(name)) return false;
+    const node = nodes.find(node => node.name === name);
+    if (!node || typeof node.type !== "string" || node.type === "direct" || node.type === "reject" || typeof node.server !== "string" || !Number.isInteger(node.port)) return false;
+    // A concrete node may dial another concrete node, but never a selectable group that could depend on DNS.
+    const dialer = node["dialer-proxy"];
+    return dialer === undefined || dialer === "DIRECT" || independent(dialer, new Set([...seen, name]));
+  };
+  if (!independent(originalDefault)) return [];
+  return [...new Set(names)].filter(name => {
+    const group = groups.find(group => group.name === name);
+    if (!group || group.type !== "select" || group["empty-fallback"] !== "REJECT") return false;
+    if (group.use !== undefined && (!Array.isArray(group.use) || group.use.length)) return false;
+    if (group["include-all-providers"] || (group["include-all"] && profile["proxy-providers"]
+      && Object.keys(profile["proxy-providers"] as object).length)) return false;
+    if (group.proxies !== undefined && !Array.isArray(group.proxies)) return false;
+    try {
+      const include = pattern(group.filter), exclude = pattern(group["exclude-filter"]);
+      if (group["exclude-type"] !== undefined && typeof group["exclude-type"] !== "string") return false;
+      const excludedTypes = String(group["exclude-type"] ?? "").toLowerCase().split("|");
+      const included = group["include-all"] || group["include-all-proxies"] ? nodes.filter(node =>
+        typeof node.name === "string" && !excludedTypes.includes(String(node.type).toLowerCase())
+        && (!include || include.test(node.name)) && !exclude?.test(node.name)).map(node => node.name) : [];
+      const members = [...(Array.isArray(group.proxies) ? group.proxies : []), ...included];
+      if (group["default-selected"] !== undefined && !members.includes(group["default-selected"])) return false;
+      // Nested policy groups are not admitted, including country cycles and business selectors.
+      return members.every(member => independent(member));
+    } catch { return false; }
+  });
+}
+
 export function prepareRolaProfile(source: string, value: unknown) {
   const settings = parseRolaSettings(value);
   const nodeName = settings.name;
   const groupName = settings.groupName;
-  if (["DIRECT", "REJECT", "COMPATIBLE", groupName].includes(nodeName)) throw new Error("Rola node name is reserved");
-  const nodePattern = `^${nodeName.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`;
+  const exits = [settings, ...settings.additionalExits];
+  const residentialNames = exits.map(exit => exit.name);
+  if (residentialNames.some(name => ["DIRECT", "REJECT", "COMPATIBLE", groupName].includes(name))) throw new Error("Rola node name is reserved");
+  const exitPatterns = exits.map(exit => `^${exit.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`);
+  const nodePattern = exitPatterns.join("|");
   const document = parseDocument(source, { prettyErrors: false, uniqueKeys: true });
   if (document.errors.length || !isMap(document.contents)) throw new Error("Base profile is not valid YAML");
   let base: Record<string, unknown>;
@@ -230,14 +314,14 @@ export function prepareRolaProfile(source: string, value: unknown) {
   for (const item of [...proxies.items, ...groups.items]) {
     if (!isMap(item) || typeof item.get("name") !== "string") throw new Error("Unsupported proxy/group structure in base profile");
     const name = String(item.get("name"));
-    if (names.has(name) || [nodeName, groupName].includes(name)) throw new Error("Duplicate or reserved Rola name in base profile; regenerate from the original base");
+    if (names.has(name) || [...residentialNames, groupName].includes(name)) throw new Error("Duplicate or reserved Rola name in base profile; regenerate from the original base");
     names.add(name);
   }
   const node = Array.isArray(base.proxies) ? base.proxies.find(item => item?.name === settings.upstreamNode) : undefined;
   if (settings.connectionMode === "chain" && (!node || ["DIRECT", "REJECT", "COMPATIBLE", nodeName, groupName].includes(settings.upstreamNode) || !encryptedUpstream(node))) {
     throw new Error("Choose one concrete encrypted upstream node, with certificate verification enabled and no existing dialer-proxy; groups and DIRECT are not allowed");
   }
-  if (protectedHost(settings.server.toLowerCase(), settings.rules) || (node && protectedHost(String(node.server).toLowerCase(), settings.rules))) {
+  if (exits.some(exit => protectedHost(exit.server.toLowerCase(), settings.rules)) || (node && protectedHost(String(node.server).toLowerCase(), settings.rules))) {
     throw new Error("Proxy gateway names must not overlap protected domains");
   }
   // The converter shares bootstrap arrays; YAML may encode the second list as an alias.
@@ -261,21 +345,21 @@ export function prepareRolaProfile(source: string, value: unknown) {
   const policy = dns.get("nameserver-policy", true);
   if (policy && (!isMap(policy) || policy.items.length)) throw new Error("Base DNS already has nameserver-policy; review overlaps before adding Rola rules");
 
-  const rola = {
-    name: nodeName,
-    type: settings.protocol,
-    server: settings.server,
-    port: settings.port,
-    username: settings.username,
-    password: settings.password,
+  const residentialNodes = exits.map(exit => ({
+    name: exit.name,
+    type: exit.protocol,
+    server: exit.server,
+    port: exit.port,
+    username: exit.username,
+    password: exit.password,
     udp: false,
     "dialer-proxy": settings.connectionMode === "direct" ? "DIRECT" : settings.upstreamNode,
-  };
+  }));
   const dnsGroup = Array.isArray(base["proxy-groups"])
     ? base["proxy-groups"].find(group => group?.name === dnsProxyGroupName) : undefined;
-  const dnsDefault = dnsGroup ? residentialDnsDefault(dnsGroup, base.proxies as Array<Record<string, unknown>>, rola) : undefined;
-  proxies.add(document.createNode(rola));
-  const countryGroups = residentialCountryGroups(settings);
+  const dnsDefaults = dnsGroup ? residentialNodes.map(node => residentialDnsDefault(dnsGroup, base.proxies as Array<Record<string, unknown>>, node)) : [];
+  const dnsDefault = dnsDefaults[0] && dnsDefaults.every(value => value === dnsDefaults[0]) ? dnsDefaults[0] : undefined;
+  for (const node of residentialNodes) proxies.add(document.createNode(node));
   // Region membership follows geography; other include-all pools must not start testing the metered exit.
   for (const group of groups.items) {
     if (!isMap(group)) continue;
@@ -283,16 +367,24 @@ export function prepareRolaProfile(source: string, value: unknown) {
       group.set("default-selected", dnsDefault);
       continue;
     }
-    if (countryGroups.includes(String(group.get("name")))) {
+    const countryExits = exits.map((exit, index) => ({ exit, pattern: exitPatterns[index] }))
+      .filter(({ exit }) => residentialCountryGroups(exit).includes(String(group.get("name"))));
+    if (countryExits.length) {
       if (!group.get("include-all") && !group.get("include-all-proxies")) {
         const members = group.get("proxies", true);
         if (members !== undefined && !isSeq(members)) throw new Error("Invalid country policy group");
-        if (isSeq(members)) members.add(nodeName);
-        else group.set("proxies", document.createNode([nodeName]));
+        if (isSeq(members)) for (const { exit } of countryExits) members.add(exit.name);
+        else group.set("proxies", document.createNode(countryExits.map(({ exit }) => exit.name)));
       }
       const filter = group.get("filter");
       if (filter !== undefined && typeof filter !== "string") throw new Error("Invalid country group filter");
-      if (filter) group.set("filter", `${filter}|${nodePattern}`);
+      if (filter) group.set("filter", `${filter}|${countryExits.map(({ pattern }) => pattern).join("|")}`);
+      const otherCountries = exitPatterns.filter(pattern => !countryExits.some(exit => exit.pattern === pattern));
+      if (otherCountries.length) {
+        const excluded = group.get("exclude-filter");
+        if (excluded !== undefined && typeof excluded !== "string") throw new Error("Invalid group exclude-filter");
+        group.set("exclude-filter", [excluded, ...otherCountries].filter(Boolean).join("|"));
+      }
       continue;
     }
     if (!group.get("include-all") && !group.get("include-all-proxies")) continue;
@@ -302,7 +394,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
   }
   const flag = String.fromCodePoint(...settings.country.toUpperCase().split("").map(char => 127397 + char.charCodeAt(0)));
   groups.add(document.createNode({
-    name: groupName, type: "select", proxies: [nodeName],
+    name: groupName, type: "select", proxies: residentialNames,
     "empty-fallback": "REJECT", "disable-udp": true,
   }));
   const residentialGroup = groups.items.pop();
@@ -314,15 +406,27 @@ export function prepareRolaProfile(source: string, value: unknown) {
     if (group.get("name") === policyGroup) members.items.unshift(document.createNode(groupName));
     else members.add(groupName);
   }
+  if (dnsDefault) {
+    const current = record(document.toJS({ maxAliasCount: 100 }), "Invalid prepared profile");
+    const choices = residentialDnsGroupChoices(current, [...Object.keys(countryGroupNames), ...Object.values(countryGroupNames), groupName], metadataFilter, dnsDefault);
+    const group = groups.items.find(group => isMap(group) && group.get("name") === dnsProxyGroupName);
+    if (isMap(group) && choices.length) {
+      const members = group.get("proxies", true);
+      if (isSeq(members)) for (const choice of choices) {
+        if (!members.items.some(member => isScalar(member) && member.value === choice)) members.add(choice);
+      }
+      else group.set("proxies", document.createNode(choices));
+    }
+  }
   const protectedRules = settings.rules.flatMap(rule => [
     `AND,((${rule}),(NETWORK,UDP)),REJECT`,
     `${rule},${policyGroup}`,
   ]);
-  const gatewayRule = rolaDirectGatewayRule(settings);
-  if (gatewayRule) {
+  const gatewayRules = [...new Set(exits.flatMap(exit => rolaDirectGatewayRule(exit) ?? []))];
+  if (gatewayRules.length) {
     // dialer-proxy affects Mihomo's own socket, not external clients entering through a proxy port or TUN.
-    rules.items = rules.items.filter(rule => !isScalar(rule) || rule.value !== gatewayRule);
-    protectedRules.unshift(gatewayRule);
+    rules.items = rules.items.filter(rule => !isScalar(rule) || !gatewayRules.includes(String(rule.value)));
+    protectedRules.unshift(...gatewayRules);
   }
   rules.items.unshift(...protectedRules.map(rule => document.createNode(rule)));
   const resolverPolicy = Object.fromEntries(settings.rules.map(rule => {
@@ -358,16 +462,17 @@ export function createRolaOverride(source: string, value: unknown) {
   const prepared = prepareRolaProfile(source, value);
   const settings = parseRolaSettings(value);
   const output = parseDocument(prepared.profile).toJS({ maxAliasCount: 100 });
-  const gatewayRule = rolaDirectGatewayRule(settings);
+  const exits = [settings, ...settings.additionalExits];
+  const gatewayRules = [...new Set(exits.flatMap(exit => rolaDirectGatewayRule(exit) ?? []))];
   const patch = {
     connectionMode: settings.connectionMode,
-    upstream: settings.upstreamNode, node: output.proxies.at(-1), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
-    rules: output.rules.slice(0, settings.rules.length * 2 + Number(Boolean(gatewayRule))), domains: settings.rules, gatewayRule,
+    upstream: settings.upstreamNode, nodes: output.proxies.slice(-exits.length), group: output["proxy-groups"].find((group: { name: string }) => group.name === settings.groupName),
+    rules: output.rules.slice(0, settings.rules.length * 2 + gatewayRules.length), domains: settings.rules, gatewayRules,
     policy: output.dns["nameserver-policy"], bootstrap: output.dns["proxy-server-nameserver"],
     bootstrapDefaults: output.dns["default-nameserver"], respectRules: output.dns["respect-rules"],
-    excludedNodePattern: `^${settings.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
-    countryGroups: residentialCountryGroups(settings),
+    exits: exits.map(exit => ({ name: exit.name, pattern: `^${exit.name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`, countryGroups: residentialCountryGroups(exit) })),
     dnsGroupName: dnsProxyGroupName,
+    dnsGroupChoices: [...Object.keys(countryGroupNames), ...Object.values(countryGroupNames), settings.groupName], metadataFilter,
     selectableGroups: residentialSelectableGroups, policyGroup: prepared.summary.policyGroup,
   };
   // This artifact contains credentials. It is downloaded only from the loopback server.
@@ -378,33 +483,42 @@ function main(config) {
   const safe = ${encryptedUpstream.toString()};
   const overlaps = ${protectedHost.toString()};
   const dnsDefault = ${residentialDnsDefault.toString()};
+  const dnsGroupChoices = ${residentialDnsGroupChoices.toString()};
   if (config.mode !== 'rule' || !Array.isArray(config.proxies) || !Array.isArray(config['proxy-groups']) || !Array.isArray(config.rules) || !config.dns?.enable) throw new Error('Rola: complete rule-mode base required');
   const nodes = config.proxies.filter(node => node.name === data.upstream);
   if (data.connectionMode === 'chain' && (nodes.length !== 1 || !safe(nodes[0]) || overlaps(String(nodes[0].server).toLowerCase(), data.domains))) throw new Error('Rola: selected first hop is missing or unsafe');
   const names = config.proxies.concat(config['proxy-groups']).map(item => item.name);
-  if (new Set(names).size !== names.length || names.includes(data.node.name) || names.includes(data.group.name)) throw new Error('Rola: duplicate names or overlay already applied');
+  if (new Set(names).size !== names.length || data.nodes.some(node => names.includes(node.name)) || names.includes(data.group.name)) throw new Error('Rola: duplicate names or overlay already applied');
   if (data.policyGroup !== data.group.name && !config['proxy-groups'].some(group => group.name === data.policyGroup && group.type === 'select')) throw new Error('Rola: selected policy group is missing');
   if (JSON.stringify(config.dns['proxy-server-nameserver']) !== JSON.stringify(data.bootstrap) || JSON.stringify(config.dns['default-nameserver']) !== JSON.stringify(data.bootstrapDefaults) || config.dns['respect-rules'] !== data.respectRules || config.dns['proxy-server-nameserver-policy'] || Object.keys(config.dns['nameserver-policy'] || {}).length) throw new Error('Rola: base DNS changed; regenerate and verify the overlay');
   const next = JSON.parse(JSON.stringify(config));
+  const excludedNodePattern = data.exits.map(exit => exit.pattern).join('|');
+  let preservedDnsDefault;
   for (const group of next['proxy-groups']) {
     if (group.name === data.dnsGroupName) {
-      const selected = dnsDefault(group, next.proxies, data.node);
-      if (selected) { group['default-selected'] = selected; continue; }
+      const selections = data.nodes.map(node => dnsDefault(group, next.proxies, node));
+      if (selections[0] && selections.every(selected => selected === selections[0])) { group['default-selected'] = preservedDnsDefault = selections[0]; continue; }
     }
-    if (data.countryGroups.includes(group.name)) {
+    const countryExits = data.exits.filter(exit => exit.countryGroups.includes(group.name));
+    if (countryExits.length) {
       if (!group['include-all'] && !group['include-all-proxies']) {
         if (group.proxies !== undefined && !Array.isArray(group.proxies)) throw new Error('Rola: invalid country policy group');
-        group.proxies = [...(group.proxies || []), data.node.name];
+        group.proxies = [...(group.proxies || []), ...countryExits.map(exit => exit.name)];
       }
       if (group.filter !== undefined && typeof group.filter !== 'string') throw new Error('Rola: invalid country group filter');
-      if (group.filter) group.filter += '|' + data.excludedNodePattern;
+      if (group.filter) group.filter += '|' + countryExits.map(exit => exit.pattern).join('|');
+      const otherCountries = data.exits.filter(exit => !countryExits.includes(exit)).map(exit => exit.pattern);
+      if (otherCountries.length) {
+        if (group['exclude-filter'] !== undefined && typeof group['exclude-filter'] !== 'string') throw new Error('Rola: invalid country group filter');
+        group['exclude-filter'] = [group['exclude-filter'], ...otherCountries].filter(Boolean).join('|');
+      }
       continue;
     }
     if (!group['include-all'] && !group['include-all-proxies']) continue;
     if (group['exclude-filter'] !== undefined && typeof group['exclude-filter'] !== 'string') throw new Error('Rola: invalid group filter');
-    group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|' + data.excludedNodePattern : data.excludedNodePattern;
+    group['exclude-filter'] = group['exclude-filter'] ? group['exclude-filter'] + '|' + excludedNodePattern : excludedNodePattern;
   }
-  next.proxies.push(data.node);
+  next.proxies.push(...data.nodes);
   next['proxy-groups'].splice(Math.min(2, next['proxy-groups'].length), 0, data.group);
   for (const group of next['proxy-groups']) {
     if (!data.selectableGroups.includes(group.name)) continue;
@@ -412,7 +526,12 @@ function main(config) {
     if (group.name === data.policyGroup) group.proxies.unshift(data.group.name);
     else group.proxies.push(data.group.name);
   }
-  if (data.gatewayRule) next.rules = next.rules.filter(rule => rule !== data.gatewayRule);
+  if (preservedDnsDefault) {
+    const choices = dnsGroupChoices(next, data.dnsGroupChoices, data.metadataFilter, preservedDnsDefault);
+    const group = next['proxy-groups'].find(group => group.name === data.dnsGroupName);
+    if (choices.length) group.proxies = [...new Set([...(group.proxies || []), ...choices])];
+  }
+  if (data.gatewayRules.length) next.rules = next.rules.filter(rule => !data.gatewayRules.includes(rule));
   next.rules.unshift(...data.rules);
   next.dns['nameserver-policy'] = data.policy;
   next.dns.ipv6 = false;

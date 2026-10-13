@@ -29,6 +29,20 @@ const prepared = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies
 const profile = prepared.profile;
 
 describe("residential mobile rendering resource budget", () => {
+  it("keeps two house nodes in mobile groups but strips both desktop-only gateway exceptions", async () => {
+    const extra = { ...settings, name: "Second US Home", server: "198.51.100.2", port: 1081, account: "second-account", password: "second-password" };
+    const input = { ...settings, additionalExits: [extra] };
+    const prepared = prepareRolaProfile(createMihomoProfile(yaml.stringify({ proxies: airportNodes })), input);
+    const nodes = await renderRolaTarget(env, prepared, input, "shadowrocket");
+    expect(nodes.split("\n")).toHaveLength(70);
+    expect(nodes).toContain("#US%20Home");
+    expect(nodes).toContain("#Second%20US%20Home");
+    const config = await renderRolaTarget(env, prepared, input, "shadowrocket-config");
+    expect(config).toContain("Home = select, US Home, Second US Home");
+    expect(config).toContain("DOMAIN-SUFFIX,claude.ai,🤖 AI");
+    expect(config).not.toMatch(/DST-PORT|fixture-password|second-password|fixture-airport-secret/);
+  });
+
   it("does not pin business DNS to the residential exit after switching the mobile default node", async () => {
     const config = await renderRolaTarget(env, prepared, settings, "shadowrocket-config");
     for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {

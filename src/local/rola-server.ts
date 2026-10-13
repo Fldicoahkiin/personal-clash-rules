@@ -4,7 +4,7 @@ import { chmod, lstat, mkdir, open, readdir, rename } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaUpstreamChoices } from "./rola";
+import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstreamChoices } from "./rola";
 export { rolaRulePaths } from "./rola";
 
 type LocalRouterOptions = {
@@ -17,8 +17,9 @@ type Exit = {
   authMode?: "literal" | "dynamic";
   id: string; name: string; protocol: "http" | "socks5"; server: string; port: number;
   account: string; password: string; country: string; sessionId: string; sessionMinutes: number;
+  exitIp?: string; region?: string;
 };
-type Chain = { baseId: string; target: string; exit: Exit; connectionMode?: unknown; groupName?: unknown; policyGroup?: unknown; upstreamNode: string; rules: string[]; dns: string[] };
+type Chain = { baseId: string; target: string; exit: Exit; additionalExits?: Exit[]; connectionMode?: unknown; groupName?: unknown; policyGroup?: unknown; upstreamNode: string; rules: string[]; dns: string[] };
 const idPattern = /^[A-Za-z0-9_-]{16}$/u;
 const targets = new Set(["clash-party-config", "clash-verge-config", "flclash-config", "mihomo-config"]);
 
@@ -51,8 +52,8 @@ async function body(request: Request) {
 }
 function metadata(exit: Exit) {
   // Account and password are write-only. The browser cannot read saved credentials back.
-  const { id, name, protocol, server, port, country, sessionId, sessionMinutes } = exit;
-  return { id, name, protocol, server, port, country, sessionId, sessionMinutes, authMode: exit.authMode ?? "dynamic" };
+  const { id, name, protocol, server, port, country, sessionId, sessionMinutes, exitIp, region } = exit;
+  return { id, name, protocol, server, port, country, sessionId, sessionMinutes, exitIp, region, authMode: exit.authMode ?? "dynamic" };
 }
 function json(value: unknown, status = 200) { return Response.json(value, { status, headers: { "Cache-Control": "no-store" } }); }
 
@@ -90,8 +91,9 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
     return convert(new Request(`${origin}/s/${id(baseId)}/${target}`));
   }
   async function candidate(base: Response, chain: Chain) {
-    try { return prepareRolaProfile(await base.text(), { ...chain.exit, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns }); }
-    catch {
+    try { return prepareRolaProfile(await base.text(), { ...chain.exit, additionalExits: chain.additionalExits, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns }); }
+    catch (error) {
+      if (error instanceof RolaExitMetadataError) throw new LocalError(400, "invalid_rola_exit_metadata", error.message);
       throw new LocalError(422, "rola_profile_rejected", "无法生成串联配置：请确认所选前置节点仍存在、启用加密和证书验证，域名规则有效且 DNS 不与网关形成循环。不会返回空节点或直连替代配置。");
     }
   }
@@ -107,16 +109,21 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
       if (url.pathname === "/api/local/rola/exits" && request.method === "POST") {
         const input = await body(request);
         const existing = input.id ? await read<Exit>("exit", id(input.id)) : undefined;
-        const value: Record<string, unknown> = { ...input,
+        const value: Record<string, unknown> = { ...existing, ...input,
           account: input.account === "" || input.account === undefined ? existing?.account : input.account,
           password: input.password === "" || input.password === undefined ? existing?.password : input.password };
+        let validated: ReturnType<typeof parseRolaSettings>;
         try {
-          parseRolaSettings({ ...value, upstreamNode: "validation", rules: defaults.rules, dns: defaults.dns });
-          if (typeof value.name !== "string" || !value.name.trim() || value.name.length > 64 || /[\u0000-\u001f\u007f]/u.test(value.name)) throw new Error("Invalid name");
-        } catch { throw new LocalError(400, "invalid_rola_exit", "请检查出口名称、网关、端口、账号和密码。现成节点应选用户名原样使用；仅动态模式需要基础账号、两位国家代码与会话参数（1–120 分钟）。"); }
+          validated = parseRolaSettings({ ...value, upstreamNode: "validation", rules: defaults.rules, dns: defaults.dns });
+          if (!validated.exitIp && (typeof value.name !== "string" || !value.name.trim())) throw new Error("Invalid name");
+        } catch (error) {
+          if (error instanceof RolaExitMetadataError) throw new LocalError(400, "invalid_rola_exit_metadata", error.message);
+          throw new LocalError(400, "invalid_rola_exit", "请检查出口名称、网关、端口、账号和密码。现成节点应选用户名原样使用；仅动态模式需要基础账号、两位国家代码与会话参数（1–120 分钟）。");
+        }
         const exit: Exit = {
           authMode: value.authMode === "literal" ? "literal" : "dynamic",
-          id: existing?.id || randomBytes(12).toString("base64url"), name: String(value.name).trim(),
+          id: existing?.id || randomBytes(12).toString("base64url"), name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : validated.name,
+          exitIp: validated.exitIp, region: validated.region,
           protocol: value.protocol as Exit["protocol"], server: String(value.server), port: Number(value.port),
           account: String(value.account), password: String(value.password), country: String(value.country ?? "").toLowerCase(),
           sessionId: String(value.sessionId ?? ""), sessionMinutes: Number(value.sessionMinutes ?? 0),
@@ -143,8 +150,18 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
       }
       if (url.pathname === "/api/local/rola/chains" && request.method === "POST") {
         const input = await body(request);
+        const requestedIds = input.additionalExitIds === undefined ? [] : input.additionalExitIds;
+        if (input.additionalExits !== undefined || !Array.isArray(requestedIds) || requestedIds.length > 7) {
+          throw new LocalError(400, "invalid_rola_additional_exits", "请从本机保存的出口中选择最多 7 个其他家宽，不能直接提交额外凭据。");
+        }
+        const additionalIds = requestedIds.map(id);
+        if (new Set(additionalIds).size !== additionalIds.length || additionalIds.includes(input.exitId as string)) {
+          throw new LocalError(400, "invalid_rola_additional_exits", "其他家宽不能重复，也不能与首选家宽相同。");
+        }
+        if (additionalIds.length && input.connectionMode !== "direct") throw new LocalError(400, "invalid_rola_additional_exits", "多个家宽出口目前仅支持直接接入。");
         const exit = await read<Exit>("exit", id(input.exitId));
-        const chain: Chain = { baseId: id(input.baseId), target: String(input.target), exit, connectionMode: input.connectionMode, groupName: input.groupName, policyGroup: input.policyGroup,
+        const additionalExits = await Promise.all(additionalIds.map(value => read<Exit>("exit", value)));
+        const chain: Chain = { baseId: id(input.baseId), target: String(input.target), exit, additionalExits, connectionMode: input.connectionMode, groupName: input.groupName, policyGroup: input.policyGroup,
           upstreamNode: input.upstreamNode as string, rules: input.rules as string[], dns: input.dns as string[] };
         const base = await renderBase(chain.baseId, chain.target);
         if (!base.ok) return base;
@@ -162,7 +179,7 @@ export async function createRolaRouter({ directory, origin, ruleLists, convert }
         const headers = new Headers(base.headers);
         const scriptSource = match[2] === "js" ? await base.clone().text() : null;
         const generated = await candidate(base, chain);
-        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
+        const script = scriptSource === null ? null : createRolaOverride(scriptSource, { ...chain.exit, additionalExits: chain.additionalExits, connectionMode: chain.connectionMode, groupName: chain.groupName, policyGroup: chain.policyGroup, upstreamNode: chain.upstreamNode, rules: chain.rules, dns: chain.dns });
         headers.delete("ETag");
         headers.set("Cache-Control", "no-store");
         headers.set("Content-Type", script ? "application/javascript; charset=utf-8" : "text/yaml; charset=utf-8");

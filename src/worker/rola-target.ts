@@ -49,11 +49,11 @@ export async function renderRolaTarget(env: SubscriptionEnv, prepared: ReturnTyp
   if (target === "shadowrocket") return nodes;
   // This exact generated exception serves external desktop clients entering through Mihomo.
   // Do not pass Mihomo-only DST-PORT syntax into the paired iOS configuration.
-  const gatewayRule = rolaDirectGatewayRule(settings);
+  const gatewayRules = new Set([settings, ...settings.additionalExits].flatMap(exit => rolaDirectGatewayRule(exit) ?? []));
   return createShadowrocketProfile(base.proxies.map(node => node.name), "flacier", "doh", {
     ...defaultDnsSettings, nameservers: settings.dns, ipv6: false,
   }, {
-    groups: base["proxy-groups"], rules: base.rules.filter(rule => rule !== gatewayRule), providers: base["rule-providers"] ?? {},
+    groups: base["proxy-groups"], rules: base.rules.filter(rule => !gatewayRules.has(rule)), providers: base["rule-providers"] ?? {},
     bootstrap: base.dns["proxy-server-nameserver"],
   });
 }

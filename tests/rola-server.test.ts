@@ -1,6 +1,7 @@
 import { chmod, mkdtemp, readFile, readdir, stat, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
@@ -44,6 +45,54 @@ async function fixture() {
 }
 
 describe("local Rola web workflow", () => {
+  it("snapshots two saved exits and refreshes both YAML and private override without dropping either", async () => {
+    const f = await fixture();
+    const first = await (await f.call("/api/local/rola/exits", { ...exit, authMode: "literal" })).json() as { id: string };
+    const extra = { ...exit, authMode: "literal", name: "Second US", server: "198.51.100.2", port: 1081, account: "second-user", password: "second-password" };
+    const second = await (await f.call("/api/local/rola/exits", extra)).json() as { id: string };
+    const input = { baseId, target: "clash-party-config", exitId: first.id, additionalExitIds: [second.id], connectionMode: "direct",
+      groupName: "Homes", rules: ["DOMAIN-SUFFIX,claude.ai"], dns: ["https://1.1.1.1/dns-query"] };
+    const response = await f.call("/api/local/rola/chains", input);
+    expect(response.status).toBe(201);
+    const created = await response.json() as { url: string; overrideUrl: string };
+    expect(JSON.stringify(created)).not.toMatch(/privatepassword|second-password/);
+    await f.call("/api/local/rola/exits", { id: second.id, password: "replacement-password" });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const refreshed = await f.call(new URL(created.url).pathname);
+      expect(refreshed.headers.get("subscription-userinfo")).toContain("total=1000");
+      const profile = parse(await refreshed.text());
+      expect(profile.proxies.slice(-2)).toMatchObject([{ name: exit.name, password: exit.password }, { name: extra.name, password: extra.password }]);
+      expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies).toEqual([exit.name, extra.name]);
+      const script = await (await f.call(new URL(created.overrideUrl).pathname)).text();
+      expect(runInNewContext(`${script}; main(config)`, { config: parse(base) })).toEqual(profile);
+    }
+    for (const additionalExitIds of [null, {}, [first.id], [second.id, second.id], Array(8).fill(second.id)]) {
+      expect((await f.call("/api/local/rola/chains", { ...input, additionalExitIds })).status).toBe(400);
+    }
+    expect((await f.call("/api/local/rola/chains", { ...input, connectionMode: "chain", upstreamNode: "Airport" })).status).toBe(400);
+    expect((await f.call("/api/local/rola/chains", { ...input, additionalExits: [extra] })).status).toBe(400);
+  });
+
+  it("round-trips exit metadata without exposing credentials or changing the gateway", async () => {
+    const f = await fixture();
+    const metadata = { exitIp: "203.0.113.24", region: "美国 Las Vegas" };
+    const saved = await (await f.call("/api/local/rola/exits", { ...exit, ...metadata })).json() as { id: string };
+    expect(saved).toMatchObject({ ...metadata, name: exit.name, server: exit.server });
+    expect(JSON.stringify(saved)).not.toMatch(/privateaccount|privatepassword/);
+    const edited = await f.call("/api/local/rola/exits", { id: saved.id, name: "Legacy note", account: "", password: "" });
+    expect(edited.status).toBe(200);
+    expect(await edited.json()).toMatchObject(metadata);
+    const result = await f.call("/api/local/rola/chains", { baseId, target: "clash-party-config", exitId: saved.id,
+      connectionMode: "direct", rules: ["DOMAIN-SUFFIX,claude.ai"], dns: ["https://1.1.1.1/dns-query"] });
+    expect(result.status).toBe(201);
+    const { url } = await result.json() as { url: string };
+    const profile = parse(await (await f.call(new URL(url).pathname)).text());
+    expect(profile.proxies.at(-1)).toMatchObject({ name: "203.0.113.24 · 美国 Las Vegas", server: exit.server });
+    const invalid = await f.call("/api/local/rola/exits", { ...exit, exitIp: metadata.exitIp });
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toMatchObject({ error: "invalid_rola_exit_metadata", message: "出口 IP 和区域需同时填写；都留空时保留原备注。" });
+  });
+
   it("persists explicit direct access and a private group in both YAML and local override", async () => {
     const f = await fixture();
     const saved = await (await f.call("/api/local/rola/exits", exit)).json() as { id: string };

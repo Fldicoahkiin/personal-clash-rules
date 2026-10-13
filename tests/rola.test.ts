@@ -54,6 +54,72 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
+  it.each(["us", "jp"])("preserves two separate homes with %s country membership and stable DNS defaults", secondCountry => {
+    const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
+    const second = { authMode: "literal", protocol: "socks5", server: "198.51.100.2", port: 1081, account: "second", password: "second-pass", name: "Second US home", country: secondCountry };
+    const input = { ...settings, authMode: "literal", connectionMode: "direct", upstreamNode: "", name: "First US home", additionalExits: [second] };
+    const prepared = prepareRolaProfile(base, input);
+    const profile = parse(prepared.profile);
+    const overlaid = runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: parse(base) });
+    expect(overlaid).toEqual(profile);
+    expect(profile.proxies.slice(-2)).toMatchObject([
+      { name: input.name, server: settings.server, password: settings.password, "dialer-proxy": "DIRECT" },
+      { name: second.name, server: second.server, port: second.port, password: second.password, "dialer-proxy": "DIRECT" },
+    ]);
+    expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([input.name, second.name]);
+    const candidates = (name: string) => {
+      const group = profile["proxy-groups"].find((group: { name: string }) => group.name === name);
+      const matches = (pattern: string | undefined, value: string) => pattern ? new RegExp(pattern.replace(/^\(\?i\)/u, ""), "iu").test(value) : false;
+      return profile.proxies.filter((node: { name: string }) => (!group.filter || matches(group.filter, node.name)) && !matches(group["exclude-filter"], node.name)).map((node: { name: string }) => node.name);
+    };
+    expect(candidates("🇺🇸 美国")).toEqual(secondCountry === "us" ? [input.name, second.name] : [input.name]);
+    if (secondCountry === "jp") expect(candidates("🇯🇵 日本")).toEqual([second.name]);
+    expect(candidates("♻️ 自动选择")).toEqual(["Airport"]);
+    expect(candidates("DNS-PROXY")).toEqual(["Airport", input.name, second.name]);
+    expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY")["default-selected"]).toBe("Airport");
+    for (const name of ["🖐 手动选择", "🌐 全局", "🤖 AI"]) {
+      expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain("ROLA");
+    }
+    expect(profile.rules.slice(0, 2)).toEqual([
+      `AND,((DOMAIN,${settings.server}),(DST-PORT,${settings.port})),DIRECT`,
+      "AND,((IP-CIDR,198.51.100.2/32,no-resolve),(DST-PORT,1081)),DIRECT",
+    ]);
+    expect(profile.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#🤖 AI`));
+  });
+
+  it("rejects duplicate, nested, nonliteral and chained additional exits without dropping nodes", () => {
+    const first = { ...settings, authMode: "literal", connectionMode: "direct", upstreamNode: "", name: "First home" };
+    const second = { ...first, name: "Second home", server: "198.51.100.2", account: "second", password: "second-pass" };
+    for (const additions of [null, {}, Array.from({ length: 8 }, () => second), [{ ...second, name: first.name }],
+      [{ ...first, name: "Different name" }], [{ ...second, additionalExits: [] }], [{ ...second, authMode: "dynamic" }], [{ ...second, connectionMode: "chain" }]]) {
+      expect(() => parseRolaSettings({ ...first, additionalExits: additions })).toThrow();
+    }
+    expect(() => parseRolaSettings({ ...first, connectionMode: "chain", upstreamNode: "Airport", additionalExits: [second] })).toThrow("直接接入");
+  });
+
+  it.each(["203.0.113.24", "2001:db8::24"])("uses exit IP %s and region consistently without replacing the gateway", exitIp => {
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", name: "Existing note", exitIp, region: " 美国 Las Vegas " };
+    const expectedName = `${exitIp} · 美国 Las Vegas`;
+    const profile = parse(prepareRolaProfile(source, input).profile);
+    expect(profile.proxies.at(-1)).toMatchObject({ name: expectedName, server: settings.server, port: settings.port, "dialer-proxy": "DIRECT" });
+    expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([expectedName]);
+    expect(profile.rules[0]).toBe(`AND,((DOMAIN,${settings.server}),(DST-PORT,${settings.port})),DIRECT`);
+    const overlaid = runInNewContext(`${createRolaOverride(source, input)}; main(config)`, { config: parse(source) });
+    expect(overlaid.proxies.at(-1)).toEqual(profile.proxies.at(-1));
+    expect(parseRolaSettings({ ...settings, name: "Existing note" }).name).toBe("Existing note");
+  });
+
+  it.each([
+    { exitIp: "203.0.113.24" }, { region: "美国" },
+    { exitIp: "https://203.0.113.24", region: "美国" }, { exitIp: "203.0.113.24:9004", region: "美国" },
+    { exitIp: "203.0.113.999", region: "美国" }, { exitIp: "fe80::1%en0", region: "美国" },
+    { exitIp: "203.0.113.24", region: "美国\nFINAL,DIRECT" }, { exitIp: "203.0.113.24", region: "US, REJECT" },
+    { exitIp: "203.0.113.24", region: "US=direct" }, { exitIp: "203.0.113.24", region: " " },
+    { exitIp: "203.0.113.24", region: "x".repeat(33) },
+  ])("rejects incomplete or unsafe residential naming metadata %#", metadata => {
+    expect(() => parseRolaSettings({ ...settings, ...metadata })).toThrow(/出口 IP|区域/u);
+  });
+
   it.each([undefined, "Zulu Airport"])("keeps the original DNS default %s while making residential selectable once", defaultSelected => {
     const original = parse(createMihomoProfile(stringify({ proxies: [
       { name: "Zulu Airport", type: "trojan", server: "airport.example", port: 443, password: "demo" },
@@ -70,7 +136,8 @@ describe("local Rola preparation", () => {
     const output = parse(prepared.profile);
     expect(prepared.summary.dnsSelection).toContain("已加入家宽选项");
     const group = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
-    expect(group).toEqual({ ...before, "default-selected": defaultSelected ?? "Alpha Airport" });
+    expect(group).toEqual({ ...before, "default-selected": defaultSelected ?? "Alpha Airport",
+      proxies: ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "ROLA"] });
     const candidates = output.proxies.filter((node: { name: string; type: string }) => (
       !group["exclude-type"].split("|").includes(node.type)
       && new RegExp(group.filter.replace(/^\(\?i\)/u, ""), "iu").test(node.name)
@@ -99,6 +166,74 @@ describe("local Rola preparation", () => {
     expect(dns["default-selected"]).toBe("Alpha Airport");
     expect(dns["include-all"]).toBe(true);
     expect(dns["exclude-filter"]).not.toContain(input.name);
+  });
+
+  it("adds only independently dialed country and residential selectors to DNS without changing its original default", () => {
+    const original = parse(createMihomoProfile(stringify({ proxies: [
+      { name: "US Airport", type: "trojan", server: "airport.example", port: 443, password: "demo" },
+      { name: "JP Airport", type: "trojan", server: "airport.example", port: 443, password: "demo" },
+      { name: "US Direct", type: "direct" },
+      { name: "US 剩余流量", type: "trojan", server: "airport.example", port: 443, password: "demo" },
+    ] })));
+    const before = original["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
+    before["default-selected"] = "US Airport";
+    before.proxies = ["JP Airport"];
+    const base = stringify(original);
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "US Home" };
+    const output = parse(prepareRolaProfile(base, input).profile);
+    const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
+    expect(dns.proxies).toEqual(["JP Airport", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "US Home"]);
+    expect(dns["default-selected"]).toBe("US Airport");
+    for (const forbidden of ["DIRECT", "🌐 全局", "🖐 手动选择", "🤖 AI", "🐟 未匹配流量", "DNS-PROXY"]) expect(dns.proxies).not.toContain(forbidden);
+    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
+  });
+
+  it.each(["direct", "metadata", "cycle", "business", "dialer", "dialer-cycle", "provider", "filter", "fallback"])("keeps unsafe %s country selectors out of DNS in YAML and refreshed override", unsafe => {
+    const base = createMihomoProfile("proxies: [{name: JP Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
+    const original = parse(base);
+    const us = original["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
+    if (unsafe === "direct") us.proxies = ["DIRECT"];
+    if (unsafe === "metadata") {
+      us.proxies = ["US 剩余流量"];
+      original.proxies.push({ ...original.proxies[0], name: "US 剩余流量" });
+    }
+    if (unsafe === "cycle") us.proxies = ["🇺🇸 美国"];
+    if (unsafe === "business") us.proxies = ["🤖 AI"];
+    if (unsafe === "dialer" || unsafe === "dialer-cycle") {
+      original.proxies.push({ ...original.proxies[0], name: "US Airport", "dialer-proxy": unsafe === "dialer" ? "DNS-PROXY" : "US Airport" });
+    }
+    if (unsafe === "provider") us.use = ["unknown-provider"];
+    if (unsafe === "filter") us.filter = "US`unknown";
+    if (unsafe === "fallback") us["empty-fallback"] = "DIRECT";
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", country: "jp", groupName: "Home" };
+    const output = parse(prepareRolaProfile(stringify(original), input).profile);
+    const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
+    expect(dns.proxies).toContain("Home");
+    expect(dns.proxies).not.toContain("🇺🇸 美国");
+    expect(dns["default-selected"]).toBe("JP Airport");
+    const refreshed = runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original });
+    expect(refreshed).toEqual(output);
+  });
+
+  it("does not add DNS group choices when the original selected node itself depends on DNS-PROXY", () => {
+    const original = parse(createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]"));
+    original.proxies[0]["dialer-proxy"] = "DNS-PROXY";
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "Home" };
+    const base = stringify(original);
+    const output = parse(prepareRolaProfile(base, input).profile);
+    const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
+    expect(dns.proxies).toBeUndefined();
+    expect(dns["default-selected"]).toBe("Airport");
+    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
+  });
+
+  it("deduplicates a residential group named with a legacy country code in YAML and JS", () => {
+    const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
+    const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "US" };
+    const output = parse(prepareRolaProfile(base, input).profile);
+    const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
+    expect(dns.proxies.filter((name: string) => name === "US")).toHaveLength(1);
+    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: parse(base) })).toEqual(output);
   });
 
   it.each([undefined, "Provider selection"])("preserves provider-backed DNS when the original default %s cannot be established locally", selected => {
@@ -135,7 +270,7 @@ describe("local Rola preparation", () => {
     // Mihomo prepends inline nodes before external provider pools; provider names are not globally sorted with them.
     expect(dns).toEqual(selected === "0 Provider"
       ? { ...before, "exclude-filter": `${before["exclude-filter"]}|^0 Residential$` }
-      : { ...before, "default-selected": selected ?? "Alpha Airport" });
+      : { ...before, "default-selected": selected ?? "Alpha Airport", proxies: ["ROLA"] });
     expect(prepared.summary.dnsSelection).toContain(selected === "0 Provider" ? "尚未加入家宽" : "已加入家宽选项");
     expect(output["proxy-providers"]).toEqual(original["proxy-providers"]);
     expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);

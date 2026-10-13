@@ -41,6 +41,67 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it("keeps two distinct homes in refreshes, country choices and paired mobile resources", async () => {
+    const p = await preview();
+    const first = { ...exit, name: "First US Home" };
+    const second = { ...exit, name: "Second US Home", server: "198.51.100.2", port: 1081, account: "second-user", password: "second-pass" };
+    const response = await post("/api/rola/chains", { baseId: p.baseId, exit: first, additionalExits: [second],
+      connectionMode: "direct", groupName: "Homes", rules, dns });
+    expect(response.status).toBe(201);
+    const created = await response.json<{ url: string; universalUrl: string; shadowrocketConfigUrl: string }>();
+    expect(JSON.stringify(created)).not.toMatch(/second-pass|test-password/);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const profile = parse(await (await fetchClient(created.url)).text());
+      expect(profile.proxies.slice(-2)).toMatchObject([{ name: first.name, password: first.password }, { name: second.name, password: second.password }]);
+      expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "Homes").proxies).toEqual([first.name, second.name]);
+      expect(profile.rules.slice(0, 2)).toEqual(["AND,((DOMAIN,residential.example),(DST-PORT,9004)),DIRECT", "AND,((IP-CIDR,198.51.100.2/32,no-resolve),(DST-PORT,1081)),DIRECT"]);
+      const country = profile["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
+      for (const name of [first.name, second.name]) expect(new RegExp(country.filter.replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(true);
+    }
+    const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
+    const nodes = await phone.text();
+    expect(nodes).toContain("#First%20US%20Home");
+    expect(nodes).toContain("#Second%20US%20Home");
+    const paired = await fetchClient(created.shadowrocketConfigUrl);
+    expect(paired.status).toBe(200);
+    const config = await paired.text();
+    expect(config).toContain("Homes = select, First US Home, Second US Home");
+    expect(config).not.toMatch(/DST-PORT|second-pass|test-password/);
+  });
+
+  it("rejects malformed, repeated or unsupported additional exits instead of publishing partial output", async () => {
+    const p = await preview();
+    const first = { ...exit, name: "First US Home" };
+    const second = { ...exit, name: "Second US Home", server: "198.51.100.2", account: "second-user", password: "second-pass" };
+    const input = { baseId: p.baseId, exit: first, connectionMode: "direct", rules, dns };
+    for (const additionalExits of [null, {}, [null], Array(8).fill(second), [{ ...first, name: "Duplicate access" }], [{ ...second, name: first.name }], [{ ...second, additionalExits: [] }]]) {
+      const rejected = await post("/api/rola/chains", { ...input, additionalExits });
+      expect(rejected.status).toBe(400);
+      expect(await rejected.text()).not.toMatch(/second-pass|test-password/);
+    }
+    expect((await post("/api/rola/chains", { ...input, connectionMode: "chain", upstreamNode: "Airport", additionalExits: [second] })).status).toBe(400);
+  });
+
+  it("preserves IP and region names in cloud refreshes and the paired phone config", async () => {
+    const p = await preview();
+    const metadata = { exitIp: "203.0.113.24", region: "美国 Las Vegas" };
+    const input = { baseId: p.baseId, exit: { ...exit, ...metadata }, connectionMode: "direct", rules, dns };
+    const response = await post("/api/rola/chains", input);
+    expect(response.status).toBe(201);
+    const created = await response.json<{ url: string; universalUrl: string; shadowrocketConfigUrl: string }>();
+    const profile = parse(await (await fetchClient(created.url)).text());
+    const name = "203.0.113.24 · 美国 Las Vegas";
+    expect(profile.proxies.at(-1)).toMatchObject({ name, server: exit.server, port: exit.port });
+    const phone = await fetchClient(created.universalUrl, { headers: { "User-Agent": "Shadowrocket/2100" } });
+    expect(await phone.text()).toContain(`#${encodeURIComponent(name)}`);
+    const paired = await fetchClient(created.shadowrocketConfigUrl);
+    expect(paired.status).toBe(200);
+    expect(await paired.text()).toContain(`ROLA = select, ${name}`);
+    const invalid = await post("/api/rola/chains", { ...input, exit: { ...exit, exitIp: metadata.exitIp } });
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toMatchObject({ error: "invalid_rola_exit_metadata", message: "出口 IP 和区域需同时填写；都留空时保留原备注。" });
+  });
+
   // Twelve sequential Worker requests exercise KV-backed rendering, recovery and revocation in one lifecycle.
   it.each(["socks5", "http"])("adapts one direct %s link for Mihomo and Shadowrocket without dropping residential nodes or quota", { timeout: 15_000 }, async protocol => {
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(uri, { headers: { "Subscription-Userinfo": "upload=10; download=20; total=100; expire=0" } }));

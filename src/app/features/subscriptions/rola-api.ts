@@ -5,8 +5,11 @@ export type RolaExit = {
   authMode: "literal" | "dynamic";
   id: string; name: string; protocol: "http" | "socks5"; server: string; port: number;
   country: string; sessionId: string; sessionMinutes: number;
+  exitIp?: string; region?: string;
 };
 export type RolaExitDraft = Omit<RolaExit, "id"> & { id?: string; account: string; password: string };
+export type AdditionalRolaExitDraft = RolaExitDraft & { authMode: "literal" };
+export const maxAdditionalRolaExits = 7;
 export type RolaSetup = { exits: RolaExit[]; defaults: { rules: string[]; dns: string[] } };
 export type RolaPreview = {
   baseId: string;
@@ -17,6 +20,17 @@ export type RolaPreview = {
 export type RolaResult = { url: string; overrideUrl: string; summary: { connectionMode: "chain" | "direct"; groupName: string; policyGroup: string; country: string; sessionMinutes: number | null; protectedRules: number; inlineNodes: number; dnsSelection?: string } };
 export type RolaCloudResult = Omit<RolaResult, "overrideUrl"> & { universalUrl: string; shadowrocketConfigUrl?: string; revokeToken: string; expiresAt: string; sourceMode: "convert" | "snapshot" | "local-sync" };
 export type RolaManagement = Pick<RolaCloudResult, "url" | "revokeToken">;
+
+export function rolaExitLabel(exit: Pick<RolaExit, "name" | "exitIp" | "region">): string {
+  return exit.exitIp && exit.region?.trim() ? `${exit.exitIp} · ${exit.region.trim()}` : exit.name || "ROLA-RESIDENTIAL";
+}
+
+export function additionalRolaExitError(connectionMode: "chain" | "direct", count: number): string {
+  if (count > maxAdditionalRolaExits) return "最多添加 7 个附加家宽出口。";
+  return connectionMode === "chain" && count > 0
+    ? "多个家宽出口只支持直接接入。请切回直接接入，或移除附加出口后再生成；当前填写内容仍保留。"
+    : "";
+}
 
 export async function requestCloudRola<T>(path: "/preview" | "/chains" | "/revoke", input: unknown): Promise<T> {
   const origin = import.meta.env.DEV ? window.location.origin : "https://rules.flacier.com";

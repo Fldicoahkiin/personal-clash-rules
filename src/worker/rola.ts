@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { defaultDnsSettings } from "../config/dns-settings";
-import { parseRolaSettings, prepareRolaProfile, rolaUpstreamChoices } from "../local/rola";
+import { parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstreamChoices } from "../local/rola";
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store";
@@ -30,6 +30,14 @@ function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ApiError(400, "invalid_rola_input", "请填写有效的出口设置。");
   return value as Record<string, unknown>;
 }
+function exitFields(value: unknown) {
+  const exit = object(value);
+  if (exit.additionalExits !== undefined || (exit.connectionMode !== undefined && exit.connectionMode !== "direct")) {
+    throw new ApiError(400, "invalid_rola_additional_exits", "家宽出口不能嵌套或单独指定机场串联；接入方式由整份订阅统一选择。");
+  }
+  return { name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
+    country: exit.country, sessionId: exit.sessionId, sessionMinutes: exit.sessionMinutes, exitIp: exit.exitIp, region: exit.region };
+}
 function boundedProfile(profile: string) {
   if (encoder.encode(profile).length > profileBytes) throw new ApiError(413, "rola_profile_too_large", "上传快照或转换后的基础配置不能超过 256 KiB，请减少节点或规则。");
   let nodes;
@@ -46,6 +54,7 @@ function prepare(profile: string, settings: unknown) {
     return generated;
   } catch (error) {
     if (error instanceof ApiError) throw error;
+    if (error instanceof RolaExitMetadataError) throw new ApiError(400, "invalid_rola_exit_metadata", error.message);
     throw new ApiError(422, "rola_profile_rejected", "串联被拒绝：请检查账号格式、所选前置节点、证书验证、域名规则和独立引导 DNS。不会返回空节点或直连替代配置。");
   }
 }
@@ -133,9 +142,10 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       }
       if (url.pathname === "/api/rola/chains") {
         const preview = await read<Preview>(env, "preview", input.baseId);
-        const exit = object(input.exit);
-        const settings = { connectionMode: input.connectionMode, groupName: input.groupName, policyGroup: input.policyGroup, name: exit.name, authMode: exit.authMode, protocol: exit.protocol, server: exit.server, port: exit.port, account: exit.account, password: exit.password,
-          country: exit.country, sessionId: exit.sessionId, sessionMinutes: exit.sessionMinutes, upstreamNode: input.upstreamNode, rules: input.rules, dns: input.dns };
+        const additions = input.additionalExits === undefined ? [] : input.additionalExits;
+        if (!Array.isArray(additions) || additions.length > 7) throw new ApiError(400, "invalid_rola_additional_exits", "其他家宽必须是最多 7 项的列表。");
+        const settings = { ...exitFields(input.exit), additionalExits: additions.map(exitFields), connectionMode: input.connectionMode,
+          groupName: input.groupName, policyGroup: input.policyGroup, upstreamNode: input.upstreamNode, rules: input.rules, dns: input.dns };
         const generated = prepare(preview.profile, settings);
         // Only validated, explicitly selected fields can enter a persistent cloud record.
         parseRolaSettings(settings);
