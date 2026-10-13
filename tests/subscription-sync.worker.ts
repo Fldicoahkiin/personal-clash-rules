@@ -26,7 +26,7 @@ describe("locally read, cloud distributed subscriptions", () => {
     const relays = ["203.0.113.10", "203.0.113.11"].map((ip, index) => ({
       name: `[Rola] 美国 · ${ip} · VPS`, type: "vless", server: "203.0.113.20", port: 443,
       uuid: `00000000-0000-4000-8000-00000000000${index + 1}`, tls: true, "skip-cert-verify": false,
-      network: "tcp", flow: "xtls-rprx-vision", servername: "tls.example", "client-fingerprint": "chrome",
+      network: "tcp", flow: "xtls-rprx-vision", udp: false, servername: "tls.example", "client-fingerprint": "chrome",
       "reality-opts": { "public-key": "example", "short-id": "12345678", "support-x25519mlkem768": true },
     }));
     body.config.sources.push({ type: "node", value: stringify({ proxies: relays }) });
@@ -40,6 +40,7 @@ describe("locally read, cloud distributed subscriptions", () => {
       const profile = parse(await (await exports.default.fetch(url)).text());
       expect(profile.proxies).toHaveLength(4);
       for (const relay of relays) expect(profile.proxies.find((node: { name: string }) => node.name === relay.name)).toMatchObject(relay);
+      expect(profile.proxies.find((node: { type: string }) => node.type === "trojan").udp).toBe(true);
       expect(profile.proxies.find((node: { type: string }) => node.type === "trojan")["reality-opts"]).toBeUndefined();
     }
     body.config.sources.at(-1)!.value = "proxies: []";

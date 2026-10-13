@@ -118,15 +118,16 @@ function providerOverride(settings: NodeSettings): Record<string, unknown> | und
       target: `${rule.flag} $1`,
     })) : []),
   ];
-  const overrideExpression = settings.showNodeType
-    ? ['.name = "[\\(.type | upcase)] \\(.name)"']
-    : undefined;
+  // A fixed udp override would erase a source opt-out before expressions run.
+  const overrideExpression = [
+    ...(settings.udp ? [".udp = (.udp != false)"] : []),
+    ...(settings.showNodeType ? ['.name = "[\\(.type | upcase)] \\(.name)"'] : []),
+  ];
   const override = {
-    ...(settings.udp ? { udp: true } : {}),
     ...(settings.skipCertVerify ? { "skip-cert-verify": true } : {}),
     ...(settings.tfo ? { tfo: true } : {}),
     ...(proxyName.length > 0 ? { "proxy-name": proxyName } : {}),
-    ...(overrideExpression ? { "override-expr": overrideExpression } : {}),
+    ...(overrideExpression.length > 0 ? { "override-expr": overrideExpression } : {}),
   };
   return Object.keys(override).length > 0 ? override : undefined;
 }

@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
+import { spawn } from "node:child_process";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { get } from "node:http";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+import { setTimeout } from "node:timers/promises";
 
 import {
   createMihomoProfile,
   createMihomoProviderProfile,
 } from "../src/worker/mihomo-profile";
+import { defaultNodeSettings } from "../src/worker/node-transforms";
 
 describe("createMihomoProfile", () => {
   it("resolves unlisted domains at the China IP fallback while keeping explicit services and proxy DNS first", () => {
@@ -217,11 +224,12 @@ proxies:
       filter: "US|JP",
       "exclude-filter": "过期|官网",
       override: {
-        udp: true,
+        "override-expr": [".udp = (.udp != false)"],
         tfo: true,
         "skip-cert-verify": true,
       },
     });
+    expect(provider.override).not.toHaveProperty("udp");
     expect((provider.override as { "proxy-name": unknown[] })["proxy-name"]).toEqual(
       expect.arrayContaining([{ pattern: "USA", target: "US" }]),
     );
@@ -241,6 +249,61 @@ proxies:
     expect(config["proxy-groups"].find((group) => group.name === "🇺🇸 美国")).toHaveProperty(
       "empty-fallback", "REJECT",
     );
+  });
+
+  it("combines source-aware provider UDP defaults with existing name overrides", () => {
+    const input = { dnsMode: "system" as const, nodeResource: "proxies: []", providers: [{ name: "Fixture", url: "https://provider.example/sub" }],
+      nodeSettings: { ...defaultNodeSettings, addCountryFlag: false, showNodeType: true }, sourceUserAgent: "clash.meta", rulePreset: "global" as const, updateIntervalHours: 6 };
+    const override = parse(createMihomoProviderProfile(input))["proxy-providers"].Fixture.override;
+    expect(override).toEqual({ "override-expr": [".udp = (.udp != false)", '.name = "[\\(.type | upcase)] \\(.name)"'] });
+    const disabled = parse(createMihomoProviderProfile({ ...input, nodeSettings: { ...input.nodeSettings, udp: false } }))["proxy-providers"].Fixture.override;
+    expect(disabled).toEqual({ "override-expr": ['.name = "[\\(.type | upcase)] \\(.name)"'] });
+  });
+
+  it.runIf(process.env.MIHOMO_TEST_BINARY)("keeps provider UDP false, omitted and true values correct in Mihomo", { timeout: 20_000 }, async () => {
+    const profile = parse(createMihomoProviderProfile({ dnsMode: "system", nodeResource: "proxies: []",
+      providers: [{ name: "Fixture", url: "https://provider.example/sub" }],
+      nodeSettings: { ...defaultNodeSettings, addCountryFlag: false }, sourceUserAgent: "clash.meta", rulePreset: "global", updateIntervalHours: 6 }));
+    const directory = await mkdtemp(resolve(process.platform === "darwin" ? "/private/tmp" : tmpdir(), "mihomo-provider-udp-"));
+    const socketPath = resolve(directory, "controller.sock");
+    const path = resolve(directory, "config.yaml");
+    await writeFile(path, stringify({ mode: "rule", "log-level": "silent", "external-controller-unix": socketPath,
+      "proxy-providers": { Fixture: { type: "inline", override: profile["proxy-providers"].Fixture.override,
+        payload: [
+          { name: "TCP only", type: "socks5", server: "127.0.0.1", port: 9, udp: false },
+          { name: "Default", type: "socks5", server: "127.0.0.1", port: 9 },
+          { name: "UDP enabled", type: "socks5", server: "127.0.0.1", port: 9, udp: true },
+        ] } }, "proxy-groups": [{ name: "Fixture choices", type: "select", use: ["Fixture"] }], rules: ["MATCH,REJECT"] }), { mode: 0o600 });
+    const core = spawn(process.env.MIHOMO_TEST_BINARY!, ["-d", directory, "-f", path], { stdio: "ignore", timeout: 15_000 });
+    const closed = new Promise<void>(resolve => core.once("close", () => resolve()));
+    let startupError: Error | undefined;
+    core.on("error", error => { startupError = error; });
+    try {
+      let data: { proxies: Array<{ name: string; udp: boolean }> } | undefined;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        if (startupError) throw startupError;
+        try {
+          data = await new Promise((resolve, reject) => {
+            const request = get({ socketPath, path: "/providers/proxies/Fixture", timeout: 1000 }, response => {
+              let body = "";
+              response.on("data", chunk => { body += chunk; });
+              response.on("end", () => {
+                try { expect(response.statusCode).toBe(200); resolve(JSON.parse(body)); } catch (error) { reject(error); }
+              });
+            });
+            request.on("error", reject);
+            request.on("timeout", () => request.destroy(new Error("Provider controller timed out")));
+          });
+          break;
+        } catch (error) {
+          if (attempt === 29 || core.exitCode !== null) throw error;
+          await setTimeout(50);
+        }
+      }
+      expect(data?.proxies.map(node => ({ name: node.name, udp: node.udp }))).toEqual([
+        { name: "TCP only", udp: false }, { name: "Default", udp: true }, { name: "UDP enabled", udp: true },
+      ]);
+    } finally { core.kill(); await closed; }
   });
 
   it("can generate a global proxy preset without Flacier rule providers", () => {

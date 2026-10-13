@@ -121,6 +121,20 @@ describe("applyNodeTransforms", () => {
     }]);
   });
 
+  it("preserves explicit TCP-only nodes while enabling UDP for unspecified nodes", () => {
+    const nodes = [
+      { name: "TCP only", type: "vless", udp: false, tls: true, "skip-cert-verify": false },
+      { name: "Default", type: "trojan", server: "default.example" },
+      { name: "UDP enabled", type: "ss", udp: true },
+    ];
+    const original = structuredClone(nodes);
+    expect(applyNodeTransforms(nodes, { ...defaultNodeSettings, addCountryFlag: false })).toEqual([
+      nodes[0], { ...nodes[1], udp: true }, nodes[2],
+    ]);
+    expect(applyNodeTransforms(nodes, { ...defaultNodeSettings, addCountryFlag: false, udp: false })).toEqual(nodes);
+    expect(nodes).toEqual(original);
+  });
+
   it("keeps explicit platform prefixes first while leaving ordinary country flag naming unchanged", () => {
     const names = ["[Rola] 美国 · 203.0.113.10 · VPS", "[Example ISP] 美国 Las Vegas · 203.0.113.11 · VPS",
       "[平台 A-1_test.io] Japan 1", "US-LAX-01", "🇯🇵 JP 2", "Custom", "[Bad/Label] 美国 1"];

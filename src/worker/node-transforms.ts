@@ -204,7 +204,7 @@ export function applyNodeTransforms(
       ...(settings.xudp && (node.type === "vmess" || node.type === "vless")
         ? { "packet-encoding": "xudp" }
         : {}),
-      ...(settings.udp ? { udp: true } : {}),
+      ...(settings.udp && node.udp !== false ? { udp: true } : {}),
       ...(settings.skipCertVerify ? { "skip-cert-verify": true } : {}),
       ...(settings.tfo ? { tfo: true } : {}),
       name,
