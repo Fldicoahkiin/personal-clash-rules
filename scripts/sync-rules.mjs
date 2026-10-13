@@ -11,6 +11,7 @@ const maxSourceBytes = 1024 * 1024;
 const domesticSupplements = [
   { name: "xiaohongshu" },
   { name: "amap" },
+  { name: "dingtalk" },
   // Only these app dependencies are taken from company-wide lists, not overseas products or shared cloud hosting.
   { name: "bytedance", domains: ["snssdk.com", "pstatp.com", "toutiao.com", "toutiaoapi.com", "toutiaocdn.com", "toutiaocloud.com", "toutiaoimg.com", "toutiaostatic.com", "toutiaovod.com", "ixigua.com", "ixiguavideo.com", "jinritemai.com", "ecombdapi.com", "ecombdimg.com", "ecombdstatic.com", "ecombdvod.com"] },
   { name: "alibaba", domains: ["taobao.com", "taobao.net", "taobaocdn.com", "taotian.com", "tb.cn", "tbcache.com", "tbcdn.cn", "tmall.com", "alipay.com", "alipay.cn", "alipay.com.cn", "alipaydns.com", "alipayobjects.com", "goofish.com", "1688.com", "juhuasuan.com", "antfortune.com", "fund123.cn", "alitrip.com", "feizhu.com", "fliggy.com"] },

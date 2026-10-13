@@ -11,6 +11,8 @@
 # Source SHA-256: 8b69aa06de192f92f60807fd62b72fe5303bfd8dd4d15c0f42401b7d6286cc7f
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/amap
 # Source SHA-256: 9c9400a024d117fae4f2906286fc7f52e0e86b349af05b4972a490be47db4aee
+# Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/dingtalk
+# Source SHA-256: 3e067a02023add491519aa6d0d6714b74e073c01e6572de42e01cca69582da45
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/bytedance
 # Source SHA-256: f7084016918288fe58dbe18d862762a471c49e7e4f3c0b388a801d54f5448b4c
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/alibaba
@@ -5426,6 +5428,17 @@ DOMAIN-SUFFIX,amapauto.com
 DOMAIN-SUFFIX,anav.com
 DOMAIN-SUFFIX,autonavi.com
 DOMAIN-SUFFIX,gaode.com
+DOMAIN-SUFFIX,ddurl.to
+DOMAIN-SUFFIX,dingding.xin
+DOMAIN-SUFFIX,dingstore.cn
+DOMAIN-SUFFIX,dingtalk.cn
+DOMAIN-SUFFIX,dingtalk.com
+DOMAIN-SUFFIX,dingtalk.net
+DOMAIN-SUFFIX,dingtalkapps.com
+DOMAIN-SUFFIX,dingtalkcloud.com
+DOMAIN-SUFFIX,laiwang.com
+DOMAIN-SUFFIX,lwurl.to
+DOMAIN-SUFFIX,ztna-dingtalk.com
 DOMAIN-SUFFIX,pstatp.com
 DOMAIN-SUFFIX,snssdk.com
 DOMAIN-SUFFIX,toutiao.com

@@ -42,6 +42,17 @@ describe("published rule sets", () => {
     }
     expect(mihomoRules.slice(-2)).toEqual(["GEOIP,CN,DIRECT,no-resolve", "MATCH,DEFAULT"]);
   });
+
+  it("routes DingTalk services and subdomains directly without accepting lookalike suffixes", async () => {
+    const rules = [createRuleSet({ id: "china-domains", label: "国内服务", policy: "DIRECT", path: "rules/direct/china-domains.list" }, await read("public/rules/direct/china-domains.list"))];
+    for (const host of ["ddurl.to", "dingding.xin", "dingstore.cn", "dingtalk.cn", "dingtalk.com", "dingtalk.net", "dingtalkapps.com", "dingtalkcloud.com", "laiwang.com", "lwurl.to", "ztna-dingtalk.com", "login.dingtalk.com", "static.dingtalkapps.com"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ matched: true, policy: "DIRECT" });
+    }
+    for (const host of ["dingtalk.com.example.org", "notdingtalk.com", "evil-dingtalkapps.com", "api.openai.com", "github.com", "www.tiktok.com"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ matched: false, policy: "DEFAULT" });
+    }
+  });
+
   it("keeps Claude authentication, content and specific intake hosts on the AI policy", async () => {
     const rules = [createRuleSet({
       id: "ai-anthropic", label: "Claude", policy: "AI", path: "rules/ai/anthropic.list",

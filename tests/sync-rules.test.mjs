@@ -76,6 +76,7 @@ describe("domestic rule sync", () => {
       xiaohongshu: "include:askdiandian\nxiaohongshu.com\nrednote.com @!cn",
       askdiandian: "askdiandian.com\nforeign.example @!cn",
       amap: "amap.com\ntracking.example @ads",
+      dingtalk: "dingtalk.com\ndingtalkapps.com\nforeign-dingtalk.example @!cn",
       bytedance: "include:tiktok\nsnssdk.com\ntiktok.com\nbyteoversea.com @!cn",
       alibaba: "include:alibabacloud\ntaobao.com\nalipay.com\naliexpress.com",
       aliyun: "alicdn.com\noss-us-west-1.aliyuncs.com @!cn",
@@ -86,10 +87,10 @@ describe("domestic rule sync", () => {
     const content = await readFile(resolve(root, "public/rules/direct/china-domains.list"), "utf8");
     expect(content).toContain("# Omitted 1 DOMAIN-REGEX");
     expect(content).toMatch(/# Source SHA-256: [a-f0-9]{64}/u);
-    for (const domain of ["douyin.com", "xiaohongshu.com", "askdiandian.com", "amap.com", "snssdk.com", "taobao.com", "alipay.com", "alicdn.com", "jd.com"]) {
+    for (const domain of ["douyin.com", "xiaohongshu.com", "askdiandian.com", "amap.com", "dingtalk.com", "dingtalkapps.com", "snssdk.com", "taobao.com", "alipay.com", "alicdn.com", "jd.com"]) {
       expect(content).toContain(`DOMAIN-SUFFIX,${domain}\n`);
     }
-    for (const domain of ["tiktok.com", "byteoversea.com", "rednote.com", "foreign.example", "tracking.example", "aliexpress.com", "jd.id", "oss-us-west-1.aliyuncs.com"]) {
+    for (const domain of ["tiktok.com", "byteoversea.com", "rednote.com", "foreign.example", "foreign-dingtalk.example", "tracking.example", "aliexpress.com", "jd.id", "oss-us-west-1.aliyuncs.com"]) {
       expect(content).not.toContain(`DOMAIN-SUFFIX,${domain}`);
     }
     expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining("/tiktok"), expect.anything());
