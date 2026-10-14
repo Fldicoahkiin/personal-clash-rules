@@ -242,6 +242,10 @@ export const mihomoProxyGroups = [
 }));
 
 export const mihomoRules = [
+  "DOMAIN-SUFFIX,alipay.com,DIRECT",
+  "DOMAIN-SUFFIX,alipayobjects.com,DIRECT",
+  "DOMAIN-SUFFIX,alicdn.com,DIRECT",
+  "DOMAIN-SUFFIX,jinhefilm.com,DIRECT",
   "RULE-SET,private-domain,DIRECT",
   "RULE-SET,private-ip,DIRECT,no-resolve",
   "RULE-SET,tencent-messaging,DIRECT",

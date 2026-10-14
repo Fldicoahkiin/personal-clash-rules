@@ -63,13 +63,17 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 16)).toEqual([
+    expect(config["+rules"].slice(0, 20)).toEqual([
       "PROCESS-NAME,WeChat,DIRECT",
       "PROCESS-NAME,WeChatAppEx,DIRECT",
       "PROCESS-NAME,QQ,DIRECT",
       "PROCESS-NAME,QQ Helper,DIRECT",
       "PROCESS-NAME,NeteaseMusic,DIRECT",
       "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
+      "DOMAIN-SUFFIX,alipay.com,DIRECT",
+      "DOMAIN-SUFFIX,alipayobjects.com,DIRECT",
+      "DOMAIN-SUFFIX,alicdn.com,DIRECT",
+      "DOMAIN-SUFFIX,jinhefilm.com,DIRECT",
       "RULE-SET,private-domain,DIRECT",
       "RULE-SET,private-ip,DIRECT,no-resolve",
       "RULE-SET,tencent-messaging,DIRECT",
