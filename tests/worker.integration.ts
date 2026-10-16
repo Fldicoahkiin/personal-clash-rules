@@ -195,7 +195,15 @@ describe("Worker entrypoint", () => {
     expect(preview.fingerprint).toMatch(/^[A-Za-z0-9_-]{43}$/u);
     expect(preview.ruleSets.at(-1)).toMatchObject({ content: "MATCH", policy: "DEFAULT" });
     expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
-    expect(preview.ruleSets.slice(0, 6).map(({ content, policy }) => ({ content, policy }))).toEqual([
+    expect(preview.ruleSets.slice(0, 14).map(({ content, policy }) => ({ content, policy }))).toEqual([
+      { content: "PROCESS-NAME,ToDesk", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk_Service", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk_Session", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk_Session_Proxy", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk_Screenwall_Helper", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk_XPCHelper", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk.exe", policy: "DIRECT" },
+      { content: "PROCESS-NAME,ToDesk_Service.exe", policy: "DIRECT" },
       { content: "PROCESS-NAME,WeChat", policy: "DIRECT" },
       { content: "PROCESS-NAME,WeChatAppEx", policy: "DIRECT" },
       { content: "PROCESS-NAME,QQ", policy: "DIRECT" },

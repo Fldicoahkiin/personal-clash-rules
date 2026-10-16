@@ -242,6 +242,8 @@ export const mihomoProxyGroups = [
 }));
 
 export const mihomoRules = [
+  "DOMAIN-SUFFIX,todesk.com,DIRECT",
+  "DOMAIN-SUFFIX,todesk.cn,DIRECT",
   "DOMAIN-SUFFIX,alipay.com,DIRECT",
   "DOMAIN-SUFFIX,alipayobjects.com,DIRECT",
   "DOMAIN-SUFFIX,alicdn.com,DIRECT",
@@ -285,6 +287,14 @@ export const mihomoRules = [
 // Exact executable names from the installed macOS apps, including their network helpers.
 // These cover IP-only connections without sending an entire shared cloud range directly.
 export const mihomoProfileRules = [
+  "PROCESS-NAME,ToDesk,DIRECT",
+  "PROCESS-NAME,ToDesk_Service,DIRECT",
+  "PROCESS-NAME,ToDesk_Session,DIRECT",
+  "PROCESS-NAME,ToDesk_Session_Proxy,DIRECT",
+  "PROCESS-NAME,ToDesk_Screenwall_Helper,DIRECT",
+  "PROCESS-NAME,ToDesk_XPCHelper,DIRECT",
+  "PROCESS-NAME,ToDesk.exe,DIRECT",
+  "PROCESS-NAME,ToDesk_Service.exe,DIRECT",
   "PROCESS-NAME,WeChat,DIRECT",
   "PROCESS-NAME,WeChatAppEx,DIRECT",
   "PROCESS-NAME,QQ,DIRECT",

@@ -646,12 +646,22 @@ rule-providers:
     empty-fallback: REJECT
 
 +rules:
+  - PROCESS-NAME,ToDesk,DIRECT
+  - PROCESS-NAME,ToDesk_Service,DIRECT
+  - PROCESS-NAME,ToDesk_Session,DIRECT
+  - PROCESS-NAME,ToDesk_Session_Proxy,DIRECT
+  - PROCESS-NAME,ToDesk_Screenwall_Helper,DIRECT
+  - PROCESS-NAME,ToDesk_XPCHelper,DIRECT
+  - PROCESS-NAME,ToDesk.exe,DIRECT
+  - PROCESS-NAME,ToDesk_Service.exe,DIRECT
   - PROCESS-NAME,WeChat,DIRECT
   - PROCESS-NAME,WeChatAppEx,DIRECT
   - PROCESS-NAME,QQ,DIRECT
   - PROCESS-NAME,QQ Helper,DIRECT
   - PROCESS-NAME,NeteaseMusic,DIRECT
   - PROCESS-NAME,NeteaseMusic Helper,DIRECT
+  - DOMAIN-SUFFIX,todesk.com,DIRECT
+  - DOMAIN-SUFFIX,todesk.cn,DIRECT
   - DOMAIN-SUFFIX,alipay.com,DIRECT
   - DOMAIN-SUFFIX,alipayobjects.com,DIRECT
   - DOMAIN-SUFFIX,alicdn.com,DIRECT

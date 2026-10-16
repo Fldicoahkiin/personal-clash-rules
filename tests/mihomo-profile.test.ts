@@ -51,6 +51,14 @@ describe("createMihomoProfile", () => {
   it("prepends exact domestic-app rules for IP-only connections without exempting other processes", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     expect(profile.rules.filter((rule: string) => rule.startsWith("PROCESS-NAME,"))).toEqual([
+      "PROCESS-NAME,ToDesk,DIRECT",
+      "PROCESS-NAME,ToDesk_Service,DIRECT",
+      "PROCESS-NAME,ToDesk_Session,DIRECT",
+      "PROCESS-NAME,ToDesk_Session_Proxy,DIRECT",
+      "PROCESS-NAME,ToDesk_Screenwall_Helper,DIRECT",
+      "PROCESS-NAME,ToDesk_XPCHelper,DIRECT",
+      "PROCESS-NAME,ToDesk.exe,DIRECT",
+      "PROCESS-NAME,ToDesk_Service.exe,DIRECT",
       "PROCESS-NAME,WeChat,DIRECT",
       "PROCESS-NAME,WeChatAppEx,DIRECT",
       "PROCESS-NAME,QQ,DIRECT",
