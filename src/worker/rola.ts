@@ -6,7 +6,7 @@ import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store";
 import { buildSubscription, buildSynchronizedSubscription, readRequestObject, readSynchronizedSubscription } from "./subscriptions";
 import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscription-recovery";
-import { renderRolaTarget, requireRolaTarget, rolaRequestTarget, type RolaTarget } from "./rola-target";
+import { renderRolaTarget, requireRolaTarget, rolaMobileFiles, rolaRequestTarget, type RolaTarget } from "./rola-target";
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
 
 const profileBytes = 256 * 1024;
@@ -78,8 +78,9 @@ async function write(env: Env, kind: "preview" | "chain", value: unknown, ttl: n
 
 function profileResponse(chain: Chain, profile: string, userinfo: string | null, target: RolaTarget = "mihomo-config") {
   const extension = target === "mihomo-config" ? "yaml" : target === "shadowrocket-config" ? "conf" : "txt";
+  const filename = target === "mihomo-config" ? `${chain.name || "Flacier-Rola"}.${extension}` : rolaMobileFiles[target];
   const headers = new Headers({ "Content-Type": target === "mihomo-config" ? "text/yaml; charset=utf-8" : "text/plain; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
-    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(chain.name || "Flacier-Rola")}.${extension}`,
+    "Content-Disposition": `attachment; ${target === "mihomo-config" ? "" : `filename="${filename}"; `}filename*=UTF-8''${encodeURIComponent(filename)}`,
     "Vary": "User-Agent", "X-Subscription-Target": target,
     "Profile-Update-Interval": "6", "X-Subscription-Source-Mode": chain.source.kind, "X-Rola-Expires-At": new Date(chain.expiresAt).toISOString() });
   if (userinfo) headers.set("Subscription-Userinfo", userinfo);
@@ -156,7 +157,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         await withSubscriptionRecovery(env.SUBSCRIPTIONS, `rola:${chainId}`, async () => profileResponse(chain, generated.profile, preview.userinfo));
         const universalUrl = `${url.origin}/r/${chainId}`;
         return result({ url: `${universalUrl}.yaml`, universalUrl,
-          ...(settings.connectionMode === "direct" ? { shadowrocketConfigUrl: `${universalUrl}?target=shadowrocket-config` } : {}),
+          ...(settings.connectionMode === "direct" ? { shadowrocketConfigUrl: `${universalUrl}/${rolaMobileFiles["shadowrocket-config"]}` } : {}),
           summary: generated.summary, revokeToken,
           expiresAt: new Date(expiresAt).toISOString(), sourceMode: preview.source.kind }, 201);
       }
@@ -176,7 +177,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         return result({ deleted: true });
       }
     }
-    const match = /^\/r\/([\w-]{32})(?:\.yaml)?$/u.exec(url.pathname);
+    const match = /^\/r\/([\w-]{32})(?:\.yaml|\/(?:Flacier-Mobile\.conf|Flacier-Mobile-Nodes\.txt))?$/u.exec(url.pathname);
     if (match && ["GET", "HEAD"].includes(request.method)) {
       const chain = await read<Chain>(env, "chain", match[1]);
       const target = rolaRequestTarget(request, url);

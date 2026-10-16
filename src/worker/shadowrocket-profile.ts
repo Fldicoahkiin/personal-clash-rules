@@ -80,9 +80,10 @@ export function createShadowrocketProfile(
   const bootstrap = routing ? routing.bootstrap.join(", ") : dnsMode === "doh" ? createProxyDns(settings)["proxy-server-nameserver"].join(", ") : "system";
   const rules = (routing?.rules ?? mihomoRules).flatMap(rule => ruleLine(rule, routing?.providers ?? mihomoRuleProviders));
   return [
-    "# Flacier · Shadowrocket",
-    "# Import the paired node subscription first; this file contains routing and DNS, not node credentials.",
-    "# PROXY and proxy DoH use the node selected on the homepage; domestic DIRECT rules stay direct.",
+    "# Flacier · 手机分流",
+    "# 配套节点订阅在首页更新；此配置负责分流与 DNS，不包含节点账号密码。",
+    "# 代理流量和加密 DNS 跟随首页所选节点，国内应用按 DIRECT 规则直连。",
+    "# 更新规则或 DNS 时，长按此配置选择 Update，并保持该配置为已选中状态。",
     "[General]",
     `ipv6 = ${settings.ipv6}`,
     "prefer-ipv6 = false",

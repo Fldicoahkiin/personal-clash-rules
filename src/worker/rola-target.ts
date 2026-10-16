@@ -8,9 +8,11 @@ import { targetForUserAgent } from "./subscription-target";
 import { isMihomoConfigTarget, type SubscriptionEnv } from "./types";
 
 export type RolaTarget = "mihomo-config" | "shadowrocket" | "shadowrocket-config";
+export const rolaMobileFiles = { shadowrocket: "Flacier-Mobile-Nodes.txt", "shadowrocket-config": "Flacier-Mobile.conf" } as const;
 
 export function rolaRequestTarget(request: Request, url: URL): RolaTarget {
   const selected = url.searchParams.get("target")
+    ?? Object.entries(rolaMobileFiles).find(([, filename]) => url.pathname.endsWith(`/${filename}`))?.[0]
     ?? (url.pathname.endsWith(".yaml") ? "mihomo-config" : targetForUserAgent(request.headers.get("User-Agent") || ""));
   if (selected === "mihomo" || isMihomoConfigTarget(selected)) return "mihomo-config";
   if (selected === "shadowrocket" || selected === "shadowrocket-config") return selected;

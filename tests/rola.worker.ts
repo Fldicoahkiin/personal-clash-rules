@@ -179,9 +179,16 @@ describe("cloud Rola subscriptions", () => {
       expect(phone.headers.get("content-type")).toContain("text/plain");
       expect(phone.headers.get("vary")).toBe("User-Agent");
       expect(phone.headers.get("subscription-userinfo")).toBe("upload=10; download=20; total=100; expire=0");
+      expect(phone.headers.get("content-disposition")).toContain('filename="Flacier-Mobile-Nodes.txt"');
       expect(await phone.text()).toContain(`${protocol}://test-account:test-password@residential.example:9004#US%20Home`);
+      const namedNodes = await fetchClient(`${created.universalUrl}/Flacier-Mobile-Nodes.txt`);
+      expect(namedNodes.status).toBe(200);
+      expect(namedNodes.headers.get("x-subscription-target")).toBe("shadowrocket");
+      expect(await namedNodes.text()).toContain(`${protocol}://`);
+      expect(created.shadowrocketConfigUrl).toBe(`${created.universalUrl}/Flacier-Mobile.conf`);
       const config = await fetchClient(created.shadowrocketConfigUrl);
       expect(config.status).toBe(200);
+      expect(config.headers.get("content-disposition")).toContain('filename="Flacier-Mobile.conf"');
       const conf = await config.text();
       expect(conf).not.toContain("[Proxy Group]");
       expect(conf).not.toContain("US Home");
