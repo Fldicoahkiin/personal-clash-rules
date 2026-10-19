@@ -7,6 +7,8 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["@cloudflare/vitest-plugin/types"]
@@ -17,7 +19,6 @@
     "tests/worker.integration.ts",
     "tests/*.worker.ts",
     "tests/helpers/*.ts",
-    "tests/worker.setup.ts",
     "vitest.worker.config.ts",
     "worker-configuration.d.ts",
     "src/worker.ts",
