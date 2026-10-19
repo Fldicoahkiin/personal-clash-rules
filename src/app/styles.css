@@ -1205,8 +1205,7 @@ summary:focus-visible {
   height: 16px;
 }
 
-.button:disabled,
-.button.is-disabled {
+.button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
