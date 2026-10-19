@@ -73,6 +73,8 @@ async function renewChain(env: Env, id: string, chain: Chain): Promise<Chain> {
   if (chain.expiresAt - Date.now() >= (chainTtl - 86_400) * 1000) return chain;
   const renewed = { ...chain, expiresAt: Date.now() + chainTtl * 1000 };
   try {
+    // A stale read in another location must not write a revoked record back.
+    if (await env.SUBSCRIPTIONS.get(`rola:revoked:${id}`)) return chain;
     await env.SUBSCRIPTIONS.put(`rola:chain:${id}`, JSON.stringify(renewed), { expirationTtl: chainTtl });
     return renewed;
   } catch (error) {
@@ -181,6 +183,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         const chain = await read<Chain>(env, "chain", match[1]);
         const digest = await hashText(typeof input.revokeToken === "string" ? input.revokeToken : "");
         if (!timingSafeEqual(encoder.encode(digest), encoder.encode(chain.revokeHash))) throw new ApiError(403, "rola_revoke_denied", "删除码不匹配，订阅未改变。");
+        await env.SUBSCRIPTIONS.put(`rola:revoked:${match[1]}`, "1", { expirationTtl: chainTtl });
         await env.SUBSCRIPTIONS.delete(`rola:chain:${match[1]}`);
         await env.SUBSCRIPTIONS.delete(await subscriptionRecoveryKey(`rola:${match[1]}`));
         for (const target of ["shadowrocket", "shadowrocket-config"]) {

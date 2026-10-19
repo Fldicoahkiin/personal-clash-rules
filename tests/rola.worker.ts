@@ -388,8 +388,15 @@ describe("cloud Rola subscriptions", () => {
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");
     expect((await post("/api/rola/revoke", { url: created.url, revokeToken: "bad" })).status).toBe(403);
+    const key = `rola:chain:${new URL(created.url).pathname.split("/").at(-1)!.replace(/\.yaml$/u, "")}`;
+    const saved = await env.SUBSCRIPTIONS.get<{ expiresAt: number }>(key, "json");
     expect((await post("/api/rola/revoke", { url: created.url, revokeToken: created.revokeToken })).status).toBe(200);
     expect((await fetchClient(created.url)).status).toBe(404);
+    // A location that still reads the revoked record must not renew it back into storage.
+    const staleExpiry = Date.now() + 86_400_000;
+    await env.SUBSCRIPTIONS.put(key, JSON.stringify({ ...saved, expiresAt: staleExpiry }));
+    expect((await fetchClient(created.url)).status).toBe(200);
+    expect((await env.SUBSCRIPTIONS.get<{ expiresAt: number }>(key, "json"))!.expiresAt).toBe(staleExpiry);
   });
 
   it("refreshes airport quota and rejects a missing first hop or denied source without returning an empty profile", async () => {
