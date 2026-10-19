@@ -21,19 +21,7 @@
     "worker-configuration.d.ts",
     "src/worker/**/*.ts",
     "src/local/**/*.ts",
-    "src/app/components/RouteTester.tsx",
-    "src/app/components/BuildDetails.tsx",
-    "src/app/components/SubscriptionFormatPicker.tsx",
-    "src/app/components/SubscriptionMoreSettings.tsx",
-    "src/app/components/MihomoDnsSettings.tsx",
-    "src/app/components/SubscriptionResult.tsx",
-    "src/app/lib",
-    "src/app/features/subscriptions",
-    "src/config/**/*.ts",
-    "src/worker/api-error.ts",
-    "src/worker/node-transforms.ts",
-    "src/worker/subscription-target.ts",
-    "src/worker/*-profile.ts",
-    "src/worker/yaml-proxy-resource.ts"
+    "src/app",
+    "src/config/**/*.ts"
   ]
 }

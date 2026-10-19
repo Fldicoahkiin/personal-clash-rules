@@ -1,91 +1,69 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
-import { describe, expect, it } from "vitest";
+import { App } from "../src/app/App";
+import { SubscriptionResult } from "../src/app/components/SubscriptionResult";
+import { completeConfigFormats } from "../src/app/features/subscriptions/client-formats";
 
-function projectFile(path: string): string {
-  return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+let page = "";
+
+beforeAll(() => {
+  vi.stubGlobal("window", { location: { origin: "https://rules.flacier.com", hostname: "rules.flacier.com", protocol: "https:" } });
+  vi.stubGlobal("__BUILD_INFO__", { builtAt: null, commit: null, dirty: false });
+  page = renderToStaticMarkup(createElement(App));
+  vi.unstubAllGlobals();
+});
+
+function positionOf(fragment: string): number {
+  const index = page.indexOf(fragment);
+  expect(index, fragment).toBeGreaterThan(-1);
+  return index;
 }
 
-describe("home page flow", () => {
+describe("home page", () => {
   it("puts subscription conversion before secondary tools", () => {
-    const app = projectFile("src/app/App.tsx");
-
-    expect(app.indexOf("<SubscriptionImport ")).toBeGreaterThan(-1);
-    expect(app.indexOf("<SubscriptionImport ")).toBeLessThan(
-      app.indexOf("<RouteTester "),
-    );
-    expect(app.indexOf("<NetworkChecks />")).toBeLessThan(
-      app.indexOf("<RouteTester "),
-    );
-    expect(app.indexOf("<RouteTester ")).toBeLessThan(
-      app.indexOf("<ConverterWorkspace />"),
-    );
+    expect(positionOf('id="subscription"')).toBeLessThan(positionOf('id="network"'));
+    expect(positionOf('id="network"')).toBeLessThan(positionOf('id="tester"'));
+    expect(positionOf('id="tester"')).toBeLessThan(positionOf('id="converter"'));
   });
 
   it("links to external DNS, WebRTC, IPv6 and connection checks", () => {
-    const checks = projectFile("src/app/components/NetworkChecks.tsx");
-
-    expect(checks).toContain("https://browserleaks.com/dns");
-    expect(checks).toContain("https://browserleaks.com/webrtc");
-    expect(checks).toContain("https://test-ipv6.com/");
-    expect(checks).toContain("https://1.1.1.1/help");
-  });
-
-  it("uses GitHub's official Primer mark instead of a third-party glyph", () => {
-    const header = projectFile("src/app/components/AppHeader.tsx");
-    const app = projectFile("src/app/App.tsx");
-
-    for (const source of [header, app]) {
-      expect(source).toContain('/brand/github-mark.svg');
-      expect(source).not.toContain("GithubLogo");
+    for (const href of ["https://browserleaks.com/dns", "https://browserleaks.com/webrtc", "https://test-ipv6.com/", "https://1.1.1.1/help"]) {
+      expect(page).toContain(`href="${href}"`);
     }
   });
 
-  it("has no management navigation or management route", () => {
-    const header = projectFile("src/app/components/AppHeader.tsx");
-    const root = projectFile("src/app/Root.tsx");
-
-    expect(header).not.toContain("/manage");
-    expect(root).not.toContain("SubscriptionConsole");
+  it("uses GitHub's official mark and has no management navigation", () => {
+    expect(page).toContain('src="/brand/github-mark.svg"');
+    expect(page).not.toContain('href="/manage');
   });
 
-  it("uses the Flacier product name as an editable value instead of placeholder text", () => {
-    const header = projectFile("src/app/components/AppHeader.tsx");
-    const form = projectFile("src/app/components/SubscriptionImport.tsx");
-    const html = projectFile("index.html");
-
-    expect(header).toContain("Flacierの订阅转换");
-    expect(form).toContain('<h1 id="subscription-title">Flacierの订阅转换</h1>');
-    expect(form).toContain('name: "Flacierの分流规则"');
-    expect(form).not.toContain('placeholder="留空时使用');
-    expect(html).toContain("<title>Flacierの订阅转换</title>");
+  it("prefills the product name as an editable value", () => {
+    expect(page).toContain('<h1 id="subscription-title">Flacierの订阅转换</h1>');
+    expect(page).toMatch(/<input[^>]*value="Flacierの分流规则"/u);
+    expect(page).not.toContain('placeholder="留空时使用');
+    expect(readFileSync(new URL("../index.html", import.meta.url), "utf8")).toContain("<title>Flacierの订阅转换</title>");
   });
 
-  it("uses a plain connecting line in the route tester", () => {
-    const tester = projectFile("src/app/components/RouteTester.tsx");
-    const styles = projectFile("src/app/styles.css");
-
-    expect(tester).toContain('className="route-line"');
-    expect(styles).toContain(".route-line");
-    expect(styles).toContain(".route-steps li::before");
-    expect(styles).toContain(".route-steps li:first-child::before");
-    expect(styles).toContain(".route-steps li:last-child::before");
-    expect(styles).not.toContain("outline: 8px solid var(--paper)");
+  it("draws the route tester as a plain line and keeps the name below the source", () => {
+    expect(page).toContain('class="route-line"');
+    expect(page).not.toMatch(/railway|signal/iu);
+    expect(positionOf("subscription-source")).toBeLessThan(positionOf("subscription-name"));
   });
 
-  it("keeps the subscription name below the source and the result responsive", () => {
-    const form = projectFile("src/app/components/SubscriptionImport.tsx");
-    const result = projectFile("src/app/components/SubscriptionResult.tsx");
-    const styles = projectFile("src/app/styles.css");
-
-    expect(form.indexOf('className="field subscription-name"')).toBeGreaterThan(
-      form.indexOf('className="field subscription-source"'),
-    );
-    expect(styles).toContain(".subscription-name {");
-    expect(styles).toContain(".subscription-result-copy");
-    expect(styles).toContain(".subscription-result-actions");
-    expect(styles).not.toContain("min-width: 320px");
-    expect(result).toContain('className="subscription-result-copy"');
-    expect(result).toContain('className="subscription-result-actions"');
+  it("renders the result link with separate copy and action areas", () => {
+    const result = renderToStaticMarkup(createElement(SubscriptionResult, {
+      copied: false, onCopy: () => undefined,
+      format: completeConfigFormats.find(format => format.target === "clash-party-config")!,
+      result: {
+        target: "clash-party-config", sourceMode: "convert", profileName: "Flacier",
+        nodeStats: { read: 1, output: 1, skipped: 0 }, usage: { combined: null, sources: [] },
+        url: "https://rules.flacier.com/s/abcdefghijklmnop/clash-party-config", universalUrl: "https://rules.flacier.com/s/abcdefghijklmnop",
+      },
+    }));
+    expect(result).toContain('class="subscription-result-copy"');
+    expect(result).toContain('class="subscription-result-actions"');
   });
 });
