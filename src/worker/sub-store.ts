@@ -32,11 +32,6 @@ const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 function stringSetting(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
-function numberSetting(value: unknown, fallback: number, min: number, max: number) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return fallback;
-  return Math.min(Math.max(Math.trunc(number), min), max);
-}
 
 function decodeMaybeBase64(raw: string) {
   const text = raw.trim();
@@ -67,17 +62,6 @@ function parseProxies(raw: string): ProxyNode[] {
   if (/^\s*[\[{]/.test(text)) return parseJsonProxies(text);
   if (/^\s*proxies\s*:/m.test(text)) return parseYamlProxies(text);
   return parseProxyLines(text);
-}
-
-function addPreviewIds(proxies: ProxyNode[]) {
-  return proxies.map((proxy, index) => ({
-    id: stableProxyId(proxy, index),
-    ...proxy,
-  }));
-}
-
-function stableProxyId(proxy: ProxyNode, index: number) {
-  return [proxy.name, proxy.type, proxy.server || "", proxy.port || "", index].join("|");
 }
 
 function parseJsonProxies(raw: string) {
@@ -778,20 +762,8 @@ function parseWireGuard(line: string, index: number): ProxyNode {
     udp: true,
   });
 }
-function ensureUniqueProxyNames(proxies: ProxyNode[]) {
-  const seen = new Map<string, number>();
-  return proxies.map((proxy) => {
-    const count = seen.get(proxy.name) || 0;
-    seen.set(proxy.name, count + 1);
-    return count === 0 ? proxy : { ...proxy, name: `${proxy.name}-${count + 1}` };
-  });
-}
 function renderSurgeProxies(proxies: ProxyNode[]) {
   return renderTextProxyList(proxies, "surge", toSurgeProxyLine);
-}
-
-function renderSurgeMacProxies(proxies: ProxyNode[]) {
-  return renderTextProxyList(proxies, "surge-mac", toSurgeMacProxyLine);
 }
 
 function renderSurfboardProxies(proxies: ProxyNode[]) {
@@ -859,25 +831,6 @@ function toSurgeProxyLine(proxy: ProxyNode) {
     return joinTextProxy(`${name}=snell,${proxy.server},${proxy.port}`, entries);
   }
   return undefined;
-}
-
-function toSurgeMacProxyLine(proxy: ProxyNode) {
-  if (proxy.type === "ssh") {
-    const entries = commonTextOptions(proxy);
-    entries.unshift(["username", proxy.username], ["password", proxy.password], ["private-key", proxy["private-key"]]);
-    return joinTextProxy(`${sanitizeTextProxyName(proxy.name)}=ssh,${proxy.server},${proxy.port}`, entries);
-  }
-  if (proxy.type === "snell") {
-    const entries = commonTextOptions(proxy);
-    entries.unshift(["psk", proxy.psk || proxy.password], ["version", proxy.version || 3]);
-    return joinTextProxy(`${sanitizeTextProxyName(proxy.name)}=snell,${proxy.server},${proxy.port}`, entries);
-  }
-  if (proxy.type === "h2-connect") {
-    const entries = commonTextOptions(proxy);
-    entries.unshift(["username", proxy.username], ["password", proxy.password], ["tls", proxy.tls], ["sni", proxy.sni || proxy.servername]);
-    return joinTextProxy(`${sanitizeTextProxyName(proxy.name)}=h2-connect,${proxy.server},${proxy.port}`, entries);
-  }
-  return toSurgeProxyLine(proxy);
 }
 
 function toSurfboardProxyLine(proxy: ProxyNode) {
@@ -1510,10 +1463,6 @@ function isProxyNode(input: ProxyNode | undefined): input is ProxyNode {
   return Boolean(input?.name && input.type);
 }
 
-function uniqueStrings(values: string[]) {
-  return [...new Set(values.filter(Boolean))];
-}
-
 function stripUndefined<T extends Record<string, unknown>>(input: T) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined && value !== "")) as T;
 }
@@ -1918,10 +1867,6 @@ export async function loadRemoteSubscriptionSources(
     sources.push(source);
   }
   return sources;
-}
-
-export function probeConverter(): "ready" {
-  return "ready";
 }
 
 export async function normalizeSources(
