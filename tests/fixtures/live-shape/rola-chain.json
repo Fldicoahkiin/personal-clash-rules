@@ -1,0 +1,88 @@
+{
+  "source": {
+    "kind": "local-sync",
+    "id": "LiveShapeBase001"
+  },
+  "target": "clash-party-config",
+  "name": "Flacier · 机场 + 美国家宽",
+  "settings": {
+    "name": "🇺🇸 Rola 美国静态家宽",
+    "authMode": "literal",
+    "protocol": "socks5",
+    "server": "203.0.113.10",
+    "port": 9004,
+    "account": "fake-acc",
+    "password": "fake-pass-01",
+    "country": "us",
+    "exitIp": "203.0.113.10",
+    "region": "美国",
+    "platform": "Rola",
+    "additionalExits": [
+      {
+        "name": "198.51.100.11 · 美国 Las Vegas",
+        "authMode": "literal",
+        "protocol": "socks5",
+        "server": "198.51.100.11",
+        "port": 5782,
+        "account": "fake-acc",
+        "password": "fake-pass-02",
+        "country": "us",
+        "exitIp": "198.51.100.11",
+        "region": "美国 Las Vegas"
+      }
+    ],
+    "connectionMode": "direct",
+    "groupName": "🇺🇸 美国固定 IP",
+    "policyGroup": "AI",
+    "rules": [
+      "DOMAIN-SUFFIX,anthropic.com",
+      "DOMAIN-SUFFIX,clau.de",
+      "DOMAIN-SUFFIX,claude.ai",
+      "DOMAIN-SUFFIX,claude.com",
+      "DOMAIN-SUFFIX,claudemcpclient.com",
+      "DOMAIN-SUFFIX,claudemcpcontent.com",
+      "DOMAIN-SUFFIX,claudeusercontent.com",
+      "DOMAIN,servd-anthropic-website.b-cdn.net",
+      "DOMAIN,anthropic.com.cdn.cloudflare.net",
+      "DOMAIN,anthropic.auth0.com",
+      "DOMAIN,anthropic-com.ghost.io",
+      "DOMAIN,cdn.usefathom.com",
+      "DOMAIN,http-intake.logs.us5.datadoghq.com",
+      "DOMAIN,browser-intake-us5-datadoghq.com",
+      "DOMAIN-SUFFIX,chat.com",
+      "DOMAIN-SUFFIX,chatgpt.com",
+      "DOMAIN-SUFFIX,chatgpt.site",
+      "DOMAIN-SUFFIX,crixet.com",
+      "DOMAIN-SUFFIX,oaistatic.com",
+      "DOMAIN-SUFFIX,oaistatsig.com",
+      "DOMAIN-SUFFIX,oaiusercontent.com",
+      "DOMAIN-SUFFIX,openai.com",
+      "DOMAIN-SUFFIX,sora.com",
+      "DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net",
+      "DOMAIN,openaiapi-site.azureedge.net",
+      "DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net",
+      "DOMAIN,production-openaicom-storage.azureedge.net",
+      "DOMAIN,openaicomproductionae4b.blob.core.windows.net",
+      "DOMAIN,openaicom.imgix.net",
+      "DOMAIN-SUFFIX,host.livekit.cloud",
+      "DOMAIN-SUFFIX,turn.livekit.cloud",
+      "DOMAIN-SUFFIX,github.com",
+      "DOMAIN-SUFFIX,githubusercontent.com",
+      "DOMAIN-SUFFIX,githubassets.com",
+      "DOMAIN-SUFFIX,browserleaks.com",
+      "DOMAIN-SUFFIX,browserleaks.net",
+      "DOMAIN-SUFFIX,browserleaks.org",
+      "DOMAIN-SUFFIX,ip.net.coffee",
+      "DOMAIN,www.cloudflare.com",
+      "DOMAIN,api.ipify.org"
+    ],
+    "dns": [
+      "https://1.1.1.1/dns-query"
+    ],
+    "residentialNodeNames": [
+      "[DigitalOcean] 美国 San Francisco · 192.0.2.50"
+    ]
+  },
+  "expiresAt": 4102444800000,
+  "revokeHash": "FakeRevokeHash00000000000000000000000000000"
+}

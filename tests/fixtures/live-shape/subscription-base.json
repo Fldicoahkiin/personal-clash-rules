@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "dnsSettings": {
+    "bootstrapMode": "system",
+    "bootstrap": [],
+    "nameservers": [
+      "https://1.1.1.1/dns-query",
+      "https://8.8.8.8/dns-query"
+    ],
+    "ipv6": false
+  },
+  "dnsMode": "doh",
+  "fallbackMode": "error",
+  "name": "Flacierの分流规则",
+  "nodeSettings": {
+    "addCountryFlag": true,
+    "includePattern": "",
+    "excludePattern": "",
+    "renameRules": [],
+    "showNodeType": false,
+    "skipCertVerify": false,
+    "sortMode": "source",
+    "tfo": false,
+    "udp": true,
+    "xudp": false
+  },
+  "rulePreset": "flacier",
+  "ruleTemplateUrl": "",
+  "sourceUserAgent": "clash.meta",
+  "sourceMode": "convert",
+  "sources": [
+    {
+      "name": "机场订阅",
+      "type": "subscription",
+      "value": "https://airport.example/api/v1/client/subscribe?token=fake-token"
+    },
+    {
+      "type": "node",
+      "name": "DigitalOcean VPS",
+      "value": "proxies:\n  - name: \"[DigitalOcean] 美国 San Francisco · 192.0.2.50\"\n    type: vless\n    server: 192.0.2.50\n    port: 443\n    uuid: 22222222-2222-4222-8222-222222222222\n    network: tcp\n    tls: true\n    udp: false\n    flow: xtls-rprx-vision\n    servername: www.example.com\n    client-fingerprint: chrome\n    skip-cert-verify: false\n    reality-opts:\n      public-key: fake-public-key-vps\n      short-id: 4e5f6a7b\n"
+    }
+  ],
+  "updateIntervalHours": 6,
+  "localSync": {
+    "sources": [
+      {
+        "content": "mixed-port: 7890\nallow-lan: false\nmode: rule\nproxies:\n  - {name: \"剩余流量：3.81 TB\", type: ss, server: 127.0.0.1, port: 1, cipher: aes-128-gcm, password: info-only, udp: true}\n  - {name: \"套餐到期：长期有效\", type: ss, server: 127.0.0.1, port: 2, cipher: aes-128-gcm, password: info-only, udp: true}\n  - {name: \"🇯🇵 日本 AWS01\", type: vless, server: jp1.airport.example, port: 443, uuid: 11111111-1111-4111-8111-111111111101, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.example.com, client-fingerprint: chrome, reality-opts: {public-key: fake-public-key-jp1, short-id: 0a1b2c3d}}\n  - {name: \"🇯🇵 日本 AWS08\", type: vless, server: jp8.airport.example, port: 443, uuid: 11111111-1111-4111-8111-111111111108, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.example.com, client-fingerprint: chrome, reality-opts: {public-key: fake-public-key-jp8, short-id: 0a1b2c3d}}\n  - {name: \"🇺🇸 美国 01\", type: vless, server: us1.airport.example, port: 443, uuid: 11111111-1111-4111-8111-111111111201, network: ws, tls: true, udp: true, servername: us1.airport.example, ws-opts: {path: /fake-path, headers: {Host: us1.airport.example}}}\n  - {name: \"🇺🇸 美国 Hy2 01\", type: hysteria2, server: us2.airport.example, port: 8443, password: fake-hy2-password, sni: us2.airport.example, skip-cert-verify: false, udp: true}\n  - {name: \"🇸🇬 新加坡 01\", type: hysteria2, server: sg1.airport.example, port: 8443, password: fake-hy2-password, sni: sg1.airport.example, skip-cert-verify: false, udp: true}\n  - {name: \"🇭🇰 香港 01\", type: vless, server: hk1.airport.example, port: 443, uuid: 11111111-1111-4111-8111-111111111301, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.example.com, client-fingerprint: chrome, reality-opts: {public-key: fake-public-key-hk1, short-id: 0a1b2c3d}}\n  - {name: \"🇹🇼 台湾 01\", type: vless, server: tw1.airport.example, port: 443, uuid: 11111111-1111-4111-8111-111111111401, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.example.com, client-fingerprint: chrome, reality-opts: {public-key: fake-public-key-tw1, short-id: 0a1b2c3d}}\nproxy-groups:\n  - {name: 节点选择, type: select, proxies: [\"🇯🇵 日本 AWS01\", \"🇯🇵 日本 AWS08\", \"🇺🇸 美国 01\", \"🇺🇸 美国 Hy2 01\", \"🇸🇬 新加坡 01\", \"🇭🇰 香港 01\", \"🇹🇼 台湾 01\"]}\nrules:\n  - MATCH,节点选择\n",
+        "metadata": {
+          "usageStatus": "available",
+          "profileName": "Fake",
+          "usage": {
+            "upload": "600000000000",
+            "download": "1900000000000",
+            "total": "4294967296000"
+          }
+        }
+      }
+    ],
+    "readAt": "2026-10-13T14:54:28.828Z",
+    "managementHash": "FakeManagementHash0000000000000000000000000"
+  }
+}
