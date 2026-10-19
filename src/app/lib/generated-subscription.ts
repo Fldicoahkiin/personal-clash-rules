@@ -58,21 +58,6 @@ const outputTargets = new Set<OutputTarget>([
   "json",
 ]);
 
-function decodeToken(token: string): unknown {
-  const [version, encoded, extra] = token.split(".");
-  if (version !== "v1" || !encoded || extra !== undefined || !/^[A-Za-z0-9_-]+$/u.test(encoded)) {
-    throw new Error("不是本站生成的订阅链接");
-  }
-  try {
-    const base64 = encoded.replaceAll("-", "+").replaceAll("_", "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
-    return JSON.parse(new TextDecoder().decode(bytes));
-  } catch {
-    throw new Error("订阅链接内容无法读取");
-  }
-}
-
 function objectValue(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("订阅链接内容无法读取");
@@ -86,22 +71,6 @@ function stringValue(value: unknown, fallback = ""): string {
 
 function booleanValue(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
-}
-
-export function parseGeneratedSubscriptionUrl(input: string): LoadedSubscriptionForm {
-  let url: URL;
-  try {
-    url = new URL(input.trim());
-  } catch {
-    throw new Error("请输入完整的订阅链接");
-  }
-  const parts = url.pathname.split("/").filter(Boolean);
-  if (parts[0] !== "s" || !parts[1]) {
-    throw new Error("不是本站生成的订阅链接");
-  }
-  const config = objectValue(decodeToken(parts[1]));
-  const targetValue = parts[2] || url.searchParams.get("target") || "clash-party-config";
-  return loadedForm(config, targetValue);
 }
 
 function loadedForm(
@@ -178,9 +147,6 @@ export async function loadGeneratedSubscriptionUrl(input: string, backend = ""):
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "s" || !parts[1]) {
     throw new Error("不是本站生成的订阅链接");
-  }
-  if (parts[1].startsWith("v1.")) {
-    return parseGeneratedSubscriptionUrl(input);
   }
   const response = await fetch(`${backend}/api/subscriptions/resolve`, {
     method: "POST",

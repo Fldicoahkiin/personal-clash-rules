@@ -18,7 +18,7 @@ import {
   type MihomoDnsMode,
   type MihomoRulePreset,
 } from "./mihomo-profile";
-import { decodeSubscriptionConfig, hashText, randomSubscriptionId } from "./secrets";
+import { hashText, randomSubscriptionId } from "./secrets";
 import {
   combineSubscriptionUsage,
   countTargetCompatibleNodes,
@@ -597,28 +597,15 @@ async function readSubscriptionConfig(
   token: string,
   env: SubscriptionEnv,
 ): Promise<{ config: SubscriptionConfig; localSync?: ManagedSubscriptionSnapshot }> {
-  let value: unknown;
-  try {
-    if (token.startsWith("v1.")) {
-      value = JSON.parse(decodeSubscriptionConfig(token));
-    } else {
-      if (!/^[A-Za-z0-9_-]{16}$/u.test(token)) {
-        throw new ApiError(404, "subscription_not_found", "Subscription not found");
-      }
-      const stored = await readStoredSubscription(env, token);
-      if (!stored) {
-        throw new ApiError(404, "subscription_not_found", "Subscription not found");
-      }
-      value = JSON.parse(stored);
-    }
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (!token.startsWith("v1.")) throw storedSubscriptionInvalid("invalid_json");
+  if (!/^[A-Za-z0-9_-]{16}$/u.test(token)) {
+    throw new ApiError(404, "subscription_not_found", "Subscription not found");
+  }
+  const stored = await readStoredSubscription(env, token);
+  if (!stored) {
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
   try {
+    const value: unknown = JSON.parse(stored);
     const config = readConfig(value);
     const localSync = (value as Record<string, unknown>).localSync;
     if (localSync) {
@@ -629,8 +616,7 @@ async function readSubscriptionConfig(
     }
     return { config };
   } catch (error) {
-    if (token.startsWith("v1.")) throw new ApiError(404, "subscription_not_found", "Subscription not found");
-    throw storedSubscriptionInvalid(error instanceof ApiError ? error.code : "invalid_sync_record");
+    throw storedSubscriptionInvalid(error instanceof ApiError ? error.code : error instanceof SyntaxError ? "invalid_json" : "invalid_sync_record");
   }
 }
 

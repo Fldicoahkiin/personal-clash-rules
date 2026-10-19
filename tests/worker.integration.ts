@@ -45,15 +45,6 @@ function nodeUri(name: string, host: string, password: string): string {
   return `ss://${userInfo}@${host}:8388#${name}`;
 }
 
-function legacyToken(value: unknown): string {
-  const bytes = new TextEncoder().encode(JSON.stringify(value));
-  let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return `v1.${btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "")}`;
-}
-
 function requestBody(overrides: Record<string, unknown> = {}) {
   return {
     name: "Flacier",
@@ -454,19 +445,11 @@ describe("KV-backed subscription links", () => {
     });
   });
 
-  it("keeps previously generated encoded links readable", async () => {
-    const config = {
-      ...requestBody(),
-      version: 1,
-      sourceMode: "convert",
-      target: undefined,
-    };
-    const response = await exports.default.fetch(
-      `https://example.com/s/${legacyToken(config)}/mihomo-config`,
-    );
+  it("does not read retired links that embedded the whole configuration", async () => {
+    const config = btoa(JSON.stringify({ version: 1, sourceMode: "convert", sources: [{ type: "node", value: "ss://retired" }] }));
+    const response = await exports.default.fetch(`https://example.com/s/v1.${config.replace(/=+$/u, "")}/mihomo-config`);
 
-    expect(response.status).toBe(200);
-    expect(await response.text()).toContain("US-01");
+    expect(response.status).toBe(404);
   });
 
   it("does not accept a malformed encoded link", async () => {
