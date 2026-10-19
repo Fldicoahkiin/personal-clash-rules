@@ -43,6 +43,7 @@ type FormState = {
   name: string;
   renameRules: RenameRuleDraft[];
   result: ConvertedSubscription | null;
+  revision: number;
   rulePreset: RulePreset;
   ruleTemplateUrl: string;
   pending: boolean;
@@ -63,7 +64,9 @@ type RenameRuleDraft = NodeRenameRule & { id: string };
 type FieldAction = {
   [Key in keyof FormState]: { key: Key; value: FormState[Key] };
 }[keyof FormState];
-type FormAction = FieldAction | { key: "load"; value: LoadedSubscriptionForm };
+type FormAction = FieldAction
+  | { key: "load"; value: LoadedSubscriptionForm }
+  | { key: "settle"; revision: number; result: ConvertedSubscription | null; error: string };
 
 const initialState: FormState = {
   dnsSettings: defaultDnsSettings,
@@ -79,6 +82,7 @@ const initialState: FormState = {
   name: "Flacierの分流规则",
   renameRules: [{ id: "rename-initial", pattern: "", replacement: "" }],
   result: null,
+  revision: 0,
   rulePreset: "flacier",
   ruleTemplateUrl: "",
   pending: false,
@@ -109,7 +113,12 @@ function reducer(state: FormState, action: FormAction): FormState {
       error: "",
       pending: false,
       result: null,
+      revision: state.revision + 1,
     };
+  }
+  // A response for inputs that changed while it was pending is discarded.
+  if (action.key === "settle") {
+    return action.revision === state.revision ? { ...state, result: action.result, error: action.error } : state;
   }
   const next = { ...state, [action.key]: action.value };
   if (
@@ -119,6 +128,7 @@ function reducer(state: FormState, action: FormAction): FormState {
     && action.key !== "result"
   ) {
     next.result = null;
+    next.revision = state.revision + 1;
   }
   return next;
 }
@@ -181,6 +191,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
     if (!validateInput()) {
       return;
     }
+    const revision = form.revision;
     dispatch({ key: "pending", value: true });
     try {
       if (backend) {
@@ -224,10 +235,9 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
         target: form.target,
         updateIntervalHours: form.updateIntervalHours,
       }, backend);
-      dispatch({ key: "result", value: result });
-      dispatch({ key: "error", value: "" });
+      dispatch({ key: "settle", revision, result, error: "" });
     } catch (error) {
-      dispatch({ key: "error", value: subscriptionErrorText(error) });
+      dispatch({ key: "settle", revision, result: null, error: subscriptionErrorText(error) });
     } finally {
       dispatch({ key: "pending", value: false });
     }
