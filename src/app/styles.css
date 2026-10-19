@@ -368,6 +368,11 @@ summary:focus-visible {
   border-color: var(--muted);
 }
 
+.route-marker-uncertain {
+  border-style: dashed;
+  border-color: var(--muted);
+}
+
 .route-marker svg {
   width: 13px;
   height: 13px;

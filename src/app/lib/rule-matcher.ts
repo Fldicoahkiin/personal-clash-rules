@@ -20,6 +20,7 @@ export interface LoadedRuleSet extends RuleSetDefinition {
 
 export interface RouteMatch {
   uncertain?: string;
+  skippedProcessRules?: number;
   destination?: { mode: string; route: string };
   hostname: string;
   matched: boolean;
@@ -113,7 +114,7 @@ function matches(hostname: string, rule: RuleEntry, context: { ip?: string; proc
     return matchesCidr(ip, rule.value);
   }
   if (rule.type === "PROCESS-NAME" || rule.type === "PROCESS-NAME-REGEX") {
-    if (!context.processName) return "此规则需要进程名，请补充后重试";
+    if (!context.processName) return false;
     if (rule.type === "PROCESS-NAME") return context.processName.toLowerCase() === rule.value;
     // Only the built-in patterns are evaluated here; arbitrary remote regexes can block the UI thread.
     if (["(?i)^codex(\\.exe)?$", "(?i)^claude(\\.exe)?$"].includes(rule.value)) {
@@ -139,12 +140,20 @@ export function matchUrl(
 ): RouteMatch {
   const hostname = readHostname(input);
   if (context.ip && ipv4ToNumber(context.ip) === null) throw new Error("目标 IPv4 格式有误");
+  // Without a process name the request is treated as coming from a browser, so process rules do not apply.
+  let skippedProcessRules = 0;
+  const skipped = () => (skippedProcessRules ? { skippedProcessRules } : {});
 
   for (const ruleSet of ruleSets) {
     for (const rule of ruleSet.rules) {
+      if (!context.processName && (rule.type === "PROCESS-NAME" || rule.type === "PROCESS-NAME-REGEX")) {
+        skippedProcessRules += 1;
+        continue;
+      }
       const matched = matches(hostname, rule, context);
       if (matched === false) continue;
       return {
+        ...skipped(),
         hostname,
         matched: matched === true && !["MATCH", "FINAL"].includes(rule.type),
         rule: rule.source,
@@ -158,6 +167,7 @@ export function matchUrl(
   }
 
   return {
+    ...skipped(),
     hostname,
     matched: false,
     rule: "MATCH",

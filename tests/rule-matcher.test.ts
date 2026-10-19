@@ -96,7 +96,7 @@ describe("matchUrl", () => {
   });
   it("respects the built-in process rule before a domain match", () => {
     const rules = [createRuleSet(definitions[2], "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$\nDOMAIN-SUFFIX,openai.com")];
-    expect(matchUrl("api.openai.com", rules).uncertain).toContain("进程名");
+    expect(matchUrl("api.openai.com", rules)).toMatchObject({ rule: "DOMAIN-SUFFIX,openai.com", matched: true, skippedProcessRules: 1 });
     expect(matchUrl("api.openai.com", rules, { processName: "Codex.exe" }).rule).toContain("PROCESS-NAME-REGEX");
     expect(matchUrl("api.openai.com", rules, { processName: "Firefox" }).rule).toBe("DOMAIN-SUFFIX,openai.com");
   });

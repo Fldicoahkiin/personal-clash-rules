@@ -21,7 +21,7 @@ export function createRouteSteps(result: RouteMatch | null): RouteStep[] {
     {
       label: "输入网址",
       value: result?.hostname || "—",
-      detail: "",
+      detail: result?.skippedProcessRules ? `按浏览器访问，跳过 ${result.skippedProcessRules} 条进程规则` : "",
       status: "",
       machine: true,
       state: null,

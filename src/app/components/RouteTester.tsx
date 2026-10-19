@@ -27,7 +27,7 @@ const featuredRules = [
 
 export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
   const [state, update] = useReducer((state: TesterState, patch: Partial<TesterState>) => ({ ...state, ...patch }), {
-    input: sampleUrl, ip: "", processName: "", preset: "flacier", customUrl: "",
+    input: "", ip: "", processName: "", preset: "flacier", customUrl: "",
     request: selection ? null : { preset: "flacier", url: "" }, preview: null, ruleSets: [], result: null,
     message: "规则加载中", resultVersion: 0,
   });
@@ -99,7 +99,7 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
           <label className="field"><span>目标 IPv4（可选）</span><input value={state.ip} onChange={event => update({ ip: event.target.value, result: null })} placeholder="仅供模拟，不会发起 DNS 查询" /></label>
           <label className="field"><span>进程名（可选）</span><input value={state.processName} onChange={event => update({ processName: event.target.value, result: null })} placeholder="例如 Firefox 或 Codex" /></label>
         </div>
-        {state.preview ? <p className={styles.note}>{state.preview.name} · 规则快照 {state.preview.fingerprint.slice(0, 12)}。缺少上下文时显示“无法确定”，不会略过规则后宣称默认代理。</p> : null}
+        {state.preview ? <p className={styles.note}>{state.preview.name} · 规则快照 {state.preview.fingerprint.slice(0, 12)}。未填进程名时按浏览器访问处理；需要 IP 或地理数据的规则显示“无法确定”。</p> : null}
         <form className="route-form" onSubmit={testRoute}>
           <label htmlFor="route-url">测试网址</label>
           <input
@@ -107,6 +107,7 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
             type="text"
             value={input}
             onChange={(event) => update({ input: event.target.value, result: null })}
+            placeholder={sampleUrl}
             spellCheck="false"
             autoComplete="off"
           />
