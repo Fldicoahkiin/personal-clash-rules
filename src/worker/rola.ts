@@ -121,7 +121,11 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
   if (!url.pathname.startsWith("/api/rola/") && !url.pathname.startsWith("/r/")) return null;
   try {
     const allowed = await env.SUBSCRIPTION_RATE_LIMITER.limit({ key: `rola:${request.headers.get("CF-Connecting-IP") || "unknown"}` });
-    if (!allowed.success) return new Response(null, { status: 429, headers: { "Retry-After": "60", "Cache-Control": "no-store" } });
+    if (!allowed.success) {
+      const limited = result({ error: "rate_limited", message: "请求过于频繁，请一分钟后再试。" }, 429);
+      limited.headers.set("Retry-After", "60");
+      return limited;
+    }
     if (request.method === "POST" && url.pathname.startsWith("/api/rola/")) {
       if (request.headers.get("content-type")?.split(";")[0] !== "application/json") throw new ApiError(415, "json_required", "仅接受 JSON 请求。");
       const input = await readRequestObject(request, requestBytes);

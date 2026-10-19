@@ -1,6 +1,7 @@
 import { env, exports } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSourceCache } from "./helpers/source-cache";
+import { routeCloudRola } from "../src/worker/rola";
 import { parse, stringify } from "yaml";
 
 let testClient = 0;
@@ -41,6 +42,16 @@ async function create(input: Record<string, unknown> = {}) {
 }
 
 describe("cloud Rola subscriptions", () => {
+  it("answers rate-limited requests with a JSON error", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const response = await routeCloudRola(new Request(`${origin}/api/rola/preview`, { method: "POST", headers: { "CF-Connecting-IP": "203.0.113.7" } }),
+      new URL(`${origin}/api/rola/preview`), { ...env, SUBSCRIPTION_RATE_LIMITER: { limit } });
+    expect(response?.status).toBe(429);
+    expect(response?.headers.get("retry-after")).toBe("60");
+    expect(response?.headers.get("content-type")).toContain("application/json");
+    await expect(response?.json()).resolves.toMatchObject({ error: "rate_limited" });
+  });
+
   it("persists explicit encrypted residential references and retains them in cloud and mobile refreshes", async () => {
     const sourceNames = ["[Rola] 美国 · 203.0.113.10", "[Rola] 美国 Las Vegas · 203.0.113.11"];
     const relays = sourceNames.map((name, index) => ({ name, type: "vless", server: "203.0.113.20", port: 443,

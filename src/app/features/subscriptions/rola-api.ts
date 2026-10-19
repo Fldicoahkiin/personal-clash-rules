@@ -46,7 +46,8 @@ export async function requestCloudRola<T>(path: "/preview" | "/chains" | "/revok
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input),
       credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", cache: "no-store", signal: AbortSignal.timeout(70000),
     });
-  } catch { throw new Error("云端没有响应，未改用其他后端，也未改变当前代理。生成结果若未收到，请勿导入未知链接。"); }
+  } catch { throw new Error("云端没有响应，请稍后重试。"); }
+  if (!response.headers.get("content-type")?.includes("application/json")) throw new Error(`云端返回了非预期内容（HTTP ${response.status}），请稍后重试。`);
   const data = await response.json() as Record<string, unknown>;
   if (!response.ok) throw new SubscriptionApiError(response.status, String(data.error || "cloud_rola_failed"), typeof data.message === "string" ? data.message : "云端请求失败。", data.upstream);
   return data as T;
