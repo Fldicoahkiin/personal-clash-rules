@@ -6,6 +6,7 @@ import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store";
 import { buildSubscription, buildSynchronizedSubscription, readRequestObject, readSynchronizedSubscription } from "./subscriptions";
 import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscription-recovery";
+import { isSyncOverdue } from "./subscription-snapshot";
 import { renderRolaTarget, requireRolaTarget, rolaMobileFiles, rolaRequestTarget, type RolaTarget } from "./rola-target";
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
 
@@ -90,13 +91,13 @@ async function write(env: Env, kind: "preview" | "chain", value: unknown, ttl: n
   return key;
 }
 
-function profileResponse(chain: Chain, profile: string, userinfo: string | null, target: RolaTarget = "mihomo-config") {
+function profileResponse(chain: Chain, profile: string, userinfo: string | null, target: RolaTarget = "mihomo-config", updateIntervalHours = 6) {
   const extension = target === "mihomo-config" ? "yaml" : target === "shadowrocket-config" ? "conf" : "txt";
   const filename = target === "mihomo-config" ? `${chain.name || "Flacier-Rola"}.${extension}` : rolaMobileFiles[target];
   const headers = new Headers({ "Content-Type": target === "mihomo-config" ? "text/yaml; charset=utf-8" : "text/plain; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
     "Content-Disposition": `attachment; ${target === "mihomo-config" ? "" : `filename="${filename}"; `}filename*=UTF-8''${encodeURIComponent(filename)}`,
     "Vary": "User-Agent", "X-Subscription-Target": target,
-    "Profile-Update-Interval": "6", "X-Subscription-Source-Mode": chain.source.kind, "X-Rola-Expires-At": new Date(chain.expiresAt).toISOString() });
+    "Profile-Update-Interval": String(updateIntervalHours), "X-Subscription-Source-Mode": chain.source.kind, "X-Rola-Expires-At": new Date(chain.expiresAt).toISOString() });
   if (userinfo) headers.set("Subscription-Userinfo", userinfo);
   return new Response(profile, { headers });
 }
@@ -213,7 +214,9 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           baseFailure = error;
         }
       }
-      const freshOutput = synchronized ? { freshForMs: 6 * 3_600_000,
+      const updateIntervalHours = synchronized?.config.updateIntervalHours
+        ?? (chain.source.kind === "convert" ? chain.source.config.updateIntervalHours : 6);
+      const freshOutput = synchronized ? { freshForMs: updateIntervalHours * 3_600_000,
         revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, chain.settings, synchronized])) } : undefined;
       const recoveryId = `rola:${match[1]}${target === "mihomo-config" ? "" : `:${target}`}`;
       const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, recoveryId, async () => {
@@ -230,7 +233,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         }
         const content = await renderRolaTarget(env, prepare(profile, chain.settings), chain.settings, target);
         if (encoder.encode(content).length > requestBytes) throw new ApiError(413, "rola_output_too_large", "家宽输出不能超过 512 KiB，请减少节点或规则。");
-        const rendered = profileResponse(chain, content, userinfo, target);
+        const rendered = profileResponse(chain, content, userinfo, target, updateIntervalHours);
         if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.localSync.readAt);
         return rendered;
       }, freshOutput);
@@ -238,7 +241,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       const syncedAt = response.headers.get("X-Subscription-Synced-At");
       if (syncedAt) response.headers.set("X-Subscription-Last-Success", syncedAt);
       if (synchronized) {
-        if (Date.now() - Date.parse(synchronized.localSync.readAt) > synchronized.config.updateIntervalHours * 3_600_000) {
+        if (isSyncOverdue(synchronized.localSync.readAt, updateIntervalHours)) {
           response.headers.set("X-Subscription-Refresh-Status", "sync-overdue");
           response.headers.set("Warning", '110 - "Local synchronization is overdue; nodes and quota are from the last successful sync"');
         }

@@ -1,6 +1,6 @@
 import { ApiError } from "./api-error";
 import { timingSafeEqual } from "node:crypto";
-import { maximumSyncRequestBytes, readSubscriptionSnapshot, type ManagedSubscriptionSnapshot } from "./subscription-snapshot";
+import { isSyncOverdue, maximumSyncRequestBytes, readSubscriptionSnapshot, type ManagedSubscriptionSnapshot } from "./subscription-snapshot";
 import { withSubscriptionRecovery } from "./subscription-recovery";
 import { parseDnsSettings, type DnsSettings } from "../config/dns-settings";
 import { ruleTemplates } from "../config/rule-templates";
@@ -731,7 +731,7 @@ async function renderSubscription(
     rendered.headers.set("X-Subscription-Source-Mode", "local-sync");
     rendered.headers.set("X-Subscription-Synced-At", localSync.readAt);
     rendered.headers.set("X-Subscription-Last-Success", localSync.readAt);
-    if (Date.now() - Date.parse(localSync.readAt) > config.updateIntervalHours * 3_600_000) {
+    if (isSyncOverdue(localSync.readAt, config.updateIntervalHours)) {
       rendered.headers.set("X-Subscription-Refresh-Status", "sync-overdue");
       rendered.headers.set("Warning", '110 - "Local synchronization is overdue; nodes and quota are from the last successful sync"');
     }

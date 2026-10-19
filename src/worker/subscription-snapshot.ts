@@ -4,6 +4,12 @@ import type { RemoteSubscriptionSource, SubscriptionUsage } from "./sub-store";
 export type SubscriptionSnapshot = { sources: RemoteSubscriptionSource[]; readAt: string };
 export type ManagedSubscriptionSnapshot = SubscriptionSnapshot & { managementHash: string };
 export const maximumSyncRequestBytes = 2 * 1024 * 1024;
+// The local job stamps readAt before uploading and polls once a minute, so a cycle can finish a few minutes late.
+const syncGraceMs = 10 * 60_000;
+
+export function isSyncOverdue(readAt: string, updateIntervalHours: number): boolean {
+  return Date.now() - Date.parse(readAt) > updateIntervalHours * 3_600_000 + syncGraceMs;
+}
 
 function invalid(): never { throw new ApiError(400, "invalid_source_snapshot", "Source snapshot is invalid or does not match its sources"); }
 function record(value: unknown): Record<string, unknown> {

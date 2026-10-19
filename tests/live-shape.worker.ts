@@ -92,6 +92,13 @@ describe("stored production subscription shape", () => {
     expect((await request(`/r/${chainId}.yaml`, "clash.meta")).status).toBe(200);
   });
 
+  it("announces the base subscription's own update interval", async () => {
+    await env.SUBSCRIPTIONS.put(`subscription:${chain.source.id}`, JSON.stringify({ ...base, updateIntervalHours: 12 }));
+    const response = await request(`/r/${chainId}.yaml`, "clash.meta");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("profile-update-interval")).toBe("12");
+  });
+
   it("renders the paired Shadowrocket node list and rules without leaking credentials into the rules", async () => {
     const nodes = await request(`/r/${chainId}/Flacier-Mobile-Nodes.txt`, "Shadowrocket/2100");
     expect(nodes.status).toBe(200);

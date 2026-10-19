@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createSubscriptionSync } from "../src/local/subscription-sync";
 import { routeSubscriptionRequest } from "../src/worker/subscriptions";
+import { isSyncOverdue } from "../src/worker/subscription-snapshot";
 import type { SubscriptionEnv } from "../src/worker/types";
 
 afterEach(() => vi.restoreAllMocks());
@@ -64,4 +65,12 @@ it("publishes through the local API, stores management credentials only locally,
   expect(refreshed.result.syncedAt).not.toBe(first.result.syncedAt);
   expect(refreshed.error).toBeUndefined();
   expect(JSON.parse(cloudStorage.get(`subscription:${first.id}`)!).localSync.readAt).toBe(refreshed.result.syncedAt);
+});
+
+it("treats a sync as overdue only after its interval plus a short grace period", () => {
+  vi.useFakeTimers({ now: Date.parse("2026-10-19T12:00:00.000Z") });
+  expect(isSyncOverdue("2026-10-19T06:00:00.000Z", 6)).toBe(false);
+  expect(isSyncOverdue("2026-10-19T05:55:00.000Z", 6)).toBe(false);
+  expect(isSyncOverdue("2026-10-19T05:49:00.000Z", 6)).toBe(true);
+  vi.useRealTimers();
 });
