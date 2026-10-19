@@ -19,23 +19,23 @@
     "check": "pnpm test && pnpm typecheck && pnpm build && pnpm test:worker"
   },
   "dependencies": {
-    "@phosphor-icons/react": "latest",
+    "@phosphor-icons/react": "^2.1.10",
     "json5": "^2.2.3",
-    "react": "latest",
-    "react-dom": "latest",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "undici": "7.29.0",
-    "yaml": "latest"
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@vitejs/plugin-react": "latest",
+    "@cloudflare/vitest-plugin": "^1.0.0",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
     "esbuild": "0.28.1",
-    "typescript": "latest",
-    "vite": "latest",
-    "vitest": "latest",
-    "wrangler": "latest"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.125.0"
   }
 }
