@@ -196,11 +196,21 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       requireRolaTarget(chain.settings, target);
       // Validate the source before consulting rendered output: removal, quota changes and
       // new nodes must invalidate the fast path even during its short freshness window.
-      const synchronized = chain.source.kind === "local-sync" ? await readSynchronizedSubscription(env, chain.source.id) : undefined;
+      let synchronized: Awaited<ReturnType<typeof readSynchronizedSubscription>> | undefined;
+      let baseFailure: ApiError | undefined;
+      if (chain.source.kind === "local-sync") {
+        // Storage outages and records that fail current validation fall back to the last good output.
+        try { synchronized = await readSynchronizedSubscription(env, chain.source.id); }
+        catch (error) {
+          if (!(error instanceof ApiError) || !["subscription_storage_unavailable", "stored_subscription_invalid"].includes(error.code)) throw error;
+          baseFailure = error;
+        }
+      }
       const freshOutput = synchronized ? { freshForMs: 6 * 3_600_000,
         revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, chain.settings, synchronized])) } : undefined;
       const recoveryId = `rola:${match[1]}${target === "mihomo-config" ? "" : `:${target}`}`;
       const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, recoveryId, async () => {
+        if (baseFailure) throw baseFailure;
         let profile: string;
         let userinfo: string | null = null;
         if (chain.source.kind === "snapshot") profile = chain.source.profile;
@@ -232,6 +242,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
   } catch (error) {
     if (error instanceof ApiError) return result({ error: error.code, message: error.message, ...(error.upstream ? { upstream: error.upstream } : {}) }, error.status);
     // Never include upstream bodies, YAML parsing diagnostics, settings, or bearer links in errors/logs.
+    console.error(JSON.stringify({ event: "cloud_rola_failed", path: url.pathname.startsWith("/r/") ? "/r/" : url.pathname, error: error instanceof Error ? error.name : "unknown" }));
     return result({ error: "cloud_rola_failed", message: "云端串联处理失败，请稍后重试；不会改变当前代理或返回直连替代配置。" }, 500);
   }
 }

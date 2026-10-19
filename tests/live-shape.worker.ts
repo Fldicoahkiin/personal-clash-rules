@@ -1,6 +1,7 @@
 import { env, exports } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
+import { hashText } from "../src/worker/secrets";
 import base from "./fixtures/live-shape/subscription-base.json";
 import chain from "./fixtures/live-shape/rola-chain.json";
 
@@ -62,6 +63,33 @@ describe("stored production subscription shape", () => {
 
     await env.SUBSCRIPTIONS.put(`rola:chain:${chainId}`, JSON.stringify({ ...chain, expiresAt: Date.now() - 1000 }));
     expect((await request(`/r/${chainId}.yaml`, "clash.meta")).status).toBe(404);
+  });
+
+  it("serves the last good output when the base record fails validation and lets the owner repair it", async () => {
+    expect((await request(`/r/${chainId}.yaml`, "clash.meta")).status).toBe(200);
+    const token = "repair-token-".padEnd(32, "0");
+    const broken = { ...base, localSync: { ...base.localSync, readAt: "not-a-timestamp", managementHash: await hashText(token) } };
+    await env.SUBSCRIPTIONS.put(`subscription:${chain.source.id}`, JSON.stringify(broken));
+
+    const recovered = await request(`/r/${chainId}.yaml`, "clash.meta");
+    expect(recovered.status).toBe(200);
+    expect(recovered.headers.get("x-subscription-refresh-status")).toBe("last-good");
+    expect(recovered.headers.get("x-subscription-refresh-error")).toBe("stored_subscription_invalid");
+
+    const recovery = await env.SUBSCRIPTIONS.list({ prefix: "last-good:" });
+    await Promise.all(recovery.keys.map(entry => env.SUBSCRIPTIONS.delete(entry.name)));
+    const failed = await request(`/r/${chainId}.yaml`, "clash.meta");
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ error: "stored_subscription_invalid" });
+
+    const { localSync, ...config } = base;
+    const repaired = await exports.default.fetch(`${origin}/api/subscriptions/sync`, {
+      method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": `198.51.100.${client}` },
+      body: JSON.stringify({ id: chain.source.id, managementToken: token, target: "clash-party-config", config,
+        snapshot: { readAt: new Date().toISOString(), sources: localSync.sources.map(({ content, metadata }) => ({ content, metadata: { profileName: metadata.profileName, usage: metadata.usage } })) } }),
+    });
+    expect(repaired.status).toBe(200);
+    expect((await request(`/r/${chainId}.yaml`, "clash.meta")).status).toBe(200);
   });
 
   it("renders the paired Shadowrocket node list and rules without leaking credentials into the rules", async () => {

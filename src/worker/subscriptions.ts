@@ -605,7 +605,7 @@ async function readSubscriptionConfig(
       if (!/^[A-Za-z0-9_-]{16}$/u.test(token)) {
         throw new ApiError(404, "subscription_not_found", "Subscription not found");
       }
-      const stored = await env.SUBSCRIPTIONS.get(`${subscriptionKeyPrefix}${token}`);
+      const stored = await readStoredSubscription(env, token);
       if (!stored) {
         throw new ApiError(404, "subscription_not_found", "Subscription not found");
       }
@@ -615,6 +615,7 @@ async function readSubscriptionConfig(
     if (error instanceof ApiError) {
       throw error;
     }
+    if (!token.startsWith("v1.")) throw storedSubscriptionInvalid("invalid_json");
     throw new ApiError(404, "subscription_not_found", "Subscription not found");
   }
   try {
@@ -627,9 +628,35 @@ async function readSubscriptionConfig(
       return { config, localSync: { ...snapshot, managementHash } };
     }
     return { config };
-  } catch {
-    throw new ApiError(404, "subscription_not_found", "Subscription not found");
+  } catch (error) {
+    if (token.startsWith("v1.")) throw new ApiError(404, "subscription_not_found", "Subscription not found");
+    throw storedSubscriptionInvalid(error instanceof ApiError ? error.code : "invalid_sync_record");
   }
+}
+
+async function readStoredSubscription(env: SubscriptionEnv, token: string): Promise<string | null> {
+  try {
+    return await env.SUBSCRIPTIONS.get(`${subscriptionKeyPrefix}${token}`);
+  } catch (error) {
+    console.error(JSON.stringify({ event: "subscription_storage_read_failed", error: error instanceof Error ? error.name : "unknown" }));
+    throw new ApiError(503, "subscription_storage_unavailable", "Subscription storage is temporarily unavailable");
+  }
+}
+
+// A stored record that no longer passes current validation is a deployment problem, not a missing link.
+function storedSubscriptionInvalid(reason: string): ApiError {
+  console.error(JSON.stringify({ event: "stored_subscription_invalid", reason }));
+  return new ApiError(500, "stored_subscription_invalid", "The stored subscription no longer passes validation");
+}
+
+// Synchronization authenticates against the raw record so an owner can overwrite a record that fails current validation.
+function storedSyncIdentity(raw: string): { managementHash: string; readAt: string } | undefined {
+  let value: unknown;
+  try { value = JSON.parse(raw); } catch { return undefined; }
+  const localSync = value && typeof value === "object" ? (value as Record<string, unknown>).localSync : undefined;
+  if (!localSync || typeof localSync !== "object") return undefined;
+  const { managementHash, readAt } = localSync as Record<string, unknown>;
+  return typeof managementHash === "string" && typeof readAt === "string" ? { managementHash, readAt } : undefined;
 }
 
 export async function readSynchronizedSubscription(env: SubscriptionEnv, id: string) {
@@ -723,11 +750,11 @@ async function syncSubscription(request: Request, url: URL, env: SubscriptionEnv
     throw new ApiError(400, "invalid_sync_identity", "A random sync identity and management token are required");
   }
   const key = `${subscriptionKeyPrefix}${body.id}`;
-  const existing = await env.SUBSCRIPTIONS.get(key);
+  const existing = await readStoredSubscription(env, body.id);
   const managementHash = await hashText(body.managementToken);
-  let previous: ManagedSubscriptionSnapshot | undefined;
+  let previous: { managementHash: string; readAt: string } | undefined;
   if (existing) {
-    previous = (await readSubscriptionConfig(body.id, env)).localSync;
+    previous = storedSyncIdentity(existing);
     if (!previous || !timingSafeEqual(encoder.encode(managementHash), encoder.encode(previous.managementHash))) {
       throw new ApiError(403, "sync_forbidden", "The synchronization credential is invalid");
     }

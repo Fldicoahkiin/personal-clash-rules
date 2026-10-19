@@ -3,7 +3,8 @@ import { hashText } from "./secrets";
 import type { SubscriptionEnv } from "./types";
 
 const lifetime = 86400;
-const retryable = new Set(["source_unreachable", "source_failed", "source_redirect_limit", "source_response_too_large", "no_nodes_found"]);
+const retryable = new Set(["source_unreachable", "source_failed", "source_redirect_limit", "source_response_too_large", "no_nodes_found",
+  "subscription_storage_unavailable", "stored_subscription_invalid"]);
 type Snapshot = { savedAt: number; content: string; headers: [string, string][]; revision?: string };
 type FreshOutput = { freshForMs: number; revision: string };
 
