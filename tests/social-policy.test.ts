@@ -31,12 +31,11 @@ describe("per-app social policies", () => {
     expect(matchUrl(host, sets)).toMatchObject({ matched: true, policy });
   });
 
-  it("places specific apps before the compatibility aggregate and domestic fallback", () => {
+  it("places specific apps before the compatibility aggregate", () => {
     for (const id of apps) {
       const index = mihomoRules.findIndex(rule => rule === `RULE-SET,${id},${id.toUpperCase()}`);
       expect(index).toBeGreaterThan(-1);
       expect(index).toBeLessThan(mihomoRules.indexOf("RULE-SET,social,SOCIAL"));
-      expect(index).toBeLessThan(mihomoRules.indexOf("RULE-SET,china-domains,DIRECT"));
     }
     expect(matchUrl("twitter.com.example.invalid", sets).matched).toBe(false);
   });

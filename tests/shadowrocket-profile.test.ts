@@ -29,12 +29,12 @@ describe("Shadowrocket paired configuration", () => {
     expect(custom).toContain("proxy-dns-server = https://1.1.1.1/dns-query\n");
   });
 
-  it("resolves the China IP fallback after explicit services and before the homepage proxy fallback", () => {
+  it("sends domestic domains direct before AI services and resolves the China IP fallback last", () => {
     const output = createShadowrocketProfile(["US-01"]);
     const domestic = "RULE-SET,https://rules.flacier.com/rules/direct/china-domains.list,DIRECT";
-    expect(output).toContain(domestic);
-    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/developer/developer.list,PROXY")).toBeLessThan(output.indexOf(domestic));
-    expect(output.indexOf("RULE-SET,https://rules.flacier.com/rules/ai/openai.list,PROXY")).toBeLessThan(output.indexOf(domestic));
+    expect(output).toContain(`RULE-SET,https://rules.flacier.com/rules/direct/china-exceptions.list,PROXY\n${domestic}\n`);
+    expect(output.indexOf(domestic)).toBeLessThan(output.indexOf("RULE-SET,https://rules.flacier.com/rules/ai/openai.list,PROXY"));
+    expect(output.indexOf(domestic)).toBeLessThan(output.indexOf("RULE-SET,https://rules.flacier.com/rules/developer/developer.list,PROXY"));
     expect(output).toContain("GEOIP,CN,DIRECT\nFINAL,PROXY");
     expect(output).toContain("RULE-SET,https://rules.flacier.com/rules/media/bilibili.list,DIRECT");
   });

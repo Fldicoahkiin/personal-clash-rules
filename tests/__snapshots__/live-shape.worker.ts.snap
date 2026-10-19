@@ -1044,6 +1044,10 @@ rules:
   - RULE-SET,netease-music,DIRECT
   - RULE-SET,apple-system,🍎 Apple
   - RULE-SET,apple-services,🍎 Apple
+  - RULE-SET,steam-download,📥 Steam 下载
+  - RULE-SET,bilibili,📺 哔哩哔哩
+  - RULE-SET,china-exceptions,🐟 未匹配流量
+  - RULE-SET,china-domains,DIRECT
   - PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🧠 Claude
   - RULE-SET,ai-anthropic,🧠 Claude
   - PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI
@@ -1052,12 +1056,10 @@ rules:
   - RULE-SET,ai-google,🤖 AI
   - RULE-SET,ai-coding,🤖 AI
   - RULE-SET,ai-general,🤖 AI
-  - RULE-SET,steam-download,📥 Steam 下载
   - RULE-SET,steam-online,🕹️ Steam 联机
   - RULE-SET,steam,🎮 Steam
   - RULE-SET,discord,💬 Discord
   - RULE-SET,developer,🛠️ 开发服务
-  - RULE-SET,bilibili,📺 哔哩哔哩
   - RULE-SET,anigamer,📺 巴哈姆特
   - RULE-SET,media,🎬 流媒体
   - RULE-SET,telegram,✈️ Telegram
@@ -1069,8 +1071,6 @@ rules:
   - RULE-SET,tiktok,🎵 TikTok
   - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
-  - RULE-SET,china-exceptions,🐟 未匹配流量
-  - RULE-SET,china-domains,DIRECT
   - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量
 "
@@ -1202,18 +1202,20 @@ RULE-SET,https://rules.flacier.com/rules/direct/tencent-messaging.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/direct/netease-music.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/apple/system.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/apple/services.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/gaming/steam-download.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/media/bilibili.list,DIRECT
+RULE-SET,https://rules.flacier.com/rules/direct/china-exceptions.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/direct/china-domains.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/ai/anthropic.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/openai.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/xai.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/google.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/coding.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/general.list,PROXY
-RULE-SET,https://rules.flacier.com/rules/gaming/steam-download.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/gaming/steam-online.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/gaming/steam.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/messaging/discord.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/developer/developer.list,PROXY
-RULE-SET,https://rules.flacier.com/rules/media/bilibili.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/media/anigamer.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/media/media.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/social/telegram.list,PROXY
@@ -1225,8 +1227,6 @@ RULE-SET,https://rules.flacier.com/rules/social/linkedin.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/social/tiktok.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/social/social.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/anthropic-ip.list,PROXY,no-resolve
-RULE-SET,https://rules.flacier.com/rules/direct/china-exceptions.list,PROXY
-RULE-SET,https://rules.flacier.com/rules/direct/china-domains.list,DIRECT
 GEOIP,CN,DIRECT
 FINAL,PROXY
 "

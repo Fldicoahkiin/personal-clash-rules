@@ -269,7 +269,7 @@ describe("Worker entrypoint", () => {
     expect(preview.ruleSets[anthropicIp]).toMatchObject({
       policy: "CLAUDE", content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
     });
-    expect(preview.ruleSets.slice(anthropicIp + 1).map(set => set.label)).toEqual(["china-exceptions", "china-domains", "模板内规则", "默认规则"]);
+    expect(preview.ruleSets.slice(anthropicIp + 1).map(set => set.label)).toEqual(["模板内规则", "默认规则"]);
   });
 
   it("rejects a private custom preview URL and unsupported HTTP methods", async () => {

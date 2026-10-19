@@ -29,18 +29,16 @@ describe("createMihomoProfile", () => {
     expect(JSON.stringify(groups)).not.toContain("🌐 全局");
     expect(groups.find((group: { name: string }) => group.name === "🧠 Claude").hidden).not.toBe(true);
   });
-  it("resolves unlisted domains at the China IP fallback while keeping explicit services and proxy DNS first", () => {
+  it("sends domestic domains direct before the AI process rules and keeps the China IP fallback last", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
-    expect(profile.rules.slice(-3)).toEqual([
-      "RULE-SET,china-domains,DIRECT",
+    expect(profile.rules.slice(-2)).toEqual([
       "GEOIP,CN,DIRECT",
       "MATCH,🐟 未匹配流量",
     ]);
     const domestic = profile.rules.indexOf("RULE-SET,china-domains,DIRECT");
-    for (const rule of ["RULE-SET,ai-openai,🤖 AI", "RULE-SET,developer,🛠️ 开发服务", "RULE-SET,social,💬 社交"]) {
-      expect(profile.rules.indexOf(rule)).toBeGreaterThanOrEqual(0);
-      expect(profile.rules.indexOf(rule)).toBeLessThan(domestic);
-    }
+    expect(profile.rules[domestic - 1]).toBe("RULE-SET,china-exceptions,🐟 未匹配流量");
+    expect(domestic).toBeLessThan(profile.rules.findIndex((rule: string) => rule.startsWith("PROCESS-NAME-REGEX,(?i)^claude")));
+    expect(domestic).toBeLessThan(profile.rules.findIndex((rule: string) => rule.startsWith("PROCESS-NAME-REGEX,(?i)^codex")));
     expect(profile.dns).toMatchObject({
       "enhanced-mode": "fake-ip",
       nameserver: ["https://1.1.1.1/dns-query#DNS-PROXY", "https://8.8.8.8/dns-query#DNS-PROXY"],

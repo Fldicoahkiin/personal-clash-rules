@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import { createRuleSet, matchUrl } from "../src/app/lib/rule-matcher";
-import { mihomoRules } from "../src/config/mihomo-policy";
+import { mihomoRuleProviders, mihomoRules } from "../src/config/mihomo-policy";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -41,10 +41,29 @@ describe("published rule sets", () => {
     expect(rules.every(set => set.rules.every(rule => ["DOMAIN", "DOMAIN-SUFFIX"].includes(rule.type)))).toBe(true);
     const domestic = mihomoRules.indexOf("RULE-SET,china-domains,DIRECT");
     expect(mihomoRules[domestic - 1]).toBe("RULE-SET,china-exceptions,DEFAULT");
-    for (const explicit of ["RULE-SET,ai-openai,AI", "RULE-SET,ai-coding,AI", "RULE-SET,developer,DEV", "RULE-SET,social,SOCIAL"]) {
-      expect(mihomoRules.indexOf(explicit as typeof mihomoRules[number])).toBeLessThan(domestic);
-    }
+    expect(domestic).toBeLessThan(mihomoRules.indexOf("PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,CLAUDE"));
     expect(mihomoRules.slice(-2)).toEqual(["GEOIP,CN,DIRECT", "MATCH,DEFAULT"]);
+  });
+
+  it("keeps every service rule set after the domestic block free of domestic and exception domains", async () => {
+    type Entry = [type: string, domain: string];
+    const entries = (content: string) => content.split(/\r?\n/u).map(line => line.trim().split(",") as Entry)
+      .filter(([type]) => type === "DOMAIN" || type === "DOMAIN-SUFFIX");
+    const under = (domain: string, suffixes: Set<string>) => domain.split(".").some((_, index, labels) => suffixes.has(labels.slice(index).join(".")));
+    const domestic = [...entries(await read("public/rules/direct/china-exceptions.list")), ...entries(await read("public/rules/direct/china-domains.list"))];
+    const domesticSuffixes = new Set(domestic.filter(([type]) => type === "DOMAIN-SUFFIX").map(([, domain]) => domain));
+    const domesticExact = new Set(domestic.filter(([type]) => type === "DOMAIN").map(([, domain]) => domain));
+    const later = mihomoRules.slice(mihomoRules.indexOf("RULE-SET,china-domains,DIRECT") + 1)
+      .filter(rule => rule.startsWith("RULE-SET,")).map(rule => rule.split(",")[1]);
+    expect(later.length).toBeGreaterThan(10);
+    // A shared domain would be captured by the domestic block and never reach its service group.
+    for (const name of later) {
+      const service = entries(await read(`public${new URL(mihomoRuleProviders[name].url).pathname}`));
+      const serviceSuffixes = new Set(service.filter(([type]) => type === "DOMAIN-SUFFIX").map(([, domain]) => domain));
+      const captured = service.filter(([type, domain]) => under(domain, domesticSuffixes) || (type === "DOMAIN" && domesticExact.has(domain)))
+        .concat(domestic.filter(([, domain]) => under(domain, serviceSuffixes)));
+      expect(captured, name).toEqual([]);
+    }
   });
 
   it("routes DingTalk services and subdomains directly without accepting lookalike suffixes", async () => {
