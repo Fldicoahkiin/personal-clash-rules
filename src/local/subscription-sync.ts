@@ -1,6 +1,6 @@
 import { ApiError } from "../worker/api-error";
 import { buildSubscription, readRequestObject, routeSubscriptionRequest } from "../worker/subscriptions";
-import { loadRemoteSubscriptionSources } from "../worker/sub-store";
+import { loadRemoteSubscriptionSources } from "../worker/sub-store/remote";
 import { randomSubscriptionId } from "../worker/secrets";
 import type { SubscriptionEnv } from "../worker/types";
 

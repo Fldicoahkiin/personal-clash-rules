@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { normalizeSourceBundle, probeRemoteSubscriptionMetadata, readRemoteSource } from "../src/worker/sub-store";
+import { normalizeSourceBundle } from "../src/worker/sub-store/normalize";
+import { probeRemoteSubscriptionMetadata, readRemoteSource } from "../src/worker/sub-store/remote";
 import type { SubscriptionEnv } from "../src/worker/types";
 
 describe("subscription upstream failures", () => {

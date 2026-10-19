@@ -1,12 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
-import {
-  normalizeSourceBundle,
-  normalizeSources,
-  combineSubscriptionUsage,
-  produceTarget,
-} from "../src/worker/sub-store";
+import { normalizeSourceBundle, normalizeSources } from "../src/worker/sub-store/normalize";
+import { produceTarget } from "../src/worker/sub-store/produce";
+import { combineSubscriptionUsage } from "../src/worker/sub-store/usage";
 import { routeSubscriptionRequest } from "../src/worker/subscriptions";
 import type { SubscriptionEnv } from "../src/worker/types";
 

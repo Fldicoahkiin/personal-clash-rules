@@ -5,7 +5,7 @@ import { mihomoProxyGroups, mihomoRuleProviders, mihomoProfileRules } from "../c
 import { applyRuleTemplate } from "./rule-template";
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
-import { readRemoteSource } from "./sub-store";
+import { readRemoteSource } from "./sub-store/remote";
 
 export async function createRulePreview(
   id: RuleTemplateId,

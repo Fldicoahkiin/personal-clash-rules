@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createLoonProfile } from "../src/worker/loon-profile";
-import { countTargetCompatibleNodes, produceTarget } from "../src/worker/sub-store";
+import { countTargetCompatibleNodes, produceTarget } from "../src/worker/sub-store/produce";
 import type { SubscriptionEnv } from "../src/worker/types";
 
 const nodes = [

@@ -3,7 +3,7 @@ import { parseRolaSettings, rolaDirectGatewayRule, type prepareRolaProfile } fro
 import { ApiError } from "./api-error";
 import type { SubscriptionNode } from "./node-transforms";
 import { createShadowrocketProfile, type ShadowrocketRouting } from "./shadowrocket-profile";
-import { countTargetCompatibleNodes, produceTarget } from "./sub-store";
+import { countTargetCompatibleNodes, produceTarget } from "./sub-store/produce";
 import { targetForUserAgent } from "./subscription-target";
 import { isMihomoConfigTarget, type SubscriptionEnv } from "./types";
 

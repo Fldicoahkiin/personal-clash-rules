@@ -1,6 +1,6 @@
 import { parse, stringify } from "yaml";
 import { ApiError } from "./api-error";
-import { parseRemoteSubscriptionUrl, readRemoteSource } from "./sub-store";
+import { parseRemoteSubscriptionUrl, readRemoteSource } from "./sub-store/remote";
 import { dnsProxyGroup, dnsProxyGroupName } from "./mihomo-dns";
 
 function invalid(): never {

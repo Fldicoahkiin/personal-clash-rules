@@ -1,5 +1,6 @@
 import { ApiError } from "./api-error";
-import type { RemoteSubscriptionSource, SubscriptionUsage } from "./sub-store";
+import type { RemoteSubscriptionSource } from "./sub-store/remote";
+import type { SubscriptionUsage } from "./sub-store/usage";
 
 export type SubscriptionSnapshot = { sources: RemoteSubscriptionSource[]; readAt: string };
 export type ManagedSubscriptionSnapshot = SubscriptionSnapshot & { managementHash: string };

@@ -19,21 +19,10 @@ import {
   type MihomoRulePreset,
 } from "./mihomo-profile";
 import { hashText, randomSubscriptionId } from "./secrets";
-import {
-  combineSubscriptionUsage,
-  countTargetCompatibleNodes,
-  formatSubscriptionUserinfo,
-  normalizeSourceBundle,
-  normalizeSources,
-  parseRemoteSubscriptionUrl,
-  probeRemoteSubscriptionMetadata,
-  produceTarget,
-  readRemoteSource,
-  type RemoteSubscriptionMetadata,
-  type RemoteSubscriptionSource,
-  type SubscriptionUsage,
-  type SourceResourceLimits,
-} from "./sub-store";
+import { normalizeSourceBundle, normalizeSources, type SourceResourceLimits } from "./sub-store/normalize";
+import { countTargetCompatibleNodes, produceTarget } from "./sub-store/produce";
+import { parseRemoteSubscriptionUrl, probeRemoteSubscriptionMetadata, readRemoteSource, type RemoteSubscriptionSource } from "./sub-store/remote";
+import { combineSubscriptionUsage, formatSubscriptionUserinfo, type RemoteSubscriptionMetadata, type SubscriptionUsage } from "./sub-store/usage";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
 import { targetForUserAgent } from "./subscription-target";
 import {

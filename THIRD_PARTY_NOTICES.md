@@ -14,7 +14,7 @@ Flacier's modifications (2026-10-12): keep compiled `geolocation-cn` DOMAIN/DOMA
 
 ## Subscription converter
 
-The parser and target serializers in `src/worker/sub-store.ts` are adapted from [`realchendahuang/sub-store-cloudflare`](https://github.com/realchendahuang/sub-store-cloudflare), distributed under AGPL-3.0. This repository is distributed under the same license.
+The parsers, target serializers and remote source reader in `src/worker/sub-store/` are adapted from [`realchendahuang/sub-store-cloudflare`](https://github.com/realchendahuang/sub-store-cloudflare), distributed under AGPL-3.0. This repository is distributed under the same license.
 
 ## Client icons
 
