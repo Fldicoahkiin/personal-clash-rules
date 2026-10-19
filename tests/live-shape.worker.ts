@@ -50,6 +50,20 @@ describe("stored production subscription shape", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("extends a record that clients keep refreshing and still rejects an expired one", async () => {
+    const soon = Date.now() + 10 * 86_400_000;
+    await env.SUBSCRIPTIONS.put(`rola:chain:${chainId}`, JSON.stringify({ ...chain, expiresAt: soon }));
+    const response = await request(`/r/${chainId}.yaml`, "clash.meta");
+    expect(response.status).toBe(200);
+    const stored = await env.SUBSCRIPTIONS.get<typeof chain>(`rola:chain:${chainId}`, "json");
+    expect(stored!.expiresAt).toBeGreaterThan(Date.now() + 89 * 86_400_000);
+    expect(stored!.settings).toEqual(chain.settings);
+    expect(response.headers.get("x-rola-expires-at")).toBe(new Date(stored!.expiresAt).toISOString());
+
+    await env.SUBSCRIPTIONS.put(`rola:chain:${chainId}`, JSON.stringify({ ...chain, expiresAt: Date.now() - 1000 }));
+    expect((await request(`/r/${chainId}.yaml`, "clash.meta")).status).toBe(404);
+  });
+
   it("renders the paired Shadowrocket node list and rules without leaking credentials into the rules", async () => {
     const nodes = await request(`/r/${chainId}/Flacier-Mobile-Nodes.txt`, "Shadowrocket/2100");
     expect(nodes.status).toBe(200);

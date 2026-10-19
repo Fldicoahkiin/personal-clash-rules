@@ -68,6 +68,18 @@ async function read<T extends { expiresAt: number }>(env: Env, kind: "preview" |
   if (data.expiresAt <= Date.now()) throw new ApiError(404, "rola_not_found", "记录已过期，请重新生成。");
   return data;
 }
+// A link that clients keep refreshing stays valid; at most one KV write per record per day.
+async function renewChain(env: Env, id: string, chain: Chain): Promise<Chain> {
+  if (chain.expiresAt - Date.now() >= (chainTtl - 86_400) * 1000) return chain;
+  const renewed = { ...chain, expiresAt: Date.now() + chainTtl * 1000 };
+  try {
+    await env.SUBSCRIPTIONS.put(`rola:chain:${id}`, JSON.stringify(renewed), { expirationTtl: chainTtl });
+    return renewed;
+  } catch (error) {
+    console.error(JSON.stringify({ event: "rola_chain_renew_failed", error: error instanceof Error ? error.name : "unknown" }));
+    return chain;
+  }
+}
 async function write(env: Env, kind: "preview" | "chain", value: unknown, ttl: number) {
   const serialized = JSON.stringify(value);
   if (encoder.encode(serialized).length > 2 * requestBytes) throw new ApiError(413, "rola_record_too_large", "存储记录超过 1 MiB。");
@@ -179,7 +191,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
     }
     const match = /^\/r\/([\w-]{32})(?:\.yaml|\/(?:Flacier-Mobile\.conf|Flacier-Mobile-Nodes\.txt))?$/u.exec(url.pathname);
     if (match && ["GET", "HEAD"].includes(request.method)) {
-      const chain = await read<Chain>(env, "chain", match[1]);
+      const chain = await renewChain(env, match[1], await read<Chain>(env, "chain", match[1]));
       const target = rolaRequestTarget(request, url);
       requireRolaTarget(chain.settings, target);
       // Validate the source before consulting rendered output: removal, quota changes and
@@ -205,6 +217,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.localSync.readAt);
         return rendered;
       }, freshOutput);
+      response.headers.set("X-Rola-Expires-At", new Date(chain.expiresAt).toISOString());
       const syncedAt = response.headers.get("X-Subscription-Synced-At");
       if (syncedAt) response.headers.set("X-Subscription-Last-Success", syncedAt);
       if (synchronized) {
