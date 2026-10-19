@@ -3,6 +3,13 @@ import { numberOrUndefined, parseWireGuardReserved, stripUndefined } from "./cod
 import { TEST_URL, type ProxyNode, type SingBoxOutbound } from "./types";
 
 // Adapted from realchendahuang/sub-store-cloudflare under AGPL-3.0.
+// Node outbounds only; createSingBoxProfile adds its own selectors, DIRECT and REJECT.
+export function renderSingBoxNodeResource(proxies: ProxyNode[]) {
+  const outbounds = proxies.map(toSingBoxOutbound).filter(isSingBoxOutbound);
+  if (outbounds.length === 0) throw new ApiError(422, "target_unsupported", "sing-box could not represent the normalized nodes");
+  return JSON.stringify({ outbounds });
+}
+
 export function renderSingBoxJson(proxies: ProxyNode[]) {
   const nodeOutbounds = proxies.map(toSingBoxOutbound).filter(isSingBoxOutbound);
   const tags = nodeOutbounds.map((outbound) => String(outbound.tag));

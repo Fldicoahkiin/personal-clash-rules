@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createSingBoxProfile } from "../src/worker/sing-box-profile";
+import { produceTarget } from "../src/worker/sub-store/produce";
+import type { SubscriptionEnv } from "../src/worker/types";
 
 describe("createSingBoxProfile", () => {
   it("hides unavailable countries and quota notices instead of creating direct fallback exits", () => {
@@ -102,5 +104,15 @@ describe("createSingBoxProfile", () => {
     expect(() => createSingBoxProfile('{"outbounds":[]}')).toThrow(
       "sing-box node resource is invalid",
     );
+  });
+});
+
+describe("sing-box complete configuration", () => {
+  it("builds from converted nodes without colliding with its own selectors", async () => {
+    const nodes = [{ name: "US-01", type: "ss", server: "us.example.com", port: 8388, cipher: "aes-128-gcm", password: "test" }];
+    const output = JSON.parse(await produceTarget({} as SubscriptionEnv, nodes, "sing-box-config"));
+    const tags = output.outbounds.map((outbound: { tag: string }) => outbound.tag);
+    expect(tags).toContain("US-01");
+    expect(tags.filter((tag: string) => tag === "DIRECT")).toHaveLength(1);
   });
 });

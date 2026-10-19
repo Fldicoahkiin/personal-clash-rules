@@ -12,7 +12,7 @@ import { createStashProfile } from "../stash-profile";
 import { createSurfboardProfile, createSurgeProfile } from "../surge-profile";
 import { isMihomoConfigTarget, type OutputTarget, type SubscriptionEnv } from "../types";
 import { base64Utf8 } from "./codec";
-import { renderSingBoxJson } from "./produce-sing-box";
+import { renderSingBoxJson, renderSingBoxNodeResource } from "./produce-sing-box";
 import { renderEgernYaml, renderLoonProxies, renderQxProxies, renderSurfboardProxies, renderSurgeProxies } from "./produce-text";
 import { renderProxyUris } from "./produce-uri";
 import type { ProxyNode } from "./types";
@@ -61,7 +61,7 @@ export async function produceTarget(
   if (target === "surfboard-config") return createSurfboardProfile(renderSurfboardProxies(supported), updateIntervalHours);
   if (target === "loon-config") return createLoonProfile(renderLoonProxies(supported), updateIntervalHours);
   if (target === "egern-config") return createEgernProfile(renderEgernYaml(supported), updateIntervalHours);
-  if (target === "sing-box-config") return createSingBoxProfile(renderSingBoxJson(supported), updateIntervalHours);
+  if (target === "sing-box-config") return createSingBoxProfile(renderSingBoxNodeResource(supported), updateIntervalHours);
   if (target === "mihomo" || target === "clash" || target === "stash") return stringifyYaml({ proxies: supported });
   if (target === "surge") return renderSurgeProxies(supported);
   if (target === "surfboard") return renderSurfboardProxies(supported);
