@@ -100,7 +100,7 @@ const LocalRolaSubscription: FC = () => {
       <button className="button" type="button" onClick={() => void connect()} disabled={Boolean(state.busy)}><PlugsConnected aria-hidden="true" />{state.busy === "连接" ? "正在连接" : state.setup ? "重新连接本地服务" : "连接本地服务"}</button>
       <span>{state.setup ? "已连接" : "尚未连接"} · <code>{origin}</code></span>
     </div>
-    <details className={styles.help}><summary>本地服务怎么启动？</summary><p>在项目目录先运行 <code>pnpm build</code>，再运行 <code>pnpm start:local</code>。需要经过现有机场代理读取订阅时，加 <code>--proxy http://127.0.0.1:你的混合端口</code>；这只影响转换进程。</p><p>浏览器阻止本地网络访问时，<a href={`${origin}/#subscription`} target="_blank" rel="noreferrer">打开同一网站的本地页面</a>，再选择「机场 → Rola」。不要把本地后端暴露到公网。</p></details>
+    <details className={styles.help}><summary>本地服务怎么启动？</summary><p>在项目目录先运行 <code>pnpm build</code>，再运行 <code>pnpm start:local</code>。需要经过现有机场代理读取订阅时，加 <code>--proxy http://127.0.0.1:你的混合端口</code>；这只影响转换进程。</p><p>浏览器阻止本地网络访问时，<a href={`${origin}/#subscription`} target="_blank" rel="noreferrer">打开同一网站的本地页面</a>，再选择「Rola 家宽出口」。不要把本地后端暴露到公网。</p></details>
     {state.setup ? <form onSubmit={generate}>
       <fieldset disabled={Boolean(state.busy)} className={styles.fields}>
         <section className={styles.step} aria-labelledby="rola-airport-title">

@@ -8,7 +8,7 @@ export function SubscriptionSyncTasks({ backend }: { backend: string }) {
   async function load(change?: { localId: string; paused: boolean }) {
     setPending(true); setError("");
     try { setTasks(await localSyncTasks(backend, change)); }
-    catch (error) { setError(subscriptionErrorText(error)); }
+    catch (error) { setError(subscriptionErrorText(error, backend)); }
     finally { setPending(false); }
   }
   return <section className="subscription-result-notes subscription-sync-tasks" aria-label="本地同步任务">

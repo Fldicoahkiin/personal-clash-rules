@@ -36,3 +36,12 @@ describe("subscription refusal messages", () => {
     expect(new SubscriptionApiError(502, "source_failed", "HTTP 403", { ...upstream, status: "403" }).upstream).toBeUndefined();
   });
 });
+
+describe("connection failures", () => {
+  it("only points to the local server when the selected backend is local", () => {
+    const failure = new TypeError("Failed to fetch");
+    expect(subscriptionErrorText(failure, "http://127.0.0.1:25500")).toContain("pnpm start:local");
+    expect(subscriptionErrorText(failure, "https://rules.flacier.com")).not.toContain("pnpm start:local");
+    expect(subscriptionErrorText(new DOMException("timed out", "TimeoutError"), "https://rules.flacier.com")).toContain("60 秒");
+  });
+});

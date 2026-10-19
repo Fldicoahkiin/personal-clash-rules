@@ -157,9 +157,15 @@ export async function createConvertedSubscription(input: {
   return await response.json() as ConvertedSubscription;
 }
 
-export function subscriptionErrorText(error: unknown): string {
+function isLoopbackBackend(backend: string): boolean {
+  const host = backend ? new URL(backend).hostname : typeof window === "undefined" ? "" : window.location.hostname;
+  return ["127.0.0.1", "localhost"].includes(host);
+}
+
+export function subscriptionErrorText(error: unknown, backend = ""): string {
   if (!(error instanceof SubscriptionApiError)) {
-    return "无法连接转换后端；本地版请先运行 pnpm start:local，或打开本地页面";
+    if (error instanceof DOMException && error.name === "TimeoutError") return "转换后端 60 秒内没有完成，请稍后重试";
+    return isLoopbackBackend(backend) ? "无法连接本地后端，请先运行 pnpm start:local" : "无法连接转换后端，请检查网络后重试";
   }
   if (error.code === "source_failed") {
     const upstream = error.upstream;
@@ -181,7 +187,7 @@ export function subscriptionErrorText(error: unknown): string {
     request_too_large: "输入内容超过 16 KiB",
     rate_limited: "请求太频繁，请稍后重试",
     no_nodes_found: "有来源返回空内容或没有可识别节点，本次不发布残缺配置；已有链接将尝试保留最近一次有效结果",
-    invalid_node_pattern: "正则格式有误，请检查更多设置",
+    invalid_node_pattern: "正则格式有误，请检查进阶设置",
     invalid_node_settings: "节点处理设置有误",
     invalid_rule_preset: "规则方案无效",
     invalid_rule_template: "请填写远程规则模板地址",
@@ -207,6 +213,8 @@ export function subscriptionErrorText(error: unknown): string {
     cloud_sync_unreachable: "同步未完成，云端保留之前的订阅；本地服务会在 15 分钟后重试",
     cloud_sync_failed: "云端未接受同步，已有链接不变；请检查本地与云端是否已更新到支持同步的版本",
     invalid_local_subscription: "请先用本地后端生成订阅，再同步到云端",
+    subscription_storage_unavailable: "云端存储暂时不可用，请稍后重试",
+    stored_subscription_invalid: "已保存的订阅不符合当前版本的校验，请重新同步或生成",
   };
   return messages[error.code] ?? error.message;
 }

@@ -181,7 +181,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
       dispatch({ key: "error", value: "" });
       return true;
     } catch {
-      dispatch({ key: "error", value: "更多设置里的正则格式有误" });
+      dispatch({ key: "error", value: "进阶设置里的正则格式有误" });
       return false;
     }
   }
@@ -237,7 +237,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
       }, backend);
       dispatch({ key: "settle", revision, result, error: "" });
     } catch (error) {
-      dispatch({ key: "settle", revision, result: null, error: subscriptionErrorText(error) });
+      dispatch({ key: "settle", revision, result: null, error: subscriptionErrorText(error, backend) });
     } finally {
       dispatch({ key: "pending", value: false });
     }
