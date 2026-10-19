@@ -19,7 +19,7 @@ type Group = {
 export type ShadowrocketRouting = {
   groups: Group[];
   rules: string[];
-  providers: Record<string, { url: string }>;
+  providers: Record<string, { url: string; behavior?: string }>;
   bootstrap: string[];
 };
 
@@ -43,7 +43,8 @@ function ruleLine(rule: string, providers: ShadowrocketRouting["providers"]): st
   const [type, value, policy, ...options] = rule.split(",");
   if (type === "MATCH") return [`FINAL,${homepagePolicy(value)}`];
   if (type === "RULE-SET") {
-    const resource = providers[value];
+    // Shadowrocket reads classical lists; Mihomo's domain-behavior copy of a published set maps back to the classical file.
+    const resource = providers[value]?.behavior === "domain" ? mihomoRuleProviders[value] : providers[value];
     if (!resource || !/^https:\/\//u.test(resource.url) || /[\r\n,]/u.test(resource.url)) {
       throw new ApiError(422, "shadowrocket_rule_provider", "Shadowrocket needs an HTTPS text rule provider");
     }

@@ -139,6 +139,13 @@ ruleSets:
     label: 社交服务
     policy: SOCIAL
     path: rules/social/social.list
+  - id: china-exceptions
+    label: 国内列表中的境外例外
+    policy: DEFAULT
+    path: rules/direct/china-exceptions.list
+    artifactLicense: GPL-3.0
+    sourceLicenses: [GPL-3.0]
+    provenance: source URL and SHA-256 hash in the rule file header
   - id: china-domains
     label: 国内服务域名
     policy: DIRECT

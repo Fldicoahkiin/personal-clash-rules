@@ -28,15 +28,19 @@ describe("published rule sets", () => {
   });
 
   it("covers domestic video, shopping and daily apps without classifying overseas services as domestic", async () => {
-    const rules = [createRuleSet({ id: "china-domains", label: "国内服务", policy: "DIRECT", path: "rules/direct/china-domains.list" }, await read("public/rules/direct/china-domains.list"))];
-    for (const host of ["www.douyin.com", "v3.douyinvod.com", "p3.douyinpic.com", "aweme.snssdk.com", "p3.pstatp.com", "www.kuaishou.com", "sns-webpic.xhscdn.com", "www.xiaohongshu.com", "www.taobao.com", "www.alipay.com", "img.alicdn.com", "img.360buyimg.com", "www.jd.com", "www.meituan.com", "www.amap.com", "www.12306.cn"]) {
+    const rules = [
+      createRuleSet({ id: "china-exceptions", label: "境外例外", policy: "DEFAULT", path: "rules/direct/china-exceptions.list" }, await read("public/rules/direct/china-exceptions.list")),
+      createRuleSet({ id: "china-domains", label: "国内服务", policy: "DIRECT", path: "rules/direct/china-domains.list" }, await read("public/rules/direct/china-domains.list")),
+    ];
+    for (const host of ["www.workbuddy.cn", "www.workbuddy.ai", "acc-1258344699.cos.accelerate.myqcloud.com", "gateway.icloud.com.cn", "lf-normal-gr-sourcecdn.bytegecko.com", "h-adashx.dingtalkapps.com", "shortconnv6.im.qcloud.com", "www.douyin.com", "v3.douyinvod.com", "p3.douyinpic.com", "aweme.snssdk.com", "p3.pstatp.com", "www.kuaishou.com", "sns-webpic.xhscdn.com", "www.xiaohongshu.com", "www.taobao.com", "www.alipay.com", "img.alicdn.com", "img.360buyimg.com", "www.jd.com", "www.meituan.com", "www.amap.com", "www.12306.cn"]) {
       expect(matchUrl(host, rules), host).toMatchObject({ matched: true, policy: "DIRECT" });
     }
-    for (const host of ["api.openai.com", "api.anthropic.com", "github.com", "raw.githubusercontent.com", "www.tiktok.com", "v16.byteoversea.com", "www.rednote.com", "assets.oss-us-west-1.aliyuncs.com", "douyin.com.example.org"]) {
-      expect(matchUrl(host, rules), host).toMatchObject({ matched: false, policy: "DEFAULT" });
+    for (const host of ["api.openai.com", "api.anthropic.com", "github.com", "raw.githubusercontent.com", "www.tiktok.com", "v16.byteoversea.com", "douyin.com.example.org", "gitlab-assets.oss-cn-hongkong.aliyuncs.com", "dl.acm.org"]) {
+      expect(matchUrl(host, rules), host).toMatchObject({ policy: "DEFAULT" });
     }
-    expect(rules[0].rules.every(rule => ["DOMAIN", "DOMAIN-SUFFIX"].includes(rule.type))).toBe(true);
+    expect(rules.every(set => set.rules.every(rule => ["DOMAIN", "DOMAIN-SUFFIX"].includes(rule.type)))).toBe(true);
     const domestic = mihomoRules.indexOf("RULE-SET,china-domains,DIRECT");
+    expect(mihomoRules[domestic - 1]).toBe("RULE-SET,china-exceptions,DEFAULT");
     for (const explicit of ["RULE-SET,ai-openai,AI", "RULE-SET,ai-coding,AI", "RULE-SET,developer,DEV", "RULE-SET,social,SOCIAL"]) {
       expect(mihomoRules.indexOf(explicit as typeof mihomoRules[number])).toBeLessThan(domestic);
     }

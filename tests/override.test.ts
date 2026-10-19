@@ -8,7 +8,7 @@ import {
   displayMihomoGroup,
   displayMihomoRule,
   mihomoProxyGroups,
-  mihomoRuleProviders,
+  mihomoProfileRuleProviders,
   mihomoProfileRules,
 } from "../src/config/mihomo-policy";
 import { displayedPolicyGroups } from "../src/app/lib/policy-groups";
@@ -26,7 +26,7 @@ describe("Clash Party override", () => {
       "+rules": unknown;
     };
 
-    expect(config["rule-providers"]).toEqual(mihomoRuleProviders);
+    expect(config["rule-providers"]).toEqual(mihomoProfileRuleProviders);
     expect(config["+proxy-groups"]).toEqual(mihomoProxyGroups.map(displayMihomoGroup));
     expect(config["+rules"]).toEqual(mihomoProfileRules.map(displayMihomoRule));
   });

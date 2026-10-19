@@ -3,6 +3,7 @@ const publishedRuleFiles = {
   "private-ip": "local/private-ip.list",
   "tencent-messaging": "direct/tencent-messaging.list",
   "netease-music": "direct/netease-music.list",
+  "china-exceptions": "direct/china-exceptions.list",
   "china-domains": "direct/china-domains.list",
   "apple-system": "apple/system.list",
   "apple-services": "apple/services.list",
@@ -44,6 +45,19 @@ export const mihomoRuleProviders = Object.fromEntries(
     },
   ]),
 );
+
+// Mihomo matches classical providers rule by rule; its copy of the large domestic list uses the domain behavior instead.
+export const mihomoProfileRuleProviders = {
+  ...mihomoRuleProviders,
+  "china-domains": {
+    type: "http",
+    behavior: "domain",
+    format: "text",
+    url: "https://rules.flacier.com/rules/mihomo/china-domains.txt",
+    path: "./ruleset/personal/china-domains.domain.txt",
+    interval: 86_400,
+  },
+};
 
 export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 export const manualProxyGroupName = "🖐 手动选择";
@@ -279,6 +293,7 @@ export const mihomoRules = [
   "RULE-SET,tiktok,TIKTOK",
   "RULE-SET,social,SOCIAL",
   "RULE-SET,ai-anthropic-ip,CLAUDE,no-resolve",
+  "RULE-SET,china-exceptions,DEFAULT",
   "RULE-SET,china-domains,DIRECT",
   "GEOIP,CN,DIRECT",
   "MATCH,DEFAULT",

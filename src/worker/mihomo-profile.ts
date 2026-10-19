@@ -6,7 +6,7 @@ import {
   displayMihomoGroup,
   displayMihomoRule,
   mihomoProxyGroups,
-  mihomoRuleProviders,
+  mihomoProfileRuleProviders,
   mihomoProfileRules,
 } from "../config/mihomo-policy";
 import type { NodeSettings } from "./node-transforms";
@@ -102,7 +102,7 @@ function profileBody(
     proxies,
     ...(providers ? { "proxy-providers": providers } : {}),
     "proxy-groups": proxyGroups.map(group => displayMihomoGroup(group as { name: string; proxies?: string[]; icon?: string })),
-    ...(flacierRules ? { "rule-providers": mihomoRuleProviders } : {}),
+    ...(flacierRules ? { "rule-providers": mihomoProfileRuleProviders } : {}),
     rules: (directRules ? ["MATCH,DIRECT"] : flacierRules ? mihomoProfileRules : globalRules).map(displayMihomoRule),
   };
 }

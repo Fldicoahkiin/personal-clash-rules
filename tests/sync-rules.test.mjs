@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { convertChinaDomains, convertDomainList, syncRules } from "../scripts/sync-rules.mjs";
+import { convertChinaDomains, convertDomainList, overseasExceptions, renderMihomoDomainSet, syncRules, withoutCoveredDomains } from "../scripts/sync-rules.mjs";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -45,20 +45,33 @@ describe("domestic rule sync", () => {
     }
   });
 
+  it("drops entries a broader suffix already covers and renders the Mihomo domain set", () => {
+    const rules = withoutCoveredDomains(["DOMAIN-SUFFIX,cn", "DOMAIN-SUFFIX,workbuddy.cn", "DOMAIN,www.dingtalk.com", "DOMAIN-SUFFIX,dingtalk.com", "DOMAIN-SUFFIX,bytegecko.com", "DOMAIN,api.example.org"]);
+    expect(rules).toEqual(["DOMAIN-SUFFIX,cn", "DOMAIN-SUFFIX,dingtalk.com", "DOMAIN-SUFFIX,bytegecko.com", "DOMAIN,api.example.org"]);
+    expect(renderMihomoDomainSet(rules)).toEqual(["+.cn", "+.dingtalk.com", "+.bytegecko.com", "api.example.org"]);
+  });
+
+  it("keeps only overseas entries that a domestic rule would otherwise send direct", () => {
+    const domestic = ["DOMAIN-SUFFIX,aliyuncs.com", "DOMAIN-SUFFIX,acm.org", "DOMAIN,api.example.cn"];
+    const overseas = "DOMAIN,gitlab-assets.oss-cn-hongkong.aliyuncs.com\nDOMAIN-SUFFIX,acm.org\nDOMAIN-SUFFIX,github.com\nDOMAIN,other.example.cn\nDOMAIN-REGEX,^x\\.aliyuncs\\.com$";
+    expect(overseasExceptions(overseas, domestic)).toEqual(["DOMAIN,gitlab-assets.oss-cn-hongkong.aliyuncs.com", "DOMAIN-SUFFIX,acm.org"]);
+  });
+
   it.each(["empty", "denied", "network", "html", "non-text", "oversize-header", "oversize-body"])("preserves every published snapshot when a domestic source is %s", async failure => {
     const root = await mkdtemp(resolve(tmpdir(), "flacier-rule-sync-"));
-    const files = ["public/rules/media/bilibili.list", "public/rules/media/anigamer.list", "public/rules/direct/china-domains.list"];
+    const files = ["public/rules/media/bilibili.list", "public/rules/media/anigamer.list", "public/rules/direct/china-domains.list", "public/rules/direct/china-exceptions.list", "public/rules/mihomo/china-domains.txt"];
     for (const file of files) {
       await mkdir(dirname(resolve(root, file)), { recursive: true });
       await writeFile(resolve(root, file), "# previous valid snapshot\nDOMAIN-SUFFIX,existing.example\n");
     }
     vi.stubGlobal("fetch", vi.fn(async url => {
+      if (String(url).endsWith("/cn.list")) return new Response("DOMAIN-SUFFIX,cn\n");
       if (String(url).includes("geolocation-cn")) {
         if (failure === "network") throw new Error("upstream disconnected");
         if (failure === "html") return new Response("<html>denied</html>");
         if (failure === "non-text") return new Response("DOMAIN-SUFFIX,example.com", { headers: { "Content-Type": "application/octet-stream" } });
-        if (failure === "oversize-header") return new Response("DOMAIN-SUFFIX,example.com", { headers: { "Content-Length": "1048577" } });
-        if (failure === "oversize-body") return new Response("#".repeat(1048577), { headers: { "Content-Length": "1" } });
+        if (failure === "oversize-header") return new Response("DOMAIN-SUFFIX,example.com", { headers: { "Content-Length": "4194305" } });
+        if (failure === "oversize-body") return new Response("#".repeat(4194305), { headers: { "Content-Length": "1" } });
         return new Response("", { status: failure === "denied" ? 403 : 200 });
       }
       return new Response("replacement.example\n");
@@ -72,6 +85,8 @@ describe("domestic rule sync", () => {
   it("publishes bounded domains with provenance, preserving attribute filters through includes", async () => {
     const root = await mkdtemp(resolve(tmpdir(), "flacier-rule-sync-"));
     const bodies = {
+      "cn.list": "DOMAIN-SUFFIX,bytegecko.com\nDOMAIN-SUFFIX,cn.example.org\nDOMAIN-SUFFIX,sub.douyin.com",
+      "geolocation-!cn.list": "DOMAIN,mirror.cn.example.org\nDOMAIN-SUFFIX,github.com",
       "geolocation-cn.list": "DOMAIN-SUFFIX,douyin.com\nDOMAIN-REGEX,^limited\\.cn$",
       xiaohongshu: "include:askdiandian\nxiaohongshu.com\nrednote.com @!cn",
       askdiandian: "askdiandian.com\nforeign.example @!cn",
@@ -90,9 +105,17 @@ describe("domestic rule sync", () => {
     for (const domain of ["douyin.com", "xiaohongshu.com", "askdiandian.com", "amap.com", "dingtalk.com", "dingtalkapps.com", "snssdk.com", "taobao.com", "alipay.com", "alicdn.com", "jd.com"]) {
       expect(content).toContain(`DOMAIN-SUFFIX,${domain}\n`);
     }
-    for (const domain of ["tiktok.com", "byteoversea.com", "rednote.com", "foreign.example", "foreign-dingtalk.example", "tracking.example", "aliexpress.com", "jd.id", "oss-us-west-1.aliyuncs.com"]) {
+    for (const domain of ["tiktok.com", "byteoversea.com", "rednote.com", "foreign.example", "foreign-dingtalk.example", "tracking.example", "aliexpress.com", "jd.id", "oss-us-west-1.aliyuncs.com", "sub.douyin.com"]) {
       expect(content).not.toContain(`DOMAIN-SUFFIX,${domain}`);
     }
+    expect(content).toContain("DOMAIN-SUFFIX,bytegecko.com\n");
+    const domainSet = await readFile(resolve(root, "public/rules/mihomo/china-domains.txt"), "utf8");
+    expect(domainSet).toContain("\n+.bytegecko.com\n");
+    expect(domainSet).toContain("\n+.douyin.com\n");
+    expect(domainSet).not.toMatch(/^DOMAIN/mu);
+    const exceptions = await readFile(resolve(root, "public/rules/direct/china-exceptions.list"), "utf8");
+    expect(exceptions).toContain("\nDOMAIN,mirror.cn.example.org\n");
+    expect(exceptions).not.toContain("github.com");
     expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining("/tiktok"), expect.anything());
   });
 });

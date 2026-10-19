@@ -82,7 +82,7 @@ async function main() {
   const policy = await import(`data:text/javascript;base64,${Buffer.from(policyModule.outputFiles[0].text).toString("base64")}`);
   const overridePath = resolve(repositoryRoot, "public/overrides/clash-party.yaml");
   const override = parseDocument(await readFile(overridePath, "utf8"));
-  override.set("rule-providers", override.createNode(policy.mihomoRuleProviders));
+  override.set("rule-providers", override.createNode(policy.mihomoProfileRuleProviders));
   override.set("+proxy-groups", override.createNode(policy.mihomoProxyGroups.map(policy.displayMihomoGroup)));
   override.set("+rules", override.createNode(policy.mihomoProfileRules.map(policy.displayMihomoRule)));
   await writeFile(overridePath, override.toString({ lineWidth: 0 }), "utf8");

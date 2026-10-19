@@ -89,7 +89,10 @@ export async function expandProfileRules(profile: string, assets?: Pick<Env["ASS
   if (providers.length > 32) throw new ApiError(413, "output_too_large", "Rule expansion supports at most 32 sources");
   const expanded = new Map<string, string[]>();
   let bytes = 0;
+  // Domain-behavior sets (the large domestic list) stay as rule providers; classical sets are inlined.
+  const kept = Object.fromEntries(providers.filter(([, provider]) => provider.behavior === "domain" && provider.format === "text"));
   for (const [name, provider] of providers) {
+    if (name in kept) continue;
     if (provider.format !== "text" || provider.behavior !== "classical") invalid();
     const url = parseRemoteSubscriptionUrl(provider.url);
     let content: string;
@@ -104,7 +107,7 @@ export async function expandProfileRules(profile: string, assets?: Pick<Env["ASS
   }
   config.rules = config.rules.flatMap(rule => {
     const [kind, name, policy, flag] = rule.split(",");
-    if (kind !== "RULE-SET") return [rule];
+    if (kind !== "RULE-SET" || name in kept) return [rule];
     const entries = expanded.get(name);
     if (!entries) invalid();
     return entries.map(entry => {
@@ -115,7 +118,8 @@ export async function expandProfileRules(profile: string, assets?: Pick<Env["ASS
       return `${parts.join(",")},${policy}${noResolve || flag === "no-resolve" ? ",no-resolve" : ""}`;
     });
   });
-  delete config["rule-providers"];
+  if (Object.keys(kept).length) config["rule-providers"] = kept;
+  else delete config["rule-providers"];
   const result = stringify(config);
   if (new TextEncoder().encode(result).length > 1_800_000) throw new ApiError(413, "output_too_large", "Expanded output exceeds 1.8 MB; use expand=false");
   return result;

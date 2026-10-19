@@ -93,6 +93,17 @@ describe("Worker entrypoint", () => {
     } finally { spy.mockRestore(); }
   });
 
+  it("expands the Flacier preset on /sub while keeping the large domestic list as a provider", async () => {
+    const query = new URLSearchParams({ target: "clash", url: "socks5://user:secret@home.example:9004#Home", expand: "True" });
+    const response = await exports.default.fetch(`https://example.com/sub?${query}`);
+    expect(response.status).toBe(200);
+    const profile = parse(await response.text());
+    expect(Object.keys(profile["rule-providers"])).toEqual(["china-domains"]);
+    expect(profile["rule-providers"]["china-domains"]).toMatchObject({ behavior: "domain", url: "https://rules.flacier.com/rules/mihomo/china-domains.txt" });
+    expect(profile.rules).toContain("RULE-SET,china-domains,DIRECT");
+    expect(profile.rules.filter((rule: string) => rule.startsWith("RULE-SET,"))).toEqual(["RULE-SET,china-domains,DIRECT"]);
+  });
+
   it("does not erase a failed source from a merged subscription or retain legitimately removed nodes", async () => {
     let content = nodeUri("First", "a.example", "one") + "\n" + nodeUri("Second", "b.example", "two");
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(content, { headers: { "Profile-Title": "Airport A" } }));
@@ -254,10 +265,11 @@ describe("Worker entrypoint", () => {
     expect(matchUrl("account.apple.com", rules, { ...context, ip: "160.79.104.1" })).toMatchObject({
       matched: true, policy: "APPLE", rule: "DOMAIN,account.apple.com",
     });
-    expect(preview.ruleSets.at(-4)).toMatchObject({
-      label: "ai-anthropic-ip", policy: "CLAUDE",
-      content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
+    const anthropicIp = preview.ruleSets.findIndex(set => set.label === "ai-anthropic-ip");
+    expect(preview.ruleSets[anthropicIp]).toMatchObject({
+      policy: "CLAUDE", content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
     });
+    expect(preview.ruleSets.slice(anthropicIp + 1).map(set => set.label)).toEqual(["china-exceptions", "china-domains", "模板内规则", "默认规则"]);
   });
 
   it("rejects a private custom preview URL and unsupported HTTP methods", async () => {

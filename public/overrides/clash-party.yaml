@@ -30,12 +30,19 @@ rule-providers:
     url: https://rules.flacier.com/rules/direct/netease-music.list
     path: ./ruleset/personal/netease-music.list
     interval: 86400
-  china-domains:
+  china-exceptions:
     type: http
     behavior: classical
     format: text
-    url: https://rules.flacier.com/rules/direct/china-domains.list
-    path: ./ruleset/personal/china-domains.list
+    url: https://rules.flacier.com/rules/direct/china-exceptions.list
+    path: ./ruleset/personal/china-exceptions.list
+    interval: 86400
+  china-domains:
+    type: http
+    behavior: domain
+    format: text
+    url: https://rules.flacier.com/rules/mihomo/china-domains.txt
+    path: ./ruleset/personal/china-domains.domain.txt
     interval: 86400
   apple-system:
     type: http
@@ -697,6 +704,7 @@ rule-providers:
   - RULE-SET,tiktok,🎵 TikTok
   - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
+  - RULE-SET,china-exceptions,🐟 未匹配流量
   - RULE-SET,china-domains,DIRECT
   - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量

@@ -3,9 +3,16 @@ import { ArrowUpRight } from "@phosphor-icons/react";
 const catalog = [
   {
     category: "国内服务",
-    coverage: "抖音、快手、小红书、电商、支付、出行等国内服务域名；明确业务规则优先",
+    coverage: "geosite:cn 与 geolocation-cn 合并，约 11 万个国内域名；明确业务规则优先",
     strategy: "DIRECT",
     href: "/rules/direct/china-domains.list",
+    count: "1 个",
+  },
+  {
+    category: "境外例外",
+    coverage: "国内列表覆盖到、但属于境外服务的域名，排在国内列表之前",
+    strategy: "未匹配流量",
+    href: "/rules/direct/china-exceptions.list",
     count: "1 个",
   },
   {

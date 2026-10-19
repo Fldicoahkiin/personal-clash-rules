@@ -157,6 +157,10 @@ proxies:
         behavior: "classical",
         url: "https://rules.flacier.com/rules/apple/services.list",
       },
+      "china-domains": {
+        behavior: "domain",
+        url: "https://rules.flacier.com/rules/mihomo/china-domains.txt",
+      },
     });
     expect(config.rules).toEqual(expect.arrayContaining([
       "RULE-SET,ai-openai,🤖 AI",

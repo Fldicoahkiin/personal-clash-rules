@@ -6,8 +6,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const upstreamRoot =
   "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const chinaDomainsSource = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list";
+// geosite:cn is the full domestic list; geolocation-cn adds service domains it does not carry.
+const chinaDomainsSources = [
+  "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/cn.list",
+  "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list",
+];
+// Overseas entries win over the domestic list where both claim a domain.
+const overseasDomainsSource = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-!cn.list";
 const maxSourceBytes = 1024 * 1024;
+const maxDomesticSourceBytes = 4 * 1024 * 1024;
 const domesticSupplements = [
   { name: "xiaohongshu" },
   { name: "amap" },
@@ -65,7 +72,7 @@ export function convertDomainList(content, excludedAttributes = []) {
   return { includes, rules };
 }
 
-async function fetchText(url, provenance) {
+async function fetchText(url, provenance, limit = maxSourceBytes) {
   const response = await fetch(url, {
     signal: AbortSignal.timeout(15_000),
   });
@@ -76,9 +83,9 @@ async function fetchText(url, provenance) {
   if (contentType && !/^text\/(?:plain|csv)(?:;|$)/iu.test(contentType)) {
     throw new Error(`Non-text rule source: ${url}`);
   }
-  if (Number(response.headers.get("content-length")) > maxSourceBytes) {
+  if (Number(response.headers.get("content-length")) > limit) {
     await response.body?.cancel();
-    throw new Error(`Rule source exceeds ${maxSourceBytes} bytes: ${url}`);
+    throw new Error(`Rule source exceeds ${limit} bytes: ${url}`);
   }
   const reader = response.body?.getReader();
   if (!reader) throw new Error(`Empty rule source: ${url}`);
@@ -89,9 +96,9 @@ async function fetchText(url, provenance) {
       const { value, done } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > maxSourceBytes) {
+      if (size > limit) {
         await reader.cancel();
-        throw new Error(`Rule source exceeds ${maxSourceBytes} bytes: ${url}`);
+        throw new Error(`Rule source exceeds ${limit} bytes: ${url}`);
       }
       chunks.push(value);
     }
@@ -142,6 +149,41 @@ export function convertChinaDomains(content) {
   return { rules: [...new Set(rules)], omitted };
 }
 
+// Drop entries a broader DOMAIN-SUFFIX in the same list already matches.
+export function withoutCoveredDomains(rules) {
+  const suffixes = new Set(rules.filter(rule => rule.startsWith("DOMAIN-SUFFIX,")).map(rule => rule.slice("DOMAIN-SUFFIX,".length)));
+  return rules.filter(rule => {
+    const [type, domain] = rule.split(",");
+    const labels = domain.split(".");
+    for (let index = type === "DOMAIN" ? 0 : 1; index < labels.length; index += 1) {
+      if (suffixes.has(labels.slice(index).join("."))) return false;
+    }
+    return true;
+  });
+}
+
+// Overseas DOMAIN / DOMAIN-SUFFIX entries that a domestic rule would otherwise send direct.
+export function overseasExceptions(content, domestic) {
+  const suffixes = new Set(domestic.filter(rule => rule.startsWith("DOMAIN-SUFFIX,")).map(rule => rule.slice("DOMAIN-SUFFIX,".length)));
+  const exact = new Set(domestic.filter(rule => rule.startsWith("DOMAIN,")).map(rule => rule.slice("DOMAIN,".length)));
+  const exceptions = [];
+  for (const rawLine of content.split(/\r?\n/u)) {
+    const line = rawLine.trim();
+    const match = /^(DOMAIN|DOMAIN-SUFFIX),([a-z0-9_.-]+)$/iu.exec(line);
+    if (!match) continue;
+    const labels = match[2].split(".");
+    const covered = (match[1] === "DOMAIN" && exact.has(match[2]))
+      || labels.some((_, index) => suffixes.has(labels.slice(index).join(".")));
+    if (covered) exceptions.push(line);
+  }
+  return [...new Set(exceptions)];
+}
+
+// Mihomo domain-behavior text: "+.example.com" matches the domain and its subdomains.
+export function renderMihomoDomainSet(rules) {
+  return rules.map(rule => rule.startsWith("DOMAIN-SUFFIX,") ? `+.${rule.slice("DOMAIN-SUFFIX,".length)}` : rule.slice("DOMAIN,".length));
+}
+
 function validateRules(rules, name) {
   if (!rules.length || rules.some(rule => !/^(?:DOMAIN(?:-SUFFIX|-KEYWORD|-REGEX)?),[^,\s<>]+$/u.test(rule))) {
     throw new Error(`Invalid or empty rule source: ${name}`);
@@ -156,7 +198,13 @@ export async function syncRules(root = repositoryRoot) {
     outputs.push([source.output, renderRules(source, rules)]);
   }
   const provenance = new Map();
-  const { rules, omitted } = convertChinaDomains(await fetchText(chinaDomainsSource, provenance));
+  let rules = [];
+  let omitted = [];
+  for (const source of chinaDomainsSources) {
+    const converted = convertChinaDomains(await fetchText(source, provenance, maxDomesticSourceBytes));
+    rules = rules.concat(converted.rules);
+    omitted = omitted.concat(converted.omitted);
+  }
   const supplements = [];
   for (const source of domesticSupplements) {
     const selected = source.domains
@@ -165,19 +213,29 @@ export async function syncRules(root = repositoryRoot) {
     validateRules(selected, source.name);
     supplements.push(...selected);
   }
-  const domestic = [...new Set([...rules, ...supplements])];
-  outputs.push(["public/rules/direct/china-domains.list", [
-    "# Mainland China service domains; explicit service and personal rules take precedence.",
-    "# Modified by Flacier (2026-10-12): domain-only compilation plus selected domestic app dependencies; no warranty.",
+  const domestic = withoutCoveredDomains([...new Set([...rules, ...supplements])]);
+  const domesticHeader = [
+    "# Mainland China domains (geosite:cn and geolocation-cn); explicit service and personal rules take precedence.",
+    "# Modified by Flacier (2026-10-19): domain-only union with selected domestic app dependencies, covered entries removed; no warranty.",
     "# Overseas and advertising attributes are excluded from v2fly supplements; company-wide includes are not imported.",
     "# Artifact license: GPL-3.0; source licenses: MetaCubeX/meta-rules-dat GPL-3.0, v2fly/domain-list-community MIT.",
     "# License texts: /rules/licenses/MetaCubeX-GPL-3.0.txt and /rules/licenses/v2fly-MIT.txt",
     ...[...provenance].flatMap(([url, hash]) => [`# Source: ${url}`, `# Source SHA-256: ${hash}`]),
     `# Omitted ${omitted.length} DOMAIN-REGEX rules for the shared mobile/domain format:`,
     ...omitted.map(rule => `# ${rule}`),
-    ...domestic,
+  ];
+  outputs.push(["public/rules/direct/china-domains.list", [...domesticHeader, ...domestic, ""].join("\n")]);
+  const overseasProvenance = new Map();
+  const exceptions = overseasExceptions(await fetchText(overseasDomainsSource, overseasProvenance, maxDomesticSourceBytes), domestic);
+  outputs.push(["public/rules/direct/china-exceptions.list", [
+    "# Overseas domains (geolocation-!cn) that the domestic list would otherwise route direct; evaluated before it.",
+    "# Modified by Flacier (2026-10-19): only entries covered by china-domains are kept; no warranty.",
+    "# Artifact license: GPL-3.0; source license: MetaCubeX/meta-rules-dat GPL-3.0. License text: /rules/licenses/MetaCubeX-GPL-3.0.txt",
+    ...[...overseasProvenance].flatMap(([url, hash]) => [`# Source: ${url}`, `# Source SHA-256: ${hash}`]),
+    ...exceptions,
     "",
   ].join("\n")]);
+  outputs.push(["public/rules/mihomo/china-domains.txt", [...domesticHeader, ...renderMihomoDomainSet(domestic), ""].join("\n")]);
   // Fetch and validate every source before replacing any last-known-good published file.
   for (const [output, content] of outputs) {
     const destination = resolve(root, output);
