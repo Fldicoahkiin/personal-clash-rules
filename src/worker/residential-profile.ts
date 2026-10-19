@@ -3,7 +3,7 @@ import { isMap, isScalar, isSeq, parseDocument, visit } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
 import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, metadataFilter, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
-import { dnsProxyGroupName } from "../worker/mihomo-dns";
+import { dnsProxyGroupName } from "./mihomo-dns";
 import claudeDomains from "../../public/rules/sing-box/ai-anthropic.json";
 
 const nodeName = "ROLA-RESIDENTIAL";

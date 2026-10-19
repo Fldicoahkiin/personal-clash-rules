@@ -15,7 +15,6 @@
   },
   "include": [
     "public/rules/sing-box/ai-anthropic.json",
-    "src/local/rola.ts",
     "tests/worker.integration.ts",
     "tests/*.worker.ts",
     "tests/helpers/*.ts",

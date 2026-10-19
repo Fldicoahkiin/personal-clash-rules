@@ -17,7 +17,6 @@
     "public/rules/sing-box/ai-anthropic.json",
     "src/worker.ts",
     "src/worker/**/*.ts",
-    "src/local/rola.ts",
     "src/config/**/*.ts",
     "worker-configuration.d.ts"
   ]

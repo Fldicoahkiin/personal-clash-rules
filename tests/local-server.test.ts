@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { expect, it } from "vitest";
 import { parse } from "yaml";
-import { prepareRolaProfile } from "../src/local/rola";
+import { prepareRolaProfile } from "../src/worker/residential-profile";
 
 it("serves the Rola web contract on loopback, rejects foreign origins and runs the actual converter", async () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");

@@ -4,8 +4,8 @@ import { chmod, lstat, mkdir, open, readdir, rename } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstreamChoices } from "./rola";
-export { rolaRulePaths } from "./rola";
+import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstreamChoices } from "../worker/residential-profile";
+export { rolaRulePaths } from "../worker/residential-profile";
 
 type LocalRouterOptions = {
   directory: string;

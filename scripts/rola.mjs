@@ -38,7 +38,7 @@ async function main() {
   await privateDirectory(resolve(root, ".local"));
   await privateDirectory(directory);
   const bundle = resolve(directory, command === "usage" ? "usage.mjs" : "profile.mjs");
-  await build({ entryPoints: [resolve(root, command === "usage" ? "src/local/rola-usage.ts" : "src/local/rola.ts")],
+  await build({ entryPoints: [resolve(root, command === "usage" ? "src/local/rola-usage.ts" : "src/worker/residential-profile.ts")],
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external" });
   const module = await import(pathToFileURL(bundle).href);
   if (command === "init") {

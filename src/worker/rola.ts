@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { defaultDnsSettings } from "../config/dns-settings";
-import { parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstreamChoices } from "../local/rola";
+import { parseRolaSettings, prepareRolaProfile, RolaExitMetadataError, rolaUpstreamChoices } from "./residential-profile";
 import { ApiError } from "./api-error";
 import { hashText } from "./secrets";
 import { formatSubscriptionUserinfo } from "./sub-store/usage";

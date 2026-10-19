@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import * as yaml from "yaml";
 import { defaultDnsSettings } from "../src/config/dns-settings";
-import { prepareRolaProfile } from "../src/local/rola";
+import { prepareRolaProfile } from "../src/worker/residential-profile";
 import { createMihomoProfile } from "../src/worker/mihomo-profile";
 import { renderRolaTarget } from "../src/worker/rola-target";
 import { createShadowrocketProfile } from "../src/worker/shadowrocket-profile";

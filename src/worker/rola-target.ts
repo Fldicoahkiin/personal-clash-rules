@@ -1,5 +1,5 @@
 import { defaultDnsSettings } from "../config/dns-settings";
-import { parseRolaSettings, rolaDirectGatewayRule, type prepareRolaProfile } from "../local/rola";
+import { parseRolaSettings, rolaDirectGatewayRule, type prepareRolaProfile } from "./residential-profile";
 import { ApiError } from "./api-error";
 import type { SubscriptionNode } from "./node-transforms";
 import { createShadowrocketProfile, type ShadowrocketRouting } from "./shadowrocket-profile";

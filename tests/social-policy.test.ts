@@ -4,7 +4,7 @@ import { parse } from "yaml";
 
 import { createRuleSet, matchUrl, type RuleSetDefinition } from "../src/app/lib/rule-matcher";
 import { mihomoPolicyDisplayNames, mihomoRules } from "../src/config/mihomo-policy";
-import { createRolaTemplate, prepareRolaProfile } from "../src/local/rola";
+import { createRolaTemplate, prepareRolaProfile } from "../src/worker/residential-profile";
 import { createMihomoProfile } from "../src/worker/mihomo-profile";
 import { createShadowrocketProfile } from "../src/worker/shadowrocket-profile";
 
