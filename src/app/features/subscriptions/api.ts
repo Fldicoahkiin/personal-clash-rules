@@ -192,6 +192,7 @@ export function subscriptionErrorText(error: unknown, backend = ""): string {
     invalid_rule_preset: "规则方案无效",
     invalid_rule_template: "请填写远程规则模板地址",
     unsupported_rule_template: "此 INI 模板含未支持的指令，请使用 ACL4SSR 默认、多国或无自动测速模板",
+    rule_preset_requires_mihomo: "这个客户端的完整配置只支持 Flacier 分流",
     invalid_dns_mode: "DNS 模板无效",
     invalid_dns_settings: "DNS 设置有误；请使用最多 4 个不带路由后缀的 HTTPS DoH 地址",
     invalid_dns_bootstrap: "自定义引导 DNS 必须使用 IP 地址的 DoH，避免先解析 DNS 自身造成循环",

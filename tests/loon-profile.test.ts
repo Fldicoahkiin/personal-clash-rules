@@ -56,3 +56,11 @@ describe("Loon node output", () => {
     await expect(produceTarget({} as SubscriptionEnv, nodes.slice(1), "loon")).rejects.toMatchObject({ code: "target_unsupported" });
   });
 });
+
+describe("full client configurations", () => {
+  it.each(["loon-config", "surge-config", "sing-box-config"] as const)("rejects presets the %s renderer cannot express", async (target) => {
+    const nodes = [{ name: "US-01", type: "ss", server: "ss.example.com", port: 8388, cipher: "aes-128-gcm", password: "test" }];
+    await expect(produceTarget({} as SubscriptionEnv, nodes, target, "global")).rejects.toMatchObject({ code: "rule_preset_requires_mihomo" });
+    await expect(produceTarget({} as SubscriptionEnv, nodes, target, "flacier")).resolves.toContain("US-01");
+  });
+});

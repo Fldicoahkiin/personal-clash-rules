@@ -52,6 +52,10 @@ export async function produceTarget(
   if (supported.length === 0) {
     throw new ApiError(422, "target_unsupported", `${target} could not represent the normalized nodes`);
   }
+  // These renderers only translate the Flacier policy set; other presets would silently become Flacier rules.
+  if (rulePreset !== "flacier" && ["stash-config", "surge-config", "surfboard-config", "loon-config", "egern-config", "sing-box-config"].includes(target)) {
+    throw new ApiError(422, "rule_preset_requires_mihomo", `${target} only supports the Flacier rule preset`);
+  }
   if (isMihomoConfigTarget(target)) {
     return createMihomoProfile(stringifyYaml({ proxies: supported }), rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings);
   }
