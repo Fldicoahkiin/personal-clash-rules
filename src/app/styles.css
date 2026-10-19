@@ -617,6 +617,11 @@ summary:focus-visible {
 .field select:focus,
 .field textarea:focus {
   border-color: var(--accent);
+}
+
+.field input:focus:not(:focus-visible),
+.field select:focus:not(:focus-visible),
+.field textarea:focus:not(:focus-visible) {
   outline: 0;
 }
 
