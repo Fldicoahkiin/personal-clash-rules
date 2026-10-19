@@ -222,7 +222,7 @@ describe("cloud Rola subscriptions", () => {
       expect(recovered.headers.get("x-subscription-refresh-status")).toBe("last-good");
       expect(await recovered.text()).toContain(`${protocol}://`);
       expect((await fetchClient(`${created.universalUrl}?target=surge`)).status).toBe(422);
-      expect((await post("/api/rola/revoke", { url: created.universalUrl, revokeToken: created.revokeToken })).status).toBe(200);
+      expect((await post("/api/rola/revoke", { url: `${created.universalUrl}/Flacier-Mobile.conf`, revokeToken: created.revokeToken })).status).toBe(200);
       expect((await fetchClient(created.url)).status).toBe(404);
     } finally { spy.mockRestore(); }
   });

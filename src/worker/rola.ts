@@ -17,6 +17,7 @@ const nodeLimit = 500;
 const previewTtl = 3600;
 const chainTtl = 90 * 86400;
 const encoder = new TextEncoder();
+const chainPath = /^\/r\/([\w-]{32})(?:\.yaml|\/(?:Flacier-Mobile\.conf|Flacier-Mobile-Nodes\.txt))?$/u;
 type Built = Awaited<ReturnType<typeof buildSubscription>>;
 type Source = { kind: "convert"; config: Built["config"] } | { kind: "snapshot"; profile: string } | { kind: "local-sync"; id: string };
 type Preview = { source: Source; target: OutputTarget; name: string; profile: string; userinfo: string | null; expiresAt: number };
@@ -183,7 +184,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       if (url.pathname === "/api/rola/revoke") {
         let link: URL;
         try { link = new URL(String(input.url)); } catch { throw new ApiError(400, "invalid_rola_url", "请填写云端串联订阅链接。"); }
-        const match = /^\/r\/([\w-]{32})(?:\.yaml)?$/u.exec(link.pathname);
+        const match = chainPath.exec(link.pathname);
         if (!match || link.origin !== url.origin) throw new ApiError(400, "invalid_rola_url", "请填写本站云端串联订阅链接。");
         const chain = await read<Chain>(env, "chain", match[1]);
         const digest = await hashText(typeof input.revokeToken === "string" ? input.revokeToken : "");
@@ -197,7 +198,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
         return result({ deleted: true });
       }
     }
-    const match = /^\/r\/([\w-]{32})(?:\.yaml|\/(?:Flacier-Mobile\.conf|Flacier-Mobile-Nodes\.txt))?$/u.exec(url.pathname);
+    const match = chainPath.exec(url.pathname);
     if (match && ["GET", "HEAD"].includes(request.method)) {
       const chain = await renewChain(env, match[1], await read<Chain>(env, "chain", match[1]));
       const target = rolaRequestTarget(request, url);
