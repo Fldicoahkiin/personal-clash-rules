@@ -13,7 +13,7 @@
 
 每次推送 `main` 后由 Cloudflare 构建并部署，不需要在本机执行部署命令。
 
-`wrangler.jsonc` 已声明 `SUBSCRIPTIONS` KV 绑定。Cloudflare 首次构建时自动创建对应的 KV 命名空间。
+`wrangler.jsonc` 的 `SUBSCRIPTIONS` 绑定固定到现有命名空间 `personal-clash-rules-subscriptions`。在其他账户部署时，先用 `wrangler kv namespace create` 新建命名空间，再替换其中的 `id`。
 
 ## 域名
 

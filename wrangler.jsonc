@@ -16,7 +16,8 @@
   },
   "kv_namespaces": [
     {
-      "binding": "SUBSCRIPTIONS"
+      "binding": "SUBSCRIPTIONS",
+      "id": "c228ec8a42134d509e29b341b045f8ad"
     }
   ],
   "ratelimits": [
