@@ -28,14 +28,18 @@ const featuredRules = [
 export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
   const [state, update] = useReducer((state: TesterState, patch: Partial<TesterState>) => ({ ...state, ...patch }), {
     input: "", ip: "", processName: "", preset: "flacier", customUrl: "",
-    request: selection ? null : { preset: "flacier", url: "" }, preview: null, ruleSets: [], result: null,
-    message: "规则加载中", resultVersion: 0,
+    request: null, active: false, pendingTest: false, preview: null, ruleSets: [], result: null,
+    message: "", resultVersion: 0,
   });
   const { input, ruleSets, result, message, resultVersion } = state;
+  // Rule bodies (the domestic list alone is ~3 MB) load on the first test, not with the page.
+  function reload(preset: RuleTemplateId, url: string, active: boolean) {
+    return { preset, customUrl: url, result: null, ruleSets: [], preview: null,
+      message: preset === "custom" && !url ? "填写远程规则地址后加载" : "",
+      request: active && (preset !== "custom" || url) ? { preset, url } : null };
+  }
   useEffect(() => {
-    if (selection) update({ preset: selection.preset, customUrl: selection.url, result: null, ruleSets: [], preview: null,
-      message: selection.preset === "custom" ? "填写远程规则地址后加载" : "规则加载中",
-      request: selection.preset === "custom" ? null : { preset: selection.preset, url: selection.url } });
+    if (selection) update(reload(selection.preset, selection.url, state.active));
   }, [selection]);
 
   useEffect(() => {
@@ -61,15 +65,28 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
     };
   }, [state.request]);
 
+  useEffect(() => {
+    if (state.pendingTest && ruleSets.length) runTest();
+  }, [ruleSets]);
+
   function testRoute(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (ruleSets.length === 0) {
+    if (ruleSets.length > 0) {
+      runTest();
       return;
     }
+    if (state.preset === "custom" && !state.customUrl) {
+      update({ message: "填写远程规则地址后加载" });
+      return;
+    }
+    update({ active: true, pendingTest: true, request: state.request ?? { preset: state.preset, url: state.customUrl } });
+  }
+
+  function runTest() {
     try {
-      update({ result: matchUrl(input, ruleSets, { ip: state.ip.trim(), processName: state.processName.trim(), groups: state.preview?.groups }), resultVersion: resultVersion + 1, message: "" });
+      update({ pendingTest: false, result: matchUrl(input, ruleSets, { ip: state.ip.trim(), processName: state.processName.trim(), groups: state.preview?.groups }), resultVersion: resultVersion + 1, message: "" });
     } catch (error) {
-      update({ result: null, message: error instanceof Error ? error.message : "请输入网址或域名" });
+      update({ pendingTest: false, result: null, message: error instanceof Error ? error.message : "请输入网址或域名" });
     }
   }
 
@@ -87,7 +104,7 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
           <label className="field"><span>测试规则方案</span>
             <select value={state.preset} onChange={event => {
               const preset = event.target.value as RuleTemplateId;
-              update({ preset, result: null, preview: null, ruleSets: [], message: preset === "custom" ? "填写远程规则地址后加载" : "规则加载中", request: preset === "custom" ? null : { preset, url: "" } });
+              update(reload(preset, "", state.active));
             }}>
               {ruleTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
             </select>
@@ -95,7 +112,7 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
           {state.preset === "custom" ? <label className="field"><span>测试用远程规则地址</span>
             <input type="url" value={state.customUrl} placeholder="https://example.com/rules.ini" onChange={event => update({ customUrl: event.target.value, request: null, ruleSets: [], result: null, preview: null })} />
           </label> : null}
-          <button type="button" className="button button-secondary" onClick={() => update({ request: { preset: state.preset, url: state.customUrl } })}>重新加载规则</button>
+          <button type="button" className="button button-secondary" onClick={() => update({ active: true, request: { preset: state.preset, url: state.customUrl } })}>重新加载规则</button>
           <label className="field"><span>目标 IPv4（可选）</span><input value={state.ip} onChange={event => update({ ip: event.target.value, result: null })} placeholder="仅供模拟，不会发起 DNS 查询" /></label>
           <label className="field"><span>进程名（可选）</span><input value={state.processName} onChange={event => update({ processName: event.target.value, result: null })} placeholder="例如 Firefox 或 Codex" /></label>
         </div>
@@ -111,7 +128,7 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
             spellCheck="false"
             autoComplete="off"
           />
-          <button type="submit" disabled={ruleSets.length === 0}>
+          <button type="submit" disabled={Boolean(state.request) && ruleSets.length === 0}>
             测试
             <ArrowRight aria-hidden="true" />
           </button>
@@ -226,6 +243,7 @@ export function RouteTester({ selection }: { selection?: RuleSelection } = {}) {
 type TesterState = {
   input: string; ip: string; processName: string; preset: RuleTemplateId; customUrl: string;
   request: { preset: RuleTemplateId; url: string } | null;
+  active: boolean; pendingTest: boolean;
   preview: RulePreview | null; ruleSets: LoadedRuleSet[]; result: RouteMatch | null;
   message: string; resultVersion: number;
 };
