@@ -1,17 +1,14 @@
 import { stringify as stringifyYaml } from "yaml";
 
 import {
-  countryGroupNames,
-  metadataFilter,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
 } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
+import { countryRegionNames, metadataNamePattern, namesMatchingFilter } from "./policy-filters";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
 
-const regions = new Set(Object.values(countryGroupNames));
-const metadataName = new RegExp(metadataFilter.replace(/^\(\?i\)/u, ""), "iu");
 
 type EgernGroup = {
   name: string;
@@ -36,14 +33,6 @@ function proxyName(proxy: unknown): string {
     : "";
 }
 
-function matchingNames(names: string[], filter: string | undefined): string[] {
-  if (!filter) {
-    return names;
-  }
-  const pattern = new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu");
-  return names.filter((name) => pattern.test(name));
-}
-
 function egernPolicyGroup(
   source: (typeof mihomoProxyGroups)[number],
   names: string[],
@@ -61,9 +50,9 @@ function egernPolicyGroup(
       },
     };
   }
-  let policies = (group.proxies ?? []).filter(name => !regions.has(name) || availableGroups.has(name));
-  if (regions.has(group.name)) {
-    policies = matchingNames(names, group.filter);
+  let policies = (group.proxies ?? []).filter(name => !countryRegionNames.has(name) || availableGroups.has(name));
+  if (countryRegionNames.has(group.name)) {
+    policies = namesMatchingFilter(names, group.filter);
   } else if (group["include-all"]) {
     policies.push(...names);
   }
@@ -105,9 +94,9 @@ export function createEgernProfile(nodeResource: string, updateIntervalHours = 6
   if (names.some((name) => !name)) {
     throw new ApiError(502, "converter_invalid_response", "Egern node resource is invalid");
   }
-  const selectableNames = names.filter(name => !metadataName.test(name));
+  const selectableNames = names.filter(name => !metadataNamePattern.test(name));
   if (!selectableNames.length) throw new ApiError(422, "no_nodes_found", "Egern profile has no selectable nodes");
-  const groups = mihomoProxyGroups.filter(group => !regions.has(group.name) || ("filter" in group && matchingNames(selectableNames, group.filter).length > 0));
+  const groups = mihomoProxyGroups.filter(group => !countryRegionNames.has(group.name) || ("filter" in group && namesMatchingFilter(selectableNames, group.filter).length > 0));
   const availableGroups = new Set(groups.map(group => group.name));
   return stringifyYaml({
     ipv6: true,

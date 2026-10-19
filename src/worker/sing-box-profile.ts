@@ -1,19 +1,16 @@
 import {
-  countryGroupNames,
-  metadataFilter,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
 } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
+import { countryRegionNames, metadataNamePattern, namesMatchingFilter } from "./policy-filters";
 
 type SingBoxOutbound = Record<string, unknown> & {
   type: string;
   tag: string;
 };
 
-const regionNames = new Set(Object.values(countryGroupNames));
-const metadataName = new RegExp(metadataFilter.replace(/^\(\?i\)/u, ""), "iu");
 const processNames = ["codex", "codex.exe", "claude", "claude.exe"];
 
 function readNodeResource(input: string): {
@@ -73,14 +70,6 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
-function matchingTags(tags: string[], filter: string | undefined): string[] {
-  if (!filter) {
-    return tags;
-  }
-  const pattern = new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu");
-  return tags.filter((tag) => pattern.test(tag));
-}
-
 function selector(tag: string, outbounds: readonly string[]): Record<string, unknown> {
   return {
     type: "selector",
@@ -91,7 +80,7 @@ function selector(tag: string, outbounds: readonly string[]): Record<string, unk
 }
 
 function policyOutbounds(nodeTags: string[]): Array<Record<string, unknown>> {
-  const groups = mihomoProxyGroups.filter(group => !regionNames.has(group.name) || ("filter" in group && matchingTags(nodeTags, group.filter).length > 0));
+  const groups = mihomoProxyGroups.filter(group => !countryRegionNames.has(group.name) || ("filter" in group && namesMatchingFilter(nodeTags, group.filter).length > 0));
   const availableGroups = new Set(groups.map(group => group.name));
   return groups.map((source) => {
     const group = source as {
@@ -112,11 +101,11 @@ function policyOutbounds(nodeTags: string[]): Array<Record<string, unknown>> {
         tolerance: group.tolerance ?? 80,
       };
     }
-    if (regionNames.has(group.name)) {
-      const matches = matchingTags(nodeTags, group.filter);
+    if (countryRegionNames.has(group.name)) {
+      const matches = namesMatchingFilter(nodeTags, group.filter);
       return selector(group.name, matches);
     }
-    const policyChoices = (group.proxies ?? []).filter(name => !regionNames.has(name) || availableGroups.has(name));
+    const policyChoices = (group.proxies ?? []).filter(name => !countryRegionNames.has(name) || availableGroups.has(name));
     const members = group["include-all"]
       ? unique([...policyChoices, ...nodeTags])
       : policyChoices;
@@ -182,7 +171,7 @@ export function createSingBoxProfile(nodeResource: string, updateIntervalHours =
       "sing-box node resource has conflicting tags",
     );
   }
-  const selectableTags = nodeTags.filter(name => !metadataName.test(name));
+  const selectableTags = nodeTags.filter(name => !metadataNamePattern.test(name));
   if (!selectableTags.length) throw new ApiError(422, "no_nodes_found", "sing-box profile has no selectable nodes");
 
   return `${JSON.stringify({

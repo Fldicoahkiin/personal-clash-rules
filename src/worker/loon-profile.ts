@@ -1,14 +1,11 @@
 import {
-  countryGroupNames,
-  metadataFilter,
   mihomoProxyGroups,
   mihomoRuleProviders,
   mihomoRules,
 } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
+import { countryRegionNames, metadataNamePattern, namesMatchingFilter } from "./policy-filters";
 
-const regions = new Set(Object.values(countryGroupNames));
-const metadataName = new RegExp(metadataFilter.replace(/^\(\?i\)/u, ""), "iu");
 
 type LoonGroup = {
   name: string;
@@ -35,24 +32,16 @@ function readLoonNodes(input: string): { content: string; names: string[] } {
   return { content: lines.join("\n"), names: [...new Set(names)] };
 }
 
-function matchingNodes(names: string[], filter: string | undefined): string[] {
-  if (!filter) {
-    return names;
-  }
-  const pattern = new RegExp(filter.replace(/^\(\?i\)/u, ""), "iu");
-  return names.filter((name) => pattern.test(name));
-}
-
 function loonGroupLine(source: (typeof mihomoProxyGroups)[number], names: string[], availableGroups: Set<string>): string {
   const group = source as LoonGroup;
   if (group.name === "AUTO") {
     return `AUTO = url-test, ${names.join(", ")}, url=https://cp.cloudflare.com/generate_204, interval=${group.interval ?? 300}`;
   }
-  if (regions.has(group.name)) {
-    const members = matchingNodes(names, group.filter);
+  if (countryRegionNames.has(group.name)) {
+    const members = namesMatchingFilter(names, group.filter);
     return `${group.name} = select, ${members.join(", ")}`;
   }
-  const members = (group.proxies ?? []).filter(name => !regions.has(name) || availableGroups.has(name));
+  const members = (group.proxies ?? []).filter(name => !countryRegionNames.has(name) || availableGroups.has(name));
   if ("include-all" in source && source["include-all"]) {
     members.push(...names);
   }
@@ -75,9 +64,9 @@ function loonRemoteRules(updateIntervalSeconds: number): string[] {
 
 export function createLoonProfile(nodeResource: string, updateIntervalHours = 6): string {
   const nodes = readLoonNodes(nodeResource);
-  const selectableNames = nodes.names.filter(name => !metadataName.test(name));
+  const selectableNames = nodes.names.filter(name => !metadataNamePattern.test(name));
   if (!selectableNames.length) throw new ApiError(422, "no_nodes_found", "Loon profile has no selectable nodes");
-  const groups = mihomoProxyGroups.filter(group => !regions.has(group.name) || ("filter" in group && matchingNodes(selectableNames, group.filter).length > 0));
+  const groups = mihomoProxyGroups.filter(group => !countryRegionNames.has(group.name) || ("filter" in group && namesMatchingFilter(selectableNames, group.filter).length > 0));
   const availableGroups = new Set(groups.map(group => group.name));
   return [
     "[General]",
