@@ -780,13 +780,13 @@ function renderQxProxies(proxies: ProxyNode[]) {
 
 function renderTextProxyList(proxies: ProxyNode[], target: string, producer: (proxy: ProxyNode) => string | undefined) {
   const lines = proxies.map(producer).filter((line): line is string => Boolean(line));
-  if (lines.length === 0) throw new Error(`No supported nodes for ${target} output`);
+  if (lines.length === 0) throw new ApiError(422, "target_unsupported", `${target} could not represent the normalized nodes`);
   return lines.join("\n");
 }
 
 function renderEgernYaml(proxies: ProxyNode[]) {
   const list = proxies.map(toEgernProxy).filter((proxy) => Boolean(proxy));
-  if (list.length === 0) throw new Error("No supported nodes for egern output");
+  if (list.length === 0) throw new ApiError(422, "target_unsupported", "egern could not represent the normalized nodes");
   return stringifyYaml({ proxies: list });
 }
 
@@ -1085,7 +1085,7 @@ function formatAlpn(value: unknown) {
 function renderSingBoxJson(proxies: ProxyNode[]) {
   const nodeOutbounds = proxies.map(toSingBoxOutbound).filter(isSingBoxOutbound);
   const tags = nodeOutbounds.map((outbound) => String(outbound.tag));
-  if (tags.length === 0) throw new Error("No supported nodes for sing-box output");
+  if (tags.length === 0) throw new ApiError(422, "target_unsupported", "sing-box could not represent the normalized nodes");
 
   const outbounds = [
     {
@@ -1519,7 +1519,7 @@ function isTargetCompatible(proxy: ProxyNode, target: OutputTarget): boolean {
   if (["sing-box", "sing-box-config"].includes(target)) return ["ss", "vmess", "vless", "trojan", "hysteria", "hysteria2", "tuic", "anytls", "http", "socks5", "wireguard"].includes(proxy.type);
   if (["surge", "surge-config"].includes(target)) return ["ss", "vmess", "trojan", "http", "socks5", "hysteria2", "tuic", "anytls", "snell"].includes(proxy.type);
   if (["surfboard", "surfboard-config"].includes(target)) return ["ss", "vmess", "trojan", "http", "socks5"].includes(proxy.type);
-  if (["loon", "loon-config"].includes(target)) return ["ss", "ssr", "vmess", "vless", "trojan", "http", "socks5", "hysteria2", "tuic", "anytls", "wireguard"].includes(proxy.type);
+  if (["loon", "loon-config"].includes(target)) return ["ss", "ssr", "vmess", "vless", "trojan", "http", "socks5", "hysteria2", "anytls"].includes(proxy.type);
   if (target === "quantumult-x") return ["ss", "ssr", "vmess", "vless", "trojan", "http", "socks5", "anytls"].includes(proxy.type);
   if (["egern", "egern-config"].includes(target)) return ["ss", "vmess", "vless", "trojan", "http", "socks5", "hysteria2", "tuic", "anytls", "wireguard"].includes(proxy.type);
   return false;

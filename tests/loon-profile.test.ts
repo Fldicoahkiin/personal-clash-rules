@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createLoonProfile } from "../src/worker/loon-profile";
+import { countTargetCompatibleNodes, produceTarget } from "../src/worker/sub-store";
+import type { SubscriptionEnv } from "../src/worker/types";
 
 const nodes = [
   "US-01=shadowsocks,us.example.com,8388,aes-128-gcm,\"test\",udp=true",
@@ -37,5 +39,20 @@ describe("createLoonProfile", () => {
     expect(() => createLoonProfile("not a node")).toThrow(
       "Loon node resource is invalid",
     );
+  });
+});
+
+describe("Loon node output", () => {
+  it("counts and renders only node types the Loon renderer supports", async () => {
+    const nodes = [
+      { name: "SS", type: "ss", server: "ss.example.com", port: 8388, cipher: "aes-128-gcm", password: "test" },
+      { name: "TUIC", type: "tuic", server: "tuic.example.com", port: 443, uuid: "00000000-0000-4000-8000-000000000001", password: "test" },
+      { name: "WG", type: "wireguard", server: "wg.example.com", port: 51820, "private-key": "test", "public-key": "test" },
+    ];
+    expect(countTargetCompatibleNodes(nodes, "loon")).toBe(1);
+    const output = await produceTarget({} as SubscriptionEnv, nodes, "loon");
+    expect(output.split("\n")).toHaveLength(1);
+    expect(output).toContain("SS=shadowsocks");
+    await expect(produceTarget({} as SubscriptionEnv, nodes.slice(1), "loon")).rejects.toMatchObject({ code: "target_unsupported" });
   });
 });
