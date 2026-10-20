@@ -46,10 +46,11 @@ describe("residential mobile rendering resource budget", () => {
 
   it("does not pin business DNS to the residential exit after switching the mobile default node", async () => {
     const config = await renderRolaTarget(env, prepared, settings, "shadowrocket-config");
-    for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {
+    for (const key of ["dns-server", "fallback-dns-server"]) {
       expect(config.split("\n").find(line => line.startsWith(`${key} =`)))
         .toBe(`${key} = https://1.1.1.1/dns-query#proxy`);
     }
+    expect(config).toContain("direct-dns-server = https://223.5.5.5/dns-query, https://1.12.12.12/dns-query\n");
     expect(config).toContain("proxy-dns-server = system\n");
     expect(config).not.toContain("[Proxy Group]");
     expect(config).not.toContain("#proxy=");

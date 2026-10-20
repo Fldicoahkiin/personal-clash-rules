@@ -19,9 +19,11 @@ describe("Shadowrocket paired configuration", () => {
     const output = createShadowrocketProfile(["US-01"]);
     expect(output).toContain("ipv6 = false");
     expect(output).toContain("proxy-dns-server = system");
-    for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {
+    for (const key of ["dns-server", "fallback-dns-server"]) {
       expect(output).toContain(`${key} = https://1.1.1.1/dns-query#proxy, https://8.8.8.8/dns-query#proxy`);
     }
+    expect(output).toContain("direct-dns-server = https://223.5.5.5/dns-query, https://1.12.12.12/dns-query\n");
+    expect(createShadowrocketProfile(["US-01"], "flacier", "system")).toContain("direct-dns-server = system\n");
     expect(output).toContain("udp-policy-not-supported-behaviour = REJECT");
     expect(output).toContain("dns-direct-system = false");
     expect(output).toContain("close-if-proxy-chain-missing = true");

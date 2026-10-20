@@ -24,7 +24,7 @@ export const MihomoDnsSettings: FC<MihomoDnsSettingsProps> = ({ settings, onChan
       <label className="field">
         <span>网站查询 DoH</span>
         <textarea rows={2} value={settings.nameservers.join("\n")} onChange={event => onChange({ ...settings, nameservers: event.target.value.split("\n") })} />
-        <small>{shadowrocket ? "每行一个 HTTPS 地址；通过首页选中的节点。备用 DNS 也通过代理，不添加系统 DNS 备用。请先导入并选择可用节点。" : "每行一个 HTTPS 地址；通过 DNS-PROXY 组。节点为空时拒绝查询，不退回系统 DNS；可在客户端选择该组的节点。"}</small>
+        <small>{shadowrocket ? "每行一个 HTTPS 地址；通过首页选中的节点。备用 DNS 也通过代理，不添加系统 DNS 备用。直连规则匹配的域名改用阿里、腾讯 DoH 直接解析。请先导入并选择可用节点。" : "每行一个 HTTPS 地址；通过 DNS-PROXY 组。节点为空时拒绝查询，不退回系统 DNS；可在客户端选择该组的节点。已判定直连的连接和微信、QQ 媒体域名改用阿里、腾讯 DoH 直接解析。"}</small>
       </label>
     </> : null}
     <label className={styles.ipv6}><input type="checkbox" checked={settings.ipv6} onChange={event => onChange({ ...settings, ipv6: event.target.checked })} /> 允许 IPv6</label>

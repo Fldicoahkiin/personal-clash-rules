@@ -206,10 +206,11 @@ describe("cloud Rola subscriptions", () => {
       expect(conf).toContain("DOMAIN-SUFFIX,claude.ai,PROXY");
       expect(conf).toContain("FINAL,PROXY");
       expect(conf).toContain("AND,((DOMAIN-SUFFIX,claude.ai),(PROTOCOL,UDP)),REJECT");
-      for (const key of ["dns-server", "direct-dns-server", "fallback-dns-server"]) {
+      for (const key of ["dns-server", "fallback-dns-server"]) {
         expect(conf.split("\n").find(line => line.startsWith(`${key} =`)))
           .toBe(`${key} = https://1.1.1.1/dns-query#proxy`);
       }
+      expect(conf).toContain("direct-dns-server = https://223.5.5.5/dns-query, https://1.12.12.12/dns-query\n");
       expect(conf).not.toContain("#proxy=");
       expect(conf).not.toMatch(/test-password|airport-secret|NETWORK,UDP/);
       expect(conf).not.toContain("DST-PORT");

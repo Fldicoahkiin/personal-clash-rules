@@ -32,7 +32,7 @@ describe("createMihomoProfile", () => {
     expect(profile.dns).toMatchObject({
       "enhanced-mode": "fake-ip",
       nameserver: ["https://1.1.1.1/dns-query#DNS-PROXY", "https://8.8.8.8/dns-query#DNS-PROXY"],
-      "direct-nameserver": ["https://1.1.1.1/dns-query#DNS-PROXY", "https://8.8.8.8/dns-query#DNS-PROXY"],
+      "direct-nameserver": ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"],
     });
   });
 

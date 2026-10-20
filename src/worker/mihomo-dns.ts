@@ -4,6 +4,10 @@ import { metadataFilter } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 
 export const dnsProxyGroupName = "DNS-PROXY";
+// AliDNS and DNSPod, dialed without a proxy. CDN answers then match the direct route instead of the proxy's location.
+export const domesticDoh = ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"];
+// WeChat and QQ fetch media by the address they receive; fake IPs or overseas CDN answers stall them.
+const tencentMediaDomains = ["qq.com", "qpic.cn", "qlogo.cn", "gtimg.cn", "gtimg.com", "wechat.com"].map(domain => `+.${domain}`);
 
 export function dnsProxyGroup(providerNames: string[] = []) {
   return {
@@ -77,12 +81,13 @@ export function createProxyDns(settings: DnsSettings = defaultDnsSettings, upstr
     ipv6: settings.ipv6,
     "enhanced-mode": "fake-ip",
     "fake-ip-range": "198.18.0.1/16",
-    "fake-ip-filter": ["*.lan", "*.local", "localhost"],
+    "fake-ip-filter": ["*.lan", "*.local", "localhost", ...tencentMediaDomains],
     "default-nameserver": resolverBootstrap,
     "proxy-server-nameserver": bootstrap,
     nameserver: proxied,
-    // Even explicitly direct destinations do not silently move business DNS to the bootstrap resolver.
-    "direct-nameserver": proxied,
+    "nameserver-policy": Object.fromEntries(tencentMediaDomains.map(domain => [domain, [...domesticDoh]])),
+    // Only connections already routed DIRECT resolve here; rule matching and proxied traffic keep the proxied resolvers.
+    "direct-nameserver": [...domesticDoh],
     "use-system-hosts": false,
   };
 }

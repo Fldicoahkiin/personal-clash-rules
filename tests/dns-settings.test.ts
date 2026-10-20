@@ -10,13 +10,21 @@ describe("DNS dependency boundary", () => {
   it("separates bootstrap from business queries without enabling TUN or sniffing", () => {
     const config = parse(createMihomoProfile(nodes));
     expect(config.dns["proxy-server-nameserver"]).toEqual(["system"]);
-    expect(config.dns["direct-nameserver"]).toEqual(config.dns.nameserver);
     expect(config.dns.nameserver.every((url: string) => url.endsWith("#DNS-PROXY"))).toBe(true);
     expect(config["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY")).toMatchObject({ "empty-fallback": "REJECT", "include-all": true, "exclude-type": "direct|reject" });
     expect(config.ipv6).toBe(false);
     expect(config.dns.ipv6).toBe(false);
     expect(config.tun).toBeUndefined();
     expect(config.sniffer).toBeUndefined();
+  });
+  it("sends only DIRECT connections and Tencent media lookups to domestic DoH", () => {
+    const config = parse(createMihomoProfile(nodes));
+    const domestic = ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"];
+    expect(config.dns["direct-nameserver"]).toEqual(domestic);
+    expect(config.dns["fake-ip-filter"]).toEqual(["*.lan", "*.local", "localhost", "+.qq.com", "+.qpic.cn", "+.qlogo.cn", "+.gtimg.cn", "+.gtimg.com", "+.wechat.com"]);
+    expect(config.dns["nameserver-policy"]).toEqual(Object.fromEntries(config.dns["fake-ip-filter"].slice(3).map((domain: string) => [domain, domestic])));
+    expect(config.dns.fallback).toBeUndefined();
+    expect(config.dns["direct-nameserver-follow-policy"]).toBeUndefined();
   });
   it("accepts explicit bootstrap DoH but prevents a hostname bootstrap loop", () => {
     const settings = { ...defaultDnsSettings, bootstrapMode: "custom" as const, bootstrap: ["https://9.9.9.9/dns-query"], ipv6: true };

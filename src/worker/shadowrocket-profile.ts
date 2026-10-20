@@ -1,7 +1,7 @@
 import { defaultDnsSettings, type DnsSettings } from "../config/dns-settings";
 import { displayMihomoGroup, mihomoProxyGroups, mihomoRuleProviders, mihomoRules } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
-import { createProxyDns } from "./mihomo-dns";
+import { createProxyDns, domesticDoh } from "./mihomo-dns";
 import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
 
 type Group = {
@@ -89,7 +89,8 @@ export function createShadowrocketProfile(
     `ipv6 = ${settings.ipv6}`,
     "prefer-ipv6 = false",
     `dns-server = ${dns}`,
-    `direct-dns-server = ${dns}`,
+    // Domains matched by DIRECT rules resolve through domestic DoH; a failure falls back to the proxied resolvers.
+    `direct-dns-server = ${dnsMode === "doh" ? domesticDoh.join(", ") : dns}`,
     `fallback-dns-server = ${dns}`,
     `proxy-dns-server = ${bootstrap}`,
     "dns-direct-system = false",
