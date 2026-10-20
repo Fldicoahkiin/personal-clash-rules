@@ -13,7 +13,8 @@ async function read(relativePath: string): Promise<string> {
   return readFile(resolve(root, relativePath), "utf8");
 }
 
-describe("published rule sets", () => {
+// Several cases scan the full domestic list (about 110,000 entries).
+describe("published rule sets", { timeout: 30_000 }, () => {
   it("keeps explicit QQ, WeChat images, observed Tencent services and NetEase Music coverage", async () => {
     const rules = await Promise.all(["tencent-messaging", "netease-music"].map(async id => createRuleSet({
       id, label: id, path: `rules/direct/${id}.list`, policy: "DIRECT",
