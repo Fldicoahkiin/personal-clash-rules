@@ -13,15 +13,11 @@ import {
   parseNodeSettings,
   type NodeSettings,
 } from "./node-transforms";
-import {
-  createMihomoProviderProfile,
-  type MihomoDnsMode,
-  type MihomoRulePreset,
-} from "./mihomo-profile";
+import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
 import { hashText, randomSubscriptionId } from "./secrets";
-import { normalizeSourceBundle, normalizeSources, type SourceResourceLimits } from "./sub-store/normalize";
+import { normalizeSourceBundle, type SourceResourceLimits } from "./sub-store/normalize";
 import { countTargetCompatibleNodes, produceTarget } from "./sub-store/produce";
-import { parseRemoteSubscriptionUrl, probeRemoteSubscriptionMetadata, readRemoteSource, type RemoteSubscriptionSource } from "./sub-store/remote";
+import { parseRemoteSubscriptionUrl, readRemoteSource, type RemoteSubscriptionSource } from "./sub-store/remote";
 import { combineSubscriptionUsage, formatSubscriptionUserinfo, type RemoteSubscriptionMetadata, type SubscriptionUsage } from "./sub-store/usage";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
 import { targetForUserAgent } from "./subscription-target";
@@ -71,8 +67,9 @@ type SubscriptionSource = {
   value: string;
 };
 
-type SourceMode = "convert" | "mihomo-provider";
-type FallbackMode = "error" | "mihomo-provider";
+// Stored records keep both fields. Client-direct provider shells ("mihomo-provider") are no longer generated.
+type SourceMode = "convert";
+type FallbackMode = "error";
 
 type SubscriptionConfig = {
   version: 1;
@@ -91,14 +88,14 @@ type SubscriptionConfig = {
 
 type NodeStats = {
   deduplicated?: number;
-  output: number | null;
-  read: number | null;
-  skipped: number | null;
+  output: number;
+  read: number;
+  skipped: number;
 };
 
 type SubscriptionUsageSource = {
   name: string;
-  status: "available" | "missing" | "client-only";
+  status: "available" | "missing";
   usage?: SubscriptionUsage;
 };
 
@@ -110,17 +107,12 @@ type GeneratedUsage = {
 function generatedUsage(
   remoteSources: SubscriptionSource[],
   metadata: RemoteSubscriptionMetadata[],
-  sourceMode: SourceMode,
 ): GeneratedUsage {
   return {
     combined: combineSubscriptionUsage(metadata.map((source) => source.usage)) ?? null,
     sources: remoteSources.map((source, index) => {
       const sourceMetadata = metadata[index] ?? { usageStatus: "unavailable" as const };
-      const status = sourceMetadata.usageStatus === "available"
-        ? "available"
-        : sourceMetadata.usageStatus === "missing" && sourceMode === "convert"
-          ? "missing"
-          : "client-only";
+      const status = sourceMetadata.usageStatus === "available" ? "available" : "missing";
       return {
         name: /^订阅\s*\d+$/u.test(source.name) ? sourceMetadata.profileName || source.name : source.name,
         status,
@@ -210,20 +202,15 @@ function readSourceMode(value: unknown): SourceMode {
     return "convert";
   }
   if (value === "mihomo-provider") {
-    return "mihomo-provider";
+    throw new ApiError(400, "client_direct_removed", "Client-direct provider links are no longer supported; regenerate the subscription");
   }
   throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
 }
 
-function readFallbackMode(value: unknown, fallback: FallbackMode): FallbackMode {
-  if (value === "error") {
+// Older records may still say "mihomo-provider"; a failed refresh now always reports the error.
+function readFallbackMode(value: unknown): FallbackMode {
+  if (value === undefined || value === "error" || value === "mihomo-provider") {
     return "error";
-  }
-  if (value === "mihomo-provider") {
-    return "mihomo-provider";
-  }
-  if (value === undefined) {
-    return fallback;
   }
   throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
 }
@@ -284,10 +271,7 @@ function readSources(value: unknown): SubscriptionSource[] {
   )) === index);
 }
 
-function readConfig(
-  value: unknown,
-  fallbackMode: FallbackMode = "mihomo-provider",
-): SubscriptionConfig {
+function readConfig(value: unknown): SubscriptionConfig {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new ApiError(400, "invalid_subscription", "Subscription configuration is invalid");
   }
@@ -299,7 +283,7 @@ function readConfig(
     version: 1,
     dnsSettings: readDnsSettings(input.dnsSettings),
     dnsMode: readDnsMode(input.dnsMode),
-    fallbackMode: readFallbackMode(input.fallbackMode, fallbackMode),
+    fallbackMode: readFallbackMode(input.fallbackMode),
     name: readName(input.name),
     nodeSettings: readSettings(input.nodeSettings),
     rulePreset: readRulePreset(input.rulePreset),
@@ -383,59 +367,6 @@ function universalUrlForToken(origin: string, token: string): string {
   return `${origin}/s/${token}`;
 }
 
-function canUseMihomoProvider(error: unknown): boolean {
-  return error instanceof ApiError
-    && error.code === "source_failed"
-    && /HTTP (?:403|429)$/u.test(error.message);
-}
-
-async function generateMihomoProviderTarget(
-  env: SubscriptionEnv,
-  config: SubscriptionConfig,
-  target: OutputTarget,
-): Promise<string> {
-  if (!isMihomoConfigTarget(target)) {
-    throw new ApiError(
-      422,
-      "source_client_fetch_only",
-      "This upstream can only be loaded directly by Mihomo or Clash Party",
-    );
-  }
-  if (config.nodeSettings.sortMode !== "source") {
-    throw new ApiError(
-      422,
-      "source_transform_unavailable",
-      "Client-fetched subscriptions cannot be sorted by the Worker",
-    );
-  }
-  const nodeSources = config.sources
-    .filter((source) => source.type === "node")
-    .map((source) => source.value);
-  let nodeResource = "proxies: []\n";
-  if (nodeSources.length > 0) {
-    const normalized = await normalizeSources(env, {
-      profileName: config.name,
-      sourceUserAgent: config.sourceUserAgent,
-      subscriptionUrls: [],
-      nodes: nodeSources,
-    });
-    const nodes = applyNodeTransforms(normalized, config.nodeSettings);
-    nodeResource = await produceTarget(env, nodes, "mihomo");
-  }
-  return createMihomoProviderProfile({
-    dnsSettings: config.dnsSettings,
-    dnsMode: config.dnsMode,
-    nodeResource,
-    nodeSettings: config.nodeSettings,
-    providers: config.sources
-      .filter((source) => source.type === "subscription")
-      .map((source) => ({ name: source.name, url: source.value })),
-    rulePreset: config.rulePreset,
-    sourceUserAgent: config.sourceUserAgent,
-    updateIntervalHours: config.updateIntervalHours,
-  });
-}
-
 async function generateTarget(
   env: SubscriptionEnv,
   config: SubscriptionConfig,
@@ -446,82 +377,42 @@ async function generateTarget(
   content: string;
   inheritedName?: string;
   nodeStats: NodeStats;
-  sourceMode: SourceMode;
   usage: GeneratedUsage;
 }> {
-  let output: string;
-  let sourceMode = config.sourceMode;
-  let inheritedName: string | undefined;
-  let nodeStats: NodeStats = { read: null, output: null, skipped: null };
   const remoteSources = config.sources.filter((source) => source.type === "subscription");
-  let remoteMetadata: RemoteSubscriptionMetadata[] = [];
-  if (sourceMode === "mihomo-provider") {
-    output = await generateMihomoProviderTarget(env, config, target);
-    remoteMetadata = await Promise.all(remoteSources.map((source) => (
-      probeRemoteSubscriptionMetadata(source.value, config.sourceUserAgent)
-    )));
-    inheritedName = remoteSources.length === 1 ? remoteMetadata[0]?.profileName : undefined;
-  } else {
-    try {
-      const normalized = await normalizeSourceBundle(env, {
-        resolvedSources,
-        resourceLimits,
-        profileName: config.name,
-        sourceUserAgent: config.sourceUserAgent,
-        subscriptionUrls: config.sources
-          .filter((source) => source.type === "subscription")
-          .map((source) => source.value),
-        nodes: config.sources
-          .filter((source) => source.type === "node")
-          .map((source) => source.value),
-      });
-      const nodes = applyNodeTransforms(normalized.nodes, config.nodeSettings);
-      const outputNodeCount = countTargetCompatibleNodes(nodes, target);
-      inheritedName = normalized.profileName;
-      nodeStats = {
-        read: normalized.inputNodeCount,
-        output: outputNodeCount,
-        skipped: nodes.length - outputNodeCount,
-        ...(normalized.inputNodeCount > normalized.nodes.length ? { deduplicated: normalized.inputNodeCount - normalized.nodes.length } : {}),
-      };
-      remoteMetadata = normalized.remoteMetadata;
-      if (nodes.length === 0) {
-        throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
-      }
-      output = await produceTarget(
-        env,
-        nodes,
-        target,
-        config.rulePreset,
-        config.updateIntervalHours,
-        config.dnsMode,
-        normalized.upstreamConfig,
-        config.dnsSettings,
-      );
-    } catch (error) {
-      const hasRemoteSource = config.sources.some((source) => source.type === "subscription");
-      if (
-        !hasRemoteSource
-        || config.fallbackMode !== "mihomo-provider"
-        || !canUseMihomoProvider(error)
-      ) {
-        throw error;
-      }
-      if (!isMihomoConfigTarget(target)) {
-        throw new ApiError(
-          422,
-          "source_client_fetch_only",
-          "This upstream can only be loaded directly by Mihomo or Clash Party",
-        );
-      }
-      sourceMode = "mihomo-provider";
-      output = await generateMihomoProviderTarget(env, config, target);
-      remoteMetadata = await Promise.all(remoteSources.map((source) => (
-        probeRemoteSubscriptionMetadata(source.value, config.sourceUserAgent)
-      )));
-      inheritedName = remoteSources.length === 1 ? remoteMetadata[0]?.profileName : undefined;
-    }
+  const normalized = await normalizeSourceBundle(env, {
+    resolvedSources,
+    resourceLimits,
+    profileName: config.name,
+    sourceUserAgent: config.sourceUserAgent,
+    subscriptionUrls: config.sources
+      .filter((source) => source.type === "subscription")
+      .map((source) => source.value),
+    nodes: config.sources
+      .filter((source) => source.type === "node")
+      .map((source) => source.value),
+  });
+  const nodes = applyNodeTransforms(normalized.nodes, config.nodeSettings);
+  const outputNodeCount = countTargetCompatibleNodes(nodes, target);
+  const nodeStats: NodeStats = {
+    read: normalized.inputNodeCount,
+    output: outputNodeCount,
+    skipped: nodes.length - outputNodeCount,
+    ...(normalized.inputNodeCount > normalized.nodes.length ? { deduplicated: normalized.inputNodeCount - normalized.nodes.length } : {}),
+  };
+  if (nodes.length === 0) {
+    throw new ApiError(422, "no_nodes_after_processing", "No nodes match the current settings");
   }
+  let output = await produceTarget(
+    env,
+    nodes,
+    target,
+    config.rulePreset,
+    config.updateIntervalHours,
+    config.dnsMode,
+    normalized.upstreamConfig,
+    config.dnsSettings,
+  );
   const template = ruleTemplates.find(template => template.id === config.rulePreset);
   const templateUrl = template?.url || (config.rulePreset === "custom" ? config.ruleTemplateUrl : "");
   if (config.rulePreset === "custom" && !templateUrl) throw new ApiError(400, "invalid_rule_template", "Remote template URL is required");
@@ -536,9 +427,8 @@ async function generateTarget(
   return {
     content: output,
     nodeStats,
-    sourceMode,
-    usage: generatedUsage(remoteSources, remoteMetadata, sourceMode),
-    ...(inheritedName ? { inheritedName } : {}),
+    usage: generatedUsage(remoteSources, normalized.remoteMetadata),
+    ...(normalized.profileName ? { inheritedName: normalized.profileName } : {}),
   };
 }
 
@@ -546,7 +436,7 @@ export async function buildSubscription(env: SubscriptionEnv, body: Record<strin
   if (typeof body.target !== "string" || !isOutputTarget(body.target)) {
     throw new ApiError(400, "unsupported_target", "Output target is not supported");
   }
-  const config = readConfig(body, "error");
+  const config = readConfig(body);
   const generated = await generateTarget(env, config, body.target, resourceLimits, resolvedSources);
   return { config, generated, target: body.target, profileName: displayProfileName(config, generated.inheritedName) };
 }
@@ -562,18 +452,13 @@ async function createSubscription(
   const body = await readRequestObject(request);
   const { config, generated, target } = await buildSubscription(env, body);
   const token = randomSubscriptionId();
-  // A refresh failure must not replace verified nodes with an unverified provider shell.
-  const storedConfig = generated.sourceMode === "convert"
-    ? { ...config, fallbackMode: "error" as const } : config;
-  await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(storedConfig));
-  if (generated.sourceMode === "convert") {
-    await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${token}/${target}`, async () => subscriptionResponse(config, generated, target, new URL(urlsForToken(url.origin, token)[target])));
-  }
+  await env.SUBSCRIPTIONS.put(`${subscriptionKeyPrefix}${token}`, JSON.stringify(config));
+  await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${token}/${target}`, async () => subscriptionResponse(config, generated, target, new URL(urlsForToken(url.origin, token)[target])));
 
   return json({
     nodeStats: generated.nodeStats,
     profileName: displayProfileName(config, generated.inheritedName),
-    sourceMode: generated.sourceMode,
+    sourceMode: "convert",
     target: body.target,
     usage: generated.usage,
     url: urlsForToken(url.origin, token)[target],
@@ -698,9 +583,8 @@ async function renderSubscription(
     target = targetForUserAgent(request.headers.get("user-agent") ?? "");
   }
   const { config, localSync } = await readSubscriptionConfig(parts[1], env);
-  const rendered = config.sourceMode === "convert"
-    ? await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${parts[1]}/${target}${localSync ? `/${localSync.readAt}` : ""}`, async () => subscriptionResponse(config, await generateTarget(env, config, target, undefined, localSync?.sources), target, url))
-    : await subscriptionResponse(config, await generateTarget(env, config, target), target, url);
+  const rendered = await withSubscriptionRecovery(env.SUBSCRIPTIONS, `${parts[1]}/${target}${localSync ? `/${localSync.readAt}` : ""}`,
+    async () => subscriptionResponse(config, await generateTarget(env, config, target, undefined, localSync?.sources), target, url));
   if (universal && !targetParameter) rendered.headers.set("Vary", "User-Agent");
   if (localSync) {
     rendered.headers.set("X-Subscription-Source-Mode", "local-sync");
@@ -734,9 +618,7 @@ async function syncSubscription(request: Request, url: URL, env: SubscriptionEnv
       throw new ApiError(403, "sync_forbidden", "The synchronization credential is invalid");
     }
   }
-  const config = readConfig(body.config, "error");
-  if (config.sourceMode !== "convert") throw new ApiError(400, "invalid_source_snapshot", "Only converted sources can be synchronized");
-  config.fallbackMode = "error";
+  const config = readConfig(body.config);
   const snapshot = readSubscriptionSnapshot(body.snapshot, config.sources.filter(source => source.type === "subscription").length);
   if (previous && Date.parse(snapshot.readAt) < Date.parse(previous.readAt)) throw new ApiError(409, "sync_outdated", "A newer snapshot is already published");
   if (typeof body.target !== "string" || !isOutputTarget(body.target)) throw new ApiError(400, "unsupported_target", "Output target is not supported");
@@ -772,7 +654,7 @@ async function subscriptionResponse(config: SubscriptionConfig, generated: Await
     ETag: etag,
     "Profile-Update-Interval": String(config.updateIntervalHours),
     "X-Subscription-Profile": encodeURIComponent(profileName),
-    "X-Subscription-Source-Mode": generated.sourceMode,
+    "X-Subscription-Source-Mode": "convert",
     "X-Subscription-Target": target,
   });
   if (subscriptionUserinfo) {

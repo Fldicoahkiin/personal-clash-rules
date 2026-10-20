@@ -1,37 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { normalizeSourceBundle } from "../src/worker/sub-store/normalize";
-import { probeRemoteSubscriptionMetadata, readRemoteSource } from "../src/worker/sub-store/remote";
+import { readRemoteSource } from "../src/worker/sub-store/remote";
 import type { SubscriptionEnv } from "../src/worker/types";
 
 describe("subscription upstream failures", () => {
-  it("retrieves GET-only quota after a successful HEAD without usage", async () => {
-    const cancel = vi.fn();
-    const spy = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(null, { headers: { "Profile-Title": "Airport" } }))
-      .mockResolvedValueOnce(new Response(new ReadableStream({ cancel }), { headers: { "Subscription-Userinfo": "upload=10; download=20; total=100; expire=0" } }));
-    try {
-      expect(await probeRemoteSubscriptionMetadata("https://provider.example/sub", "clash.meta")).toEqual({
-        profileName: "Airport", usageStatus: "available", usage: { upload: "10", download: "20", total: "100", expire: "0" },
-      });
-      expect(spy.mock.calls.map(([, init]) => init?.method)).toEqual(["HEAD", "GET"]);
-      expect(cancel).toHaveBeenCalledOnce();
-    } finally { spy.mockRestore(); }
-  });
-
-  it("falls back for unsupported HEAD but does not retry a challenge or rate limit", async () => {
-    const spy = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(null, { status: 405 }))
-      .mockResolvedValueOnce(new Response(null, { headers: { "Subscription-Userinfo": "upload=1; download=2; total=3" } }))
-      .mockResolvedValueOnce(new Response(null, { status: 403, headers: { "CF-Mitigated": "challenge" } }))
-      .mockResolvedValueOnce(new Response(null, { status: 429 }));
-    try {
-      expect((await probeRemoteSubscriptionMetadata("https://provider.example/sub", "clash.meta")).usageStatus).toBe("available");
-      expect((await probeRemoteSubscriptionMetadata("https://provider.example/sub", "clash.meta")).usageStatus).toBe("unavailable");
-      expect((await probeRemoteSubscriptionMetadata("https://provider.example/sub", "clash.meta")).usageStatus).toBe("unavailable");
-      expect(spy).toHaveBeenCalledTimes(4);
-    } finally { spy.mockRestore(); }
-  });
-
   it("reuses validated source content and quota across output requests, isolates UA and expires the cache", async () => {
     const stored = new Map<string, string>();
     const env = { SUBSCRIPTIONS: { get: async (key: string) => stored.get(key) ?? null, put: async (key: string, value: string) => { stored.set(key, value); } } } as SubscriptionEnv;

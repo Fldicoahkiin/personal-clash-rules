@@ -168,29 +168,6 @@ export async function readRemoteSource(
   };
 }
 
-export async function probeRemoteSubscriptionMetadata(
-  value: string,
-  sourceUserAgent: string,
-): Promise<RemoteSubscriptionMetadata> {
-  let head: RemoteSubscriptionMetadata | undefined;
-  try {
-    const response = await requestRemoteSource(value, sourceUserAgent, "HEAD");
-    head = remoteSubscriptionMetadata(response);
-    if (head.usage) return head;
-  } catch (error) {
-    // Unsupported HEAD is a method difference, not permission to retry refusals or challenges.
-    if (!(error instanceof ApiError) || ![405, 501].includes(error.upstream?.status ?? 0)) {
-      return { usageStatus: "unavailable" };
-    }
-  }
-  try {
-    const response = await requestRemoteSource(value, sourceUserAgent, "GET");
-    const metadata = remoteSubscriptionMetadata(response);
-    await response.body?.cancel();
-    return { ...head, ...metadata, ...(metadata.profileName || !head?.profileName ? {} : { profileName: head.profileName }) };
-  } catch { return head ?? { usageStatus: "unavailable" }; }
-}
-
 export async function loadRemoteSubscriptionSources(
   env: SubscriptionEnv, urls: string[], userAgent: string, byteLimit = maximumRemoteBytes,
 ): Promise<RemoteSubscriptionSource[]> {

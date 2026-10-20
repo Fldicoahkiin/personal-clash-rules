@@ -25,7 +25,6 @@ describe("subscription controls", () => {
   it("explains every advanced setting and keeps the country flag wording", () => {
     const html = renderToStaticMarkup(createElement(SubscriptionMoreSettings, {
       addCountryFlag: true,
-      allowClientFallback: false,
       dnsMode: "doh",
       excludePattern: "",
       includePattern: "",
@@ -53,7 +52,6 @@ describe("subscription controls", () => {
       "移除名称匹配的节点",
       "正则匹配节点名称",
       "替换匹配到的名称",
-      "客户端直读时仅支持来源顺序",
       "按节点名称识别国家或地区",
       "在名称前显示协议类型",
       "用于语音、游戏和 QUIC",
@@ -64,7 +62,6 @@ describe("subscription controls", () => {
       expect(html).toContain(description);
     }
     expect(html).toContain("国家旗帜");
-    expect(html).toContain("客户端直读备用");
     expect(html).toContain("添加重命名");
     expect(html).not.toContain("Emoji");
   });
@@ -72,7 +69,6 @@ describe("subscription controls", () => {
   it("offers preset and custom subscription user agents", () => {
     const html = renderToStaticMarkup(createElement(SubscriptionMoreSettings, {
       addCountryFlag: true,
-      allowClientFallback: false,
       dnsMode: "doh",
       excludePattern: "",
       includePattern: "",

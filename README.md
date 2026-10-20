@@ -15,7 +15,6 @@
 - 透传、合并上游流量与到期信息
 - 独立 HTTP／HTTPS／SOCKS5 代理字段录入、备注；多机场来源名称与剩余流量
 - 刷新失败时保留 24 小时内的完整有效输出，不用空节点替换
-- 默认 Worker 转换；可选 Clash Party / Mihomo 客户端直读备用
 - 继承独立的原订阅 DNS，或配置节点引导 DNS 与代理 DoH；Mihomo IPv6 默认关闭
 - CF、本地及自定义 Flacier 后端；ACL4SSR 和自定义远程规则模板
 - BrowserLeaks、IPv6、Cloudflare 网络检测入口

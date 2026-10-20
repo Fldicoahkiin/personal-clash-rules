@@ -94,31 +94,4 @@ describe("SubscriptionResult", () => {
     expect(html).not.toContain("打开 Clash Party");
   });
 
-  it("does not invent node counts for client-direct sources", () => {
-    const html = renderToStaticMarkup(createElement(SubscriptionResult, {
-      copied: false,
-      format,
-      onCopy: () => undefined,
-      result: {
-        nodeStats: { read: null, output: null, skipped: null },
-        profileName: "Flacierの分流规则",
-        sourceMode: "mihomo-provider",
-        target: "clash-party-config",
-        usage: {
-          combined: null,
-          sources: [{ name: "机场 A", status: "client-only" }],
-        },
-        universalUrl: "https://rules.flacier.com/s/abcdefghijklmnop",
-        url: "https://rules.flacier.com/s/abcdefghijklmnop/clash-party-config",
-      },
-    }));
-
-    expect(html).toContain("客户端直读");
-    expect(html).toContain("由客户端读取");
-    expect(html).toContain("Worker 不可见");
-    expect(html).toContain("Worker 无法统计节点，也无法重新排序");
-    expect(html).toContain("机场未向 Worker 返回用量，Clash Party 会显示“远程”");
-    expect(html).toContain("跳过不兼容节点");
-    expect(html).not.toContain("读取</dt><dd>0");
-  });
 });

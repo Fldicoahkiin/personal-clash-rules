@@ -257,7 +257,7 @@ describe("browser credential egress boundary", () => {
     await createRolaCloudBase(input);
     expect(fetcher).toHaveBeenCalledExactlyOnceWith("https://rules.flacier.com/api/subscriptions", expect.objectContaining({ redirect: "error", credentials: "omit", method: "POST" }));
     const body = JSON.parse(fetcher.mock.calls[0][1].body);
-    expect(body).toMatchObject({ sources: [{ name: "Airport", type: "subscription", value: "https://airport.example/sub" }], rulePreset: "flacier", dnsMode: "doh", fallbackMode: "error", updateIntervalHours: 6 });
+    expect(body).toMatchObject({ sources: [{ name: "Airport", type: "subscription", value: "https://airport.example/sub" }], rulePreset: "flacier", dnsMode: "doh", updateIntervalHours: 6 });
     expect(JSON.stringify(body)).not.toMatch(/privateaccount|privatepassword|private\.example|private-exit|do-not-send/);
     expect(body.dnsSettings.bootstrapMode).toBe("system");
   });

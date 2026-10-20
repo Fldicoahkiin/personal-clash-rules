@@ -25,7 +25,6 @@ type SubscriptionMoreSettingsProps = {
   dnsSettings?: DnsSettings;
   onDnsSettingsChange?: (value: DnsSettings) => void;
   addCountryFlag: boolean;
-  allowClientFallback: boolean;
   dnsMode: DnsMode;
   supportsDns?: boolean;
   shadowrocket?: boolean;
@@ -41,7 +40,7 @@ type SubscriptionMoreSettingsProps = {
   updateIntervalHours: number;
   xudp: boolean;
   onBooleanChange: (
-    key: "addCountryFlag" | "allowClientFallback" | "showNodeType" | "skipCertVerify" | "tfo" | "udp" | "xudp",
+    key: "addCountryFlag" | "showNodeType" | "skipCertVerify" | "tfo" | "udp" | "xudp",
     value: boolean,
   ) => void;
   onDnsModeChange: (value: DnsMode) => void;
@@ -61,7 +60,6 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
   dnsSettings,
   onDnsSettingsChange,
   addCountryFlag,
-  allowClientFallback,
   dnsMode,
   supportsDns = true,
   shadowrocket = false,
@@ -247,7 +245,6 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
         <label className="field subscription-sort">
           <span className="field-label">
             <strong>排序</strong>
-            <small>客户端直读时仅支持来源顺序</small>
           </span>
           <select
             value={sortMode}
@@ -259,17 +256,6 @@ export const SubscriptionMoreSettings: FC<SubscriptionMoreSettingsProps> = ({
           </select>
         </label>
         <div className="subscription-option-list" aria-label="节点选项">
-          <label>
-            <input
-              type="checkbox"
-              checked={allowClientFallback}
-              onChange={(event) => onBooleanChange("allowClientFallback", event.target.checked)}
-            />
-            <span className="subscription-option-copy">
-              <strong>客户端直读备用</strong>
-              <small>Mihomo 系客户端可用；外层订阅可能没有流量信息</small>
-            </span>
-          </label>
           <label>
             <input
               type="checkbox"

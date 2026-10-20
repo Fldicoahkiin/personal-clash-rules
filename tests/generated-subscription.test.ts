@@ -42,7 +42,6 @@ describe("loadGeneratedSubscriptionUrl", () => {
       excludePattern: "过期",
       includePattern: "US|JP",
       name: "个人订阅",
-      allowClientFallback: true,
       renameRules: [
         { pattern: "USA", replacement: "US" },
         { pattern: "Tokyo", replacement: "JP" },

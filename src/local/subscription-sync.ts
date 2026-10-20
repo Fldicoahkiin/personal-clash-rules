@@ -35,9 +35,8 @@ export function createSubscriptionSync({ env, origin, keys }: SyncOptions) {
       const resolved = await routeSubscriptionRequest(new Request(resolveUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: localUrl }) }), resolveUrl, env);
       if (!resolved?.ok) throw new ApiError(404, "subscription_not_found", "Local subscription not found");
       const data = await resolved.json() as { config: Awaited<ReturnType<typeof buildSubscription>>["config"]; target: string };
-      if (data.config.sourceMode !== "convert") throw new ApiError(422, "sync_requires_conversion", "Client-direct shells cannot be synchronized");
       const sources = await loadRemoteSubscriptionSources(env, data.config.sources.filter(source => source.type === "subscription").map(source => source.value), data.config.sourceUserAgent);
-      const config = { ...data.config, fallbackMode: "error" };
+      const config = data.config;
       await buildSubscription(env, { ...config, target: data.target }, undefined, sources);
       const response = await fetch(`${cloudOrigin}/api/subscriptions/sync`, {
         method: "POST", headers: { "Content-Type": "application/json" }, redirect: "error", signal: AbortSignal.timeout(60_000),

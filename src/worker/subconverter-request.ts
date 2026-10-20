@@ -34,7 +34,7 @@ export function readSubconverterRequest(url: URL) {
     filterUnsupported: boolean("fdn", true),
     body: {
       target: nodesOnly ? "mihomo" : "mihomo-config", sources, name: parameters.get("filename") || "",
-      sourceUserAgent: parameters.get("ua") || "clash.meta", fallbackMode: "error",
+      sourceUserAgent: parameters.get("ua") || "clash.meta",
       rulePreset: nodesOnly ? "flacier" : template?.id || "custom", ruleTemplateUrl: templateUrl,
       nodeSettings: { sortMode: boolean("sort", false) ? "name-asc" : "source", addCountryFlag: boolean("emoji", true),
         showNodeType: boolean("append_type", false), udp: boolean("udp", true), tfo: boolean("tfo", false),

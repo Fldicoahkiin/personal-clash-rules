@@ -95,7 +95,7 @@ export async function createRolaCloudBase(input: {
     signal: AbortSignal.timeout(60000),
     body: JSON.stringify({ sources: input.sources.map(({ name, type, value }) => ({ name, type, value })),
       name: input.name, sourceUserAgent: input.sourceUserAgent, target: input.target,
-      rulePreset: "flacier", dnsMode: "doh", dnsSettings: defaultDnsSettings, fallbackMode: "error", updateIntervalHours: 6 }),
+      rulePreset: "flacier", dnsMode: "doh", dnsSettings: defaultDnsSettings, updateIntervalHours: 6 }),
   });
   const data = await response.json() as ConvertedSubscription & { error?: string; message?: string; upstream?: unknown };
   if (!response.ok) throw new SubscriptionApiError(response.status, typeof data.error === "string" ? data.error : "cloud_base_failed", typeof data.message === "string" ? data.message : "云端基础订阅生成失败；本地配置保持不变。", data.upstream);

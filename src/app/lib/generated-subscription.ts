@@ -11,7 +11,6 @@ import { parseDnsSettings, type DnsSettings } from "../../config/dns-settings";
 export type LoadedSubscriptionForm = {
   dnsSettings: DnsSettings;
   addCountryFlag: boolean;
-  allowClientFallback: boolean;
   dnsMode: DnsMode;
   excludePattern: string;
   includePattern: string;
@@ -115,8 +114,6 @@ function loadedForm(
   return {
     addCountryFlag: booleanValue(nodeSettings.addCountryFlag, true),
     dnsSettings: parseDnsSettings(config.dnsSettings),
-    allowClientFallback: config.fallbackMode === "mihomo-provider"
-      || config.sourceMode === "mihomo-provider",
     dnsMode: config.dnsMode === "system" || config.dnsMode === "upstream" ? config.dnsMode : "doh",
     excludePattern: stringValue(nodeSettings.excludePattern),
     includePattern: stringValue(nodeSettings.includePattern),

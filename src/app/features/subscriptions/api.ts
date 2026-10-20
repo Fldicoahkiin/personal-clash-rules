@@ -29,8 +29,7 @@ export type OutputTarget =
 export type SourceType = "subscription" | "node";
 export type NodeSortMode = "source" | "name-asc" | "name-desc";
 export type RulePreset = import("../../../config/rule-templates").RuleTemplateId | "global" | "direct";
-export type SourceMode = "convert" | "mihomo-provider" | "local-sync";
-export type FallbackMode = "error" | "mihomo-provider";
+export type SourceMode = "convert" | "local-sync";
 export type DnsMode = "doh" | "system" | "upstream";
 
 export interface NodeRenameRule {
@@ -54,9 +53,9 @@ export interface NodeSettings {
 export interface ConvertedSubscription {
   nodeStats: {
     deduplicated?: number;
-    output: number | null;
-    read: number | null;
-    skipped: number | null;
+    output: number;
+    read: number;
+    skipped: number;
   };
   profileName: string;
   sourceMode: SourceMode;
@@ -80,7 +79,7 @@ export interface SubscriptionUsage {
 
 export interface SubscriptionUsageSource {
   name: string;
-  status: "available" | "missing" | "client-only";
+  status: "available" | "missing";
   usage?: SubscriptionUsage;
 }
 
@@ -135,7 +134,6 @@ async function apiError(response: Response): Promise<SubscriptionApiError> {
 export async function createConvertedSubscription(input: {
   dnsSettings?: import("../../../config/dns-settings").DnsSettings;
   dnsMode: DnsMode;
-  fallbackMode: FallbackMode;
   name: string;
   nodeSettings: NodeSettings;
   rulePreset: RulePreset;
@@ -205,12 +203,10 @@ export function subscriptionErrorText(error: unknown, backend = ""): string {
     invalid_source_user_agent: "订阅请求 UA 无效",
     invalid_update_interval: "更新间隔需要在 1 到 168 小时之间",
     no_nodes_after_processing: "没有节点符合当前筛选条件",
-    source_client_fetch_only: "不兼容：机场只能由 Clash Party 或 Mihomo 直接读取",
-    source_transform_unavailable: "客户端直连模式不支持节点排序",
     target_unsupported: "不兼容：节点协议无法生成当前格式",
     output_too_large: "生成内容过大",
     sync_busy: "本地正在同步，请稍后再试",
-    sync_requires_conversion: "请先在本地成功读取节点；不能把客户端直读外壳当作同步快照",
+    client_direct_removed: "这条链接使用已停用的客户端直读备用，请重新生成",
     cloud_sync_unreachable: "同步未完成，云端保留之前的订阅；本地服务会在 15 分钟后重试",
     cloud_sync_failed: "云端未接受同步，已有链接不变；请检查本地与云端是否已更新到支持同步的版本",
     invalid_local_subscription: "请先用本地后端生成订阅，再同步到云端",

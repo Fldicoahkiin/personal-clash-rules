@@ -47,7 +47,7 @@ export async function withSubscriptionRecovery(
     headers.set("Warning", '110 - "Upstream refresh failed; nodes and quota are from last successful conversion"');
     return new Response(previous.content, { headers });
   }
-  if (response.status !== 200 || response.headers.get("x-subscription-source-mode") === "mihomo-provider") return response;
+  if (response.status !== 200) return response;
   response.headers.set("X-Subscription-Refresh-Status", "fresh");
   response.headers.set("X-Subscription-Last-Success", new Date().toISOString());
   // Unchanged snapshots are throttled; a new source/deployment revision replaces stale output immediately.

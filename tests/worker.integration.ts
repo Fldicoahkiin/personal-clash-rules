@@ -26,7 +26,7 @@ type CreatedSubscription = {
     } | null;
     sources: Array<{
       name: string;
-      status: "available" | "missing" | "client-only";
+      status: "available" | "missing";
       usage?: {
         upload: string;
         download: string;
@@ -697,102 +697,23 @@ describe("KV-backed subscription links", () => {
     }
   });
 
-  it("uses a Mihomo provider when the upstream rejects the Worker with 403", async () => {
-    const sourceUrl = "https://provider.example/subscription";
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => (
-      init?.method === "HEAD"
-        ? new Response(null, {
-            headers: {
-              "Subscription-Userinfo": "upload=4096; download=8192; total=214748364800; expire=1805938734",
-            },
-          })
-        : new Response(null, { status: 403 })
-    ));
-
+  it("reports an upstream refusal instead of publishing a client-direct provider shell", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 403 }));
     try {
       const { data, response } = await createSubscription({
         fallbackMode: "mihomo-provider",
-        name: "",
-        rulePreset: "flacier",
-        sourceUserAgent: "ClashParty/2.0",
-        updateIntervalHours: 12,
-        sources: [{ name: "订阅 1", type: "subscription", value: sourceUrl }],
+        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/subscription" }],
         target: "clash-party-config",
       });
-      expect(response.status).toBe(201);
-      expect(data.profileName).toBe("Flacierの分流规则");
-      expect(data.sourceMode).toBe("mihomo-provider");
-      expect(data.nodeStats).toEqual({ read: null, output: null, skipped: null });
-      expect(data.usage.sources).toEqual([
-        expect.objectContaining({ name: "订阅 1", status: "available" }),
-      ]);
+      expect(response.status).toBe(502);
+      expect(data).toMatchObject({ error: "source_failed" });
 
-      const published = await exports.default.fetch(data.url);
-      const config = parse(await published.text()) as {
-        "profile-update-interval": number;
-        "proxy-providers": Record<string, Record<string, unknown>>;
-      };
-      expect(published.status).toBe(200);
-      expect(published.headers.get("content-disposition")).toContain(
-        encodeURIComponent("Flacierの分流规则.yaml"),
-      );
-      expect(published.headers.get("profile-update-interval")).toBe("12");
-      expect(published.headers.get("subscription-userinfo")).toBe(
-        "upload=4096; download=8192; total=214748364800; expire=1805938734",
-      );
-      expect(config["profile-update-interval"]).toBe(12);
-      expect(config["proxy-providers"]["订阅 1"]).toMatchObject({
-        type: "http",
-        url: sourceUrl,
-        header: { "User-Agent": ["ClashParty/2.0"] },
+      const retired = await exports.default.fetch("https://example.com/api/subscriptions", {
+        method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "192.0.2.200" },
+        body: JSON.stringify({ ...requestBody(), sourceMode: "mihomo-provider" }),
       });
-      expect(fetchSpy).toHaveBeenCalledTimes(4);
-      expect(fetchSpy).toHaveBeenLastCalledWith(
-        sourceUrl,
-        expect.objectContaining({ method: "HEAD" }),
-      );
-    } finally {
-      fetchSpy.mockRestore();
-    }
-  });
-
-  it("reports client-only usage when a provider source hides its metadata", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(null, { status: 403 }),
-    );
-
-    try {
-      const { data, response } = await createSubscription({
-        fallbackMode: "mihomo-provider",
-        sources: [{ name: "机场 A", type: "subscription", value: "https://provider.example/sub" }],
-        target: "clash-party-config",
-      });
-
-      expect(response.status).toBe(201);
-      expect(data.usage).toEqual({
-        combined: null,
-        sources: [{ name: "机场 A", status: "client-only" }],
-      });
-    } finally {
-      fetchSpy.mockRestore();
-    }
-  });
-
-  it("reports client-direct sources as incompatible with non-Mihomo configs", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(null, { status: 403 }),
-    );
-    try {
-      const { data, response } = await createSubscription({
-        fallbackMode: "mihomo-provider",
-        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
-        target: "surge-config",
-      });
-
-      expect(response.status).toBe(422);
-      expect(data).toMatchObject({
-        error: "source_client_fetch_only",
-      });
+      expect(retired.status).toBe(400);
+      expect(await retired.json()).toMatchObject({ error: "client_direct_removed" });
     } finally {
       fetchSpy.mockRestore();
     }
@@ -842,38 +763,4 @@ describe("KV-backed subscription links", () => {
     } finally { fetchSpy.mockRestore(); }
   });
 
-  it("retries Worker conversion when an upstream becomes readable again", async () => {
-    let blocked = true;
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
-      if (blocked) {
-        return new Response(null, { status: 403 });
-      }
-      return init?.method === "HEAD"
-        ? new Response(null)
-        : new Response(nodeUri("US-01", "us.example.com", "secret"));
-    });
-
-    try {
-      const { data, response } = await createSubscription({
-        fallbackMode: "mihomo-provider",
-        sources: [{ name: "订阅 1", type: "subscription", value: "https://provider.example/sub" }],
-        target: "clash-party-config",
-      });
-      expect(response.status).toBe(201);
-      expect(data.sourceMode).toBe("mihomo-provider");
-
-      blocked = false;
-      const published = await exports.default.fetch(data.url);
-      const config = parse(await published.text()) as Record<string, unknown>;
-
-      expect(published.status).toBe(200);
-      expect(published.headers.get("x-subscription-source-mode")).toBe("convert");
-      expect(config).not.toHaveProperty("proxy-providers");
-      expect(config.proxies).toEqual([
-        expect.objectContaining({ name: "🇺🇸 US-01" }),
-      ]);
-    } finally {
-      fetchSpy.mockRestore();
-    }
-  });
 });

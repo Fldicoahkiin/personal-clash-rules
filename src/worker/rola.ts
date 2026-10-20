@@ -149,7 +149,7 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           const syncId = synchronizedBaseId(input.sources, url.origin);
           const built = syncId ? await buildSynchronizedSubscription(env, syncId, input.target, { sourceBytes, nodes: nodeLimit })
             : await buildSubscription(env, { sources: input.sources, target: input.target, name: input.name, sourceUserAgent: input.sourceUserAgent,
-            fallbackMode: "error", dnsMode: "doh", dnsSettings: defaultDnsSettings, rulePreset: "flacier", updateIntervalHours: 6 }, { sourceBytes, nodes: nodeLimit });
+            dnsMode: "doh", dnsSettings: defaultDnsSettings, rulePreset: "flacier", updateIntervalHours: 6 }, { sourceBytes, nodes: nodeLimit });
           profile = built.generated.content;
           source = syncId ? { kind: "local-sync", id: syncId } : { kind: "convert", config: built.config };
           stats = built.generated.nodeStats;

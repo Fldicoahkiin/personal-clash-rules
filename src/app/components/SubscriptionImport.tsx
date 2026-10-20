@@ -34,7 +34,6 @@ type FormState = {
   backend: string;
   backendMode: "current" | "local" | "custom";
   addCountryFlag: boolean;
-  allowClientFallback: boolean;
   copied: boolean;
   dnsMode: DnsMode;
   error: string;
@@ -73,7 +72,6 @@ const initialState: FormState = {
   backend: "",
   backendMode: "current",
   addCountryFlag: true,
-  allowClientFallback: false,
   copied: false,
   dnsMode: "doh",
   error: "",
@@ -212,7 +210,6 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
       const result = await createConvertedSubscription({
         dnsSettings,
         dnsMode: form.dnsMode,
-        fallbackMode: form.allowClientFallback ? "mihomo-provider" : "error",
         name: form.name.trim(),
         nodeSettings: {
           addCountryFlag: form.addCountryFlag,
@@ -348,7 +345,6 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
           supportsDns={supportsDns}
           shadowrocket={shadowrocketConfig}
           addCountryFlag={form.addCountryFlag}
-          allowClientFallback={form.allowClientFallback}
           dnsMode={form.dnsMode}
           excludePattern={form.excludePattern}
           includePattern={form.includePattern}

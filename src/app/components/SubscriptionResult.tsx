@@ -52,8 +52,7 @@ function formatExpiry(expire?: string): string {
 
 function usageStatus(source: SubscriptionUsageSource): string {
   if (source.status === "available") return "已读取";
-  if (source.status === "missing") return "未返回";
-  return "Worker 不可见";
+  return "未返回";
 }
 
 export function SubscriptionResult({
@@ -65,13 +64,9 @@ export function SubscriptionResult({
   const clientAction = format.clientId
     ? buildClientAction(format.clientId, result.url, result.profileName)
     : null;
-  const clientDirect = result.sourceMode === "mihomo-provider";
   const localBackend = ["127.0.0.1", "localhost"].includes(new URL(result.url).hostname);
   const pairedConfig = result.target === "shadowrocket-config";
   const deduplicated = result.nodeStats.deduplicated ?? 0;
-  const countValue = (value: number | null, fallback: string) => (
-    value === null ? fallback : String(value)
-  );
 
   return (
     <div className="subscription-result" aria-live="polite">
@@ -83,42 +78,27 @@ export function SubscriptionResult({
         <dl className="subscription-result-meta">
           <div>
             <dt>模式</dt>
-            <dd>{result.sourceMode === "local-sync" ? "本地读取 · 云端分发" : clientDirect ? "客户端直读" : localBackend ? "本地转换" : "Worker 转换"}</dd>
+            <dd>{result.sourceMode === "local-sync" ? "本地读取 · 云端分发" : localBackend ? "本地转换" : "Worker 转换"}</dd>
           </div>
           <div>
             <dt>读取</dt>
-            <dd>{countValue(result.nodeStats.read, "由客户端读取")}</dd>
+            <dd>{result.nodeStats.read}</dd>
           </div>
           <div>
             <dt>输出</dt>
-            <dd>{countValue(result.nodeStats.output, "由客户端确认")}</dd>
+            <dd>{result.nodeStats.output}</dd>
           </div>
           <div>
             <dt>跳过不兼容节点</dt>
-            <dd>{countValue(result.nodeStats.skipped, "由客户端确认")}</dd>
+            <dd>{result.nodeStats.skipped}</dd>
           </div>
           {deduplicated > 0 ? <div><dt>重复节点</dt><dd>{deduplicated}</dd></div> : null}
         </dl>
-        {result.nodeStats.read !== null && result.nodeStats.output !== null && result.nodeStats.skipped !== null
-          && result.nodeStats.read - result.nodeStats.output - result.nodeStats.skipped - deduplicated > 0
+        {result.nodeStats.read - result.nodeStats.output - result.nodeStats.skipped - deduplicated > 0
           ? <p>筛选移除 {result.nodeStats.read - result.nodeStats.output - result.nodeStats.skipped - deduplicated} 个节点</p> : null}
-        {clientDirect ? (
-          <div className="subscription-result-notes">
-            <p>此配置尚未验证能读取到节点，不代表转换成功；若客户端只显示 COMPATIBLE，请保留原机场订阅并检查资源下载错误。</p>
-            <p>Worker 无法统计节点，也无法重新排序；节点保持来源顺序。</p>
-            {result.usage.sources.some((source) => source.status === "client-only") ? (
-              <p>
-                机场未向 Worker 返回用量，
-                {format.name === "Clash Party"
-                  ? "Clash Party 会显示“远程”。"
-                  : "生成链接不会显示用量。"}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
         {result.sourceMode === "local-sync"
           ? <p>最近同步：{result.syncedAt ? new Date(result.syncedAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }) : "未知"}（UTC+8）。这是同步时的节点和用量，不是 CF 对机场的实时查询。云端刷新不会删除未同步的节点。</p>
-          : !clientDirect ? <p>有效来源缓存 5 分钟；刷新失败时最多回用 24 小时内的完整有效配置，用量也可能是旧数据。成功刷新会移除上游已撤回的节点。</p> : null}
+          : <p>有效来源缓存 5 分钟；刷新失败时最多回用 24 小时内的完整有效配置，用量也可能是旧数据。成功刷新会移除上游已撤回的节点。</p>}
         {result.usage.sources.length > 0 ? (
           <div className="subscription-usage">
             <div className="subscription-usage-total">
@@ -163,7 +143,7 @@ export function SubscriptionResult({
             {format.icon ? (
               <img src={format.icon} alt="" width="20" height="20" />
             ) : null}
-            {pairedConfig ? "2. 添加配置" : clientDirect ? "导入待验证配置" : "一键导入"}
+            {pairedConfig ? "2. 添加配置" : "一键导入"}
             <ArrowUpRight aria-hidden="true" />
           </a>
         ) : null}
