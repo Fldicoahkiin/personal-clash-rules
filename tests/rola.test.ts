@@ -1,9 +1,8 @@
 import { readFileSync } from "node:fs";
-import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 import { parse, stringify } from "yaml";
 
-import { createRolaOverride, createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaRulePaths } from "../src/worker/residential-profile";
+import { createRolaTemplate, parseRolaSettings, prepareRolaProfile, rolaRulePaths } from "../src/worker/residential-profile";
 import { parseRolaUsage, readRolaUsage } from "../src/local/rola-usage";
 import { createMihomoProfile } from "../src/worker/mihomo-profile";
 
@@ -54,9 +53,8 @@ rules:
 `;
 
 describe("local Rola preparation", () => {
-  it("migrates legacy global references in place and keeps generated overrides equivalent", () => {
+  it("migrates legacy global references in place", () => {
     const text = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]").replaceAll("GLOBAL", "🌐 全局");
-    const base = parse(text);
     const output = parse(prepareRolaProfile(text, settings).profile);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "GLOBAL")).toMatchObject({
       proxies: expect.arrayContaining([parseRolaSettings(settings).groupName, "🖐 手动选择"]),
@@ -64,7 +62,6 @@ describe("local Rola preparation", () => {
     expect(output["proxy-groups"][1].name).toBe("GLOBAL");
     expect(output["proxy-groups"].filter((group: { name: string }) => group.name === "GLOBAL")).toHaveLength(1);
     expect(JSON.stringify(output)).not.toContain("🌐 全局");
-    expect(runInNewContext(`${createRolaOverride(text, settings)}; main(config)`, { config: base })).toEqual(output);
   });
   it("preserves legacy default selections and rejects conflicting global groups", () => {
     const text = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]").replaceAll("GLOBAL", "🌐 全局");
@@ -73,11 +70,10 @@ describe("local Rola preparation", () => {
     const source = stringify(base);
     const prepared = prepareRolaProfile(source, settings);
     expect(parse(prepared.profile)["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI")["default-selected"]).toBe("GLOBAL");
-    expect(runInNewContext(`${createRolaOverride(source, settings)}; main(config)`, { config: base })).toEqual(parse(prepared.profile));
     base["proxy-groups"].push({ name: "GLOBAL", type: "select", proxies: ["DIRECT"] });
     expect(() => prepareRolaProfile(stringify(base), settings)).toThrow("GLOBAL already exists");
   });
-  it("keeps explicitly referenced encrypted residential nodes in the house group across refresh without classifying lookalikes", () => {
+  it("keeps explicitly referenced encrypted residential nodes in the house group without classifying lookalikes", () => {
     const residentialNodeNames = ["[Rola] 美国 · 203.0.113.10", "[Rola] 美国 Las Vegas · 203.0.113.11"];
     const relay = { type: "vless", server: "203.0.113.20", port: 443, uuid: "00000000-0000-4000-8000-000000000000", tls: true, network: "tcp", flow: "xtls-rprx-vision", "reality-opts": { "public-key": "example", "short-id": "12345678" } };
     const original = parse(createMihomoProfile(stringify({ proxies: [
@@ -106,25 +102,18 @@ describe("local Rola preparation", () => {
     for (const name of ["DNS-PROXY", "🤖 AI", "🧠 Claude", "🖐 手动选择"]) {
       expect(output["proxy-groups"].find((group: { name: string }) => group.name === name)["default-selected"]).toBe("JP Airport");
     }
-    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
-    const refreshed = { ...original, proxies: [...original.proxies, { ...original.proxies[0], name: "Another JP Airport" }] };
-    const updated = runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: refreshed });
-    expect(updated).toEqual(parse(prepareRolaProfile(stringify(refreshed), input).profile));
-    expect(updated["proxy-groups"].find((group: { name: string }) => group.name === input.groupName).proxies).toEqual(house.proxies);
   });
 
-  it("requires exact existing encrypted nodes for residential references, including after an override refresh", () => {
+  it("requires exact existing encrypted nodes for residential references", () => {
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", residentialNodeNames: ["Relay US"] };
     const original = parse(source);
     original.proxies.push({ ...original.proxies[0], name: "Relay US" });
     const base = stringify(original);
-    const script = createRolaOverride(base, input);
     for (const change of [null, { name: "Relay US renamed" }, { tls: false }, { "skip-cert-verify": true }, { "dialer-proxy": "AUTO" }, { type: "direct" }]) {
       const current = parse(base);
       if (change) Object.assign(current.proxies[1], change);
       else current.proxies.pop();
       expect(() => prepareRolaProfile(stringify(current), input)).toThrow(/residential node/iu);
-      expect(() => runInNewContext(`${script}; main(config)`, { config: current })).toThrow(/residential node/iu);
     }
     for (const residentialNodeNames of [null, "Relay US", [""], ["\nRelay US"], [123], ["Relay US", "Relay US"], ["ROLA-RESIDENTIAL"], ["DIRECT"], ["ROLA"], ["AUTO"]]) {
       expect(() => prepareRolaProfile(base, { ...input, residentialNodeNames })).toThrow();
@@ -143,7 +132,6 @@ describe("local Rola preparation", () => {
     const output = parse(prepareRolaProfile(base, input).profile);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国").proxies).toEqual(["Airport", "Relay US", "ROLA-RESIDENTIAL"]);
     expect(new RegExp(output["proxy-groups"][0]["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test("Relay US")).toBe(true);
-    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
   });
 
   it("separates Claude routing and protected DNS from Codex and other AI, including stored bases", () => {
@@ -167,8 +155,6 @@ describe("local Rola preparation", () => {
     expect(output.rules.indexOf("RULE-SET,ai-anthropic,🧠 Claude")).toBeLessThan(output.rules.indexOf(codexRule));
     expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(input.dns.map(url => `${url}#🧠 Claude`));
     expect(output.dns["nameserver-policy"]["+.openai.com"]).toEqual(input.dns.map(url => `${url}#🤖 AI`));
-    const overlaid = runInNewContext(`${createRolaOverride(stringify(original), input)}; main(config)`, { config: original });
-    expect(overlaid).toEqual(output);
   });
   it.each(["us", "jp"])("preserves two separate homes with %s country membership and stable DNS defaults", secondCountry => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
@@ -176,8 +162,6 @@ describe("local Rola preparation", () => {
     const input = { ...settings, authMode: "literal", connectionMode: "direct", upstreamNode: "", name: "First US home", additionalExits: [second] };
     const prepared = prepareRolaProfile(base, input);
     const profile = parse(prepared.profile);
-    const overlaid = runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: parse(base) });
-    expect(overlaid).toEqual(profile);
     expect(profile.proxies.slice(-2)).toMatchObject([
       { name: input.name, server: settings.server, password: settings.password, "dialer-proxy": "DIRECT" },
       { name: second.name, server: second.server, port: second.port, password: second.password, "dialer-proxy": "DIRECT" },
@@ -220,8 +204,6 @@ describe("local Rola preparation", () => {
     expect(profile.proxies.at(-1)).toMatchObject({ name: expectedName, server: settings.server, port: settings.port, "dialer-proxy": "DIRECT" });
     expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([expectedName]);
     expect(profile.rules[0]).toBe(`AND,((DOMAIN,${settings.server}),(DST-PORT,${settings.port})),DIRECT`);
-    const overlaid = runInNewContext(`${createRolaOverride(source, input)}; main(config)`, { config: parse(source) });
-    expect(overlaid.proxies.at(-1)).toEqual(profile.proxies.at(-1));
     expect(parseRolaSettings({ ...settings, name: "Existing note" }).name).toBe("Existing note");
     expect(parseRolaSettings({ ...settings, name: "Existing note", platform: "Example ISP" }).name).toBe("Existing note");
   });
@@ -282,19 +264,6 @@ describe("local Rola preparation", () => {
     expect(output.dns["proxy-server-nameserver"]).toEqual(original.dns["proxy-server-nameserver"]);
     expect(output.dns.nameserver).toEqual(original.dns.nameserver);
     expect(output.profile).toEqual(original.profile);
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
-  });
-
-  it("recomputes the DNS airport default from refreshed local override nodes", () => {
-    const base = createMihomoProfile("proxies: [{name: Zulu Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
-    const input = { ...settings, connectionMode: "direct", upstreamNode: "", name: "0 Residential" };
-    const current = parse(base);
-    current.proxies.push({ ...current.proxies[0], name: "Alpha Airport" });
-    const output = runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: current }, { timeout: 1000 });
-    const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
-    expect(dns["default-selected"]).toBe("Alpha Airport");
-    expect(dns["include-all"]).toBe(true);
-    expect(dns["exclude-filter"]).not.toContain(input.name);
   });
 
   it("adds only independently dialed country and residential selectors to DNS without changing its original default", () => {
@@ -314,10 +283,9 @@ describe("local Rola preparation", () => {
     expect(dns.proxies).toEqual(["JP Airport", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "US Home"]);
     expect(dns["default-selected"]).toBe("US Airport");
     for (const forbidden of ["DIRECT", "GLOBAL", "🖐 手动选择", "🤖 AI", "🐟 未匹配流量", "DNS-PROXY"]) expect(dns.proxies).not.toContain(forbidden);
-    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
   });
 
-  it.each(["direct", "metadata", "cycle", "business", "dialer", "dialer-cycle", "provider", "filter", "fallback"])("keeps unsafe %s country selectors out of DNS in YAML and refreshed override", unsafe => {
+  it.each(["direct", "metadata", "cycle", "business", "dialer", "dialer-cycle", "provider", "filter", "fallback"])("keeps unsafe %s country selectors out of DNS", unsafe => {
     const base = createMihomoProfile("proxies: [{name: JP Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const original = parse(base);
     const us = original["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国");
@@ -340,8 +308,6 @@ describe("local Rola preparation", () => {
     expect(dns.proxies).toContain("Home");
     expect(dns.proxies).not.toContain("🇺🇸 美国");
     expect(dns["default-selected"]).toBe("JP Airport");
-    const refreshed = runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original });
-    expect(refreshed).toEqual(output);
   });
 
   it("does not add DNS group choices when the original selected node itself depends on DNS-PROXY", () => {
@@ -353,16 +319,14 @@ describe("local Rola preparation", () => {
     const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
     expect(dns.proxies).toBeUndefined();
     expect(dns["default-selected"]).toBe("Airport");
-    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: original })).toEqual(output);
   });
 
-  it("deduplicates a residential group named with a legacy country code in YAML and JS", () => {
+  it("deduplicates a residential group named with a legacy country code", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "US" };
     const output = parse(prepareRolaProfile(base, input).profile);
     const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
     expect(dns.proxies.filter((name: string) => name === "US")).toHaveLength(1);
-    expect(runInNewContext(`${createRolaOverride(base, input)}; main(config)`, { config: parse(base) })).toEqual(output);
   });
 
   it.each([undefined, "Provider selection"])("preserves provider-backed DNS when the original default %s cannot be established locally", selected => {
@@ -378,7 +342,6 @@ describe("local Rola preparation", () => {
     const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
     expect(dns).toEqual({ ...before, "exclude-filter": `${before["exclude-filter"]}|^0 Residential$` });
     expect(output["proxy-providers"]).toEqual(original["proxy-providers"]);
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
   });
 
   it.each([undefined, "Zulu Airport", "0 Provider"])("preserves mixed inline/provider DNS and its default %s", selected => {
@@ -402,7 +365,6 @@ describe("local Rola preparation", () => {
       : { ...before, "default-selected": selected ?? "Alpha Airport", proxies: ["ROLA"] });
     expect(prepared.summary.dnsSelection).toContain(selected === "0 Provider" ? "尚未加入家宽" : "已加入家宽选项");
     expect(output["proxy-providers"]).toEqual(original["proxy-providers"]);
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
   });
 
   it("does not guess an airport default from Mihomo multi-expression filters", () => {
@@ -431,7 +393,6 @@ describe("local Rola preparation", () => {
     expect(output.rules).not.toContain(`IP-CIDR,${server}/32,DIRECT,no-resolve`);
     expect(output.rules).not.toContain(`DOMAIN-SUFFIX,${server},DIRECT`);
     expect(output.rules).not.toContain("PROCESS-NAME,Roxy,DIRECT");
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
     const chained = parse(prepareRolaProfile(source, { ...settings, server }).profile);
     expect(chained.rules).not.toContain(gatewayRule);
     for (const invalid of [`${server},DIRECT`, `${server}),(DST-PORT,443`, `${server}\nMATCH,DIRECT`]) {
@@ -470,7 +431,6 @@ describe("local Rola preparation", () => {
     expect(auto.proxies ?? []).not.toContain(name);
     expect(new RegExp(auto["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(true);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "ROLA").proxies).toEqual([name]);
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
   });
 
   it.each([false, true])("preserves regional ordering with include-all-proxies=%s", includeAllProxies => {
@@ -484,7 +444,6 @@ describe("local Rola preparation", () => {
     const output = parse(prepareRolaProfile(base, input).profile);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🇺🇸 美国").proxies)
       .toEqual(includeAllProxies ? undefined : ["US Airport", input.name]);
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: original }, { timeout: 1000 })))).toEqual(output);
   });
 
   it("makes the residential group selectable in every business policy without adding it to automatic or unrelated regional pools", () => {
@@ -505,7 +464,6 @@ describe("local Rola preparation", () => {
       expect(group["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
     }
     expect(output["proxy-groups"].slice(0, 3).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "GLOBAL", input.groupName]);
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
   });
 
   it("migrates stored settings to service selectors so Claude DNS follows its own exit", () => {
@@ -532,14 +490,7 @@ describe("local Rola preparation", () => {
     expect(output.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");
     expect(output.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#🧠 Claude`);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "♻️ 自动选择")["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
-    expect(JSON.parse(JSON.stringify(runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: parse(base) }, { timeout: 1000 })))).toEqual(output);
     expect(() => prepareRolaProfile(source, input)).toThrow("policy group");
-    const changed = parse(base);
-    changed["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI").proxies.push("Airport");
-    const overlaid = runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: changed }, { timeout: 1000 });
-    expect(overlaid["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI").proxies).toContain("Airport");
-    changed["proxy-groups"] = changed["proxy-groups"].filter((group: { name: string }) => group.name !== "🤖 AI");
-    expect(() => runInNewContext(createRolaOverride(base, input) + '\nmain(config)', { config: changed }, { timeout: 1000 })).toThrow("policy group");
   });
   it.each(["socks5", "http"])("supports explicit direct %s access with a separate named group and no airport fallback", protocol => {
     const direct = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", protocol };
@@ -550,11 +501,6 @@ describe("local Rola preparation", () => {
     expect(profile.rules[2]).toBe(`DOMAIN-SUFFIX,claude.ai,${direct.groupName}`);
     expect(profile.dns["nameserver-policy"]["+.claude.ai"][0]).toBe(`${settings.dns[0]}#${direct.groupName}`);
     expect(output.summary.connectionMode).toBe("direct");
-    const config = parse(source);
-    config.proxies[0].name = "RenamedAirport";
-    const actual = runInNewContext(createRolaOverride(source, direct) + '\nmain(config)', { config }, { timeout: 1000 });
-    expect(actual.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
-    expect(actual["proxy-groups"][2].name).toBe(direct.groupName);
   });
 
   it("requires a deliberate valid connection mode and safe group name", () => {
@@ -585,21 +531,6 @@ describe("local Rola preparation", () => {
     expect(() => prepareRolaProfile(stringify(base), settings)).toThrow("independent");
   });
 
-  it("exports a local-only Party override matching the validated profile and preserving refreshed airport credentials", () => {
-    const script = createRolaOverride(source, { ...settings, authMode: "literal" });
-    const config = parse(source);
-    const expected = parse(prepareRolaProfile(source, { ...settings, authMode: "literal" }).profile);
-    const actual = runInNewContext(script + '\nmain(config)', { config }, { timeout: 1000 });
-    expect(JSON.parse(JSON.stringify(actual))).toEqual(expected);
-    expect(config.proxies.length).toBe(1);
-    config.proxies[0].uuid = "00000000-0000-4000-8000-000000000001";
-    expect(runInNewContext(script + '\nmain(config)', { config }, { timeout: 1000 }).proxies[0].uuid).toBe(config.proxies[0].uuid);
-    config.proxies[0].name = "Missing";
-    expect(() => runInNewContext(script + '\nmain(config)', { config }, { timeout: 1000 })).toThrow("first hop");
-    const dnsChanged = parse(source);
-    dnsChanged.dns['proxy-server-nameserver'] = ['https://1.1.1.1/dns-query#ROLA'];
-    expect(() => runInNewContext(script + '\nmain(config)', { config: dnsChanged }, { timeout: 1000 })).toThrow("DNS changed");
-  });
   it("reuses the published domain rules and stable, documented session syntax", () => {
     const template = createRolaTemplate(rolaRulePaths.map(path => readFileSync(new URL(`../public/${path}`, import.meta.url), "utf8")));
     expect(template.rules).toContain("DOMAIN,anthropic.auth0.com");

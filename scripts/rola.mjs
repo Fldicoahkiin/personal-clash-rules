@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { lstat, mkdir, mkdtemp, open, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, open, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -29,11 +29,10 @@ async function readSettings() {
 }
 
 async function main() {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { base: { type: "string" }, proxy: { type: "string" } } });
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: { proxy: { type: "string" } } });
   const command = positionals[0];
-  if (!["init", "prepare", "usage"].includes(command) || positionals.length !== 1
-    || (values.base && command !== "prepare") || (values.proxy && command !== "usage")) {
-    throw new Error("Usage: pnpm rola init | pnpm rola prepare --base /path/profile.yaml | pnpm rola usage --proxy http://127.0.0.1:port");
+  if (!["init", "usage"].includes(command) || positionals.length !== 1 || (values.proxy && command !== "usage")) {
+    throw new Error("Usage: pnpm rola init | pnpm rola usage --proxy http://127.0.0.1:port");
   }
   await privateDirectory(resolve(root, ".local"));
   await privateDirectory(directory);
@@ -48,35 +47,23 @@ async function main() {
     return;
   }
   const settings = await readSettings();
-  if (command === "usage") {
-    if (!values.proxy) throw new Error("Usage queries require --proxy with your existing local HTTP/mixed endpoint; no direct fallback");
-    let proxy;
-    try { proxy = new URL(values.proxy); }
-    catch { throw new Error("Invalid loopback proxy URL"); }
-    if (proxy.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(proxy.hostname)
-      || proxy.username || proxy.password || proxy.pathname !== "/" || proxy.search || proxy.hash) {
-      throw new Error("--proxy must be the unauthenticated HTTP/mixed loopback endpoint of your existing client");
-    }
-    const dispatcher = new ProxyAgent({ uri: proxy.href, connectTimeout: 8000 });
-    setGlobalDispatcher(dispatcher);
-    try { console.log(JSON.stringify(await module.readRolaUsage(settings.apiToken), null, 2)); }
-    finally { await dispatcher.close(); }
-    return;
+  if (!values.proxy) throw new Error("Usage queries require --proxy with your existing local HTTP/mixed endpoint; no direct fallback");
+  let proxy;
+  try { proxy = new URL(values.proxy); }
+  catch { throw new Error("Invalid loopback proxy URL"); }
+  if (proxy.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(proxy.hostname)
+    || proxy.username || proxy.password || proxy.pathname !== "/" || proxy.search || proxy.hash) {
+    throw new Error("--proxy must be the unauthenticated HTTP/mixed loopback endpoint of your existing client");
   }
-  if (!values.base) throw new Error("--base must point to an exported, working Mihomo profile");
-  const source = await readFile(resolve(values.base), "utf8");
-  if (Buffer.byteLength(source) > 2 * 1024 * 1024) throw new Error("Base profile exceeds 2 MiB");
-  const result = module.prepareRolaProfile(source, settings);
-  const candidate = await mkdtemp(resolve(directory, "candidate-"));
-  await writeFile(resolve(candidate, "mihomo.yaml"), result.profile, { flag: "wx", mode: 0o600 });
-  await writeFile(resolve(candidate, "summary.json"), JSON.stringify(result.summary, null, 2) + "\n", { flag: "wx", mode: 0o600 });
-  console.log(JSON.stringify({ candidate, ...result.summary }, null, 2));
-  console.log("Offline candidate only. See docs/rola-residential.md before import. No client or network settings were changed.");
+  const dispatcher = new ProxyAgent({ uri: proxy.href, connectTimeout: 8000 });
+  setGlobalDispatcher(dispatcher);
+  try { console.log(JSON.stringify(await module.readRolaUsage(settings.apiToken), null, 2)); }
+  finally { await dispatcher.close(); }
 }
 
 main().catch(error => {
   // Parser and filesystem errors can include source text or private paths.
   const message = error?.code ? `Rola local operation failed (${error.code})` : error.message;
-  console.error(message || "Rola preparation failed");
+  console.error(message || "Rola local operation failed");
   process.exitCode = 1;
 });

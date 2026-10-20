@@ -24,7 +24,7 @@ import { SubscriptionMoreSettings } from "./SubscriptionMoreSettings";
 import { SubscriptionResult } from "./SubscriptionResult";
 import { SubscriptionCloudSync } from "./SubscriptionCloudSync";
 import { SubscriptionSyncTasks } from "./SubscriptionSyncTasks";
-import { RolaSubscription } from "./RolaSubscription";
+import { RolaCloudSubscription } from "./RolaCloudSubscription";
 import { ProxyEndpointInput } from "./ProxyEndpointInput";
 import { ruleTemplates, type RuleSelection } from "../../config/rule-templates";
 import { defaultDnsSettings, parseDnsSettings, type DnsSettings } from "../../config/dns-settings";
@@ -267,7 +267,7 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
           <option value="rola">Rola 家宽出口（可选机场前置）</option>
         </select>
       </label>
-      {rolaMode ? <RolaSubscription /> : <>
+      {rolaMode ? <RolaCloudSubscription /> : <>
       <form className="subscription-workspace" onSubmit={submit}>
         <div className="subscription-fields">
           <label className="field subscription-source">

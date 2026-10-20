@@ -30,9 +30,6 @@ const { routeSubscriptionRequest } = await import(pathToFileURL(bundle).href);
 const syncBundle = resolve(root, ".local/subscription-sync.mjs");
 await build({ entryPoints: [resolve(root, "src/local/subscription-sync.ts")], outfile: syncBundle, bundle: true, platform: "node", format: "esm", packages: "external" });
 const { createSubscriptionSync } = await import(pathToFileURL(syncBundle).href);
-const rolaBundle = resolve(root, ".local/rola-server.mjs");
-await build({ entryPoints: [resolve(root, "src/local/rola-server.ts")], outfile: rolaBundle, bundle: true, platform: "node", format: "esm", packages: "external" });
-const { createRolaRouter, rolaRulePaths } = await import(pathToFileURL(rolaBundle).href);
 const origin = `http://127.0.0.1:${port}`;
 const allowedOrigins = new Set([origin, `http://localhost:${port}`, "https://rules.flacier.com"]);
 const limits = new Map();
@@ -79,11 +76,6 @@ const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css
 const sync = createSubscriptionSync({ env, origin, keys: async () => (await readdir(data))
   .filter(name => /^cloud-sync-[\w-]{16}\.json$/.test(name)).map(name => `cloud-sync:${name.slice(11, -5)}`) });
 setInterval(() => { sync.refreshDue().catch(() => console.warn("Local subscription sync storage is unavailable")); }, 60000).unref();
-const routeRola = await createRolaRouter({
-  directory: resolve(root, ".local/rola/web"), origin,
-  ruleLists: await Promise.all(rolaRulePaths.map(path => readFile(resolve(root, "public", path), "utf8"))),
-  convert: request => routeSubscriptionRequest(request, new URL(request.url), env),
-});
 const server = createServer(async (incoming, outgoing) => {
   outgoing.setHeader("Cache-Control", "no-store");
   outgoing.setHeader("X-Content-Type-Options", "nosniff");
@@ -111,7 +103,7 @@ const server = createServer(async (incoming, outgoing) => {
     const request = new Request(url, { method: incoming.method, headers,
       ...(["GET", "HEAD"].includes(incoming.method) ? {} : { body: Readable.toWeb(incoming), duplex: "half" }),
     });
-    let response = await sync.route(request) ?? await routeRola(request);
+    let response = await sync.route(request);
     if (!response && url.pathname !== "/api/version") response = await routeSubscriptionRequest(request, url, env);
     if (!response && url.pathname === "/health") response = Response.json({ status: "ok", service: "personal-clash-rules", backend: "local" });
     if (!response && url.pathname === "/api/version") {

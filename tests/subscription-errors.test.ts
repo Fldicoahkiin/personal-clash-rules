@@ -1,24 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SubscriptionApiError, subscriptionErrorText } from "../src/app/features/subscriptions/api";
-import { createRolaCloudBase, requestCloudRola } from "../src/app/features/subscriptions/rola-api";
+import { requestCloudRola } from "../src/app/features/subscriptions/rola-api";
 
 const upstream = { status: 403, challenge: true, cloudflare: true, responseType: "html", rayId: "a4942df21d672617-NRT", redirects: 0, checkedAt: "2026-10-12T06:52:04.891Z" };
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("subscription refusal messages", () => {
-  it("preserves challenge evidence from both cloud subscription callers", async () => {
+  it("preserves challenge evidence from the cloud Rola caller", async () => {
     vi.stubGlobal("window", { location: { origin: "https://rules.flacier.com" } });
     vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json({ error: "source_failed", message: "Subscription source returned HTTP 403", upstream }, { status: 502 }));
-    for (const request of [
-      () => requestCloudRola("/preview", {}),
-      () => createRolaCloudBase({ sources: [], name: "Test", sourceUserAgent: "clash.meta", target: "clash-party-config" }),
-    ]) {
-      const error = await request().catch(value => value);
-      if (!(error instanceof SubscriptionApiError)) throw new Error("Expected a typed subscription error");
-      expect(error.upstream).toEqual(upstream);
-      expect(subscriptionErrorText(error)).toContain("浏览器验证页");
-      expect(subscriptionErrorText(error)).toContain(upstream.rayId);
-    }
+    const error = await requestCloudRola("/preview", {}).catch(value => value);
+    if (!(error instanceof SubscriptionApiError)) throw new Error("Expected a typed subscription error");
+    expect(error.upstream).toEqual(upstream);
+    expect(subscriptionErrorText(error)).toContain("浏览器验证页");
+    expect(subscriptionErrorText(error)).toContain(upstream.rayId);
   });
 
   it("does not claim that an ordinary 403 proves a specific block, and distinguishes rate limiting", () => {
