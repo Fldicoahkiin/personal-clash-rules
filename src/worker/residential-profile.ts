@@ -441,8 +441,16 @@ export function prepareRolaProfile(source: string, value: unknown) {
     throw new Error("Base DNS needs independent proxy-server-nameserver entries (system, IP or independently bootstrapped HTTPS); review bootstrap before adding a chain");
   }
   if (dns.has("proxy-server-nameserver-policy")) throw new Error("Review the existing proxy-server-nameserver-policy before adding a chain");
-  const policy = dns.get("nameserver-policy", true);
-  if (policy && (!isMap(policy) || policy.items.length)) throw new Error("Base DNS already has nameserver-policy; review overlaps before adding Rola rules");
+  // Base resolver policies stay beside the Rola entries only when no domain can match both.
+  const basePolicy = baseDns["nameserver-policy"] === undefined ? {} : record(baseDns["nameserver-policy"], "Invalid base nameserver-policy");
+  for (const key of Object.keys(basePolicy)) {
+    // Rola rules are stored lowercase; Mihomo matches domains case-insensitively.
+    const host = (key.startsWith("+.") ? key.slice(2) : key).toLowerCase();
+    const covers = (target: string) => key.startsWith("+.") && (target === host || target.endsWith(`.${host}`));
+    if (!domain(host) || protectedHost(host, settings.rules) || settings.rules.some(rule => covers(rule.split(",")[1]))) {
+      throw new Error("Base DNS nameserver-policy overlaps Rola rules or uses an unsupported key; review it before adding a chain");
+    }
+  }
 
   const residentialNodes = exits.map(exit => ({
     name: exit.name,
@@ -535,7 +543,7 @@ export function prepareRolaProfile(source: string, value: unknown) {
     const [kind, host] = rule.split(",");
     return [kind === "DOMAIN-SUFFIX" ? `+.${host}` : host, settings.dns.map(url => `${url}#${protectedPolicy(rule)}`)];
   }));
-  dns.set("nameserver-policy", document.createNode(resolverPolicy));
+  dns.set("nameserver-policy", document.createNode({ ...resolverPolicy, ...basePolicy }));
   dns.set("ipv6", false);
   document.set("ipv6", false);
   const summary = {

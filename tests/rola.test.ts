@@ -580,6 +580,15 @@ describe("local Rola preparation", () => {
     expect(() => prepareRolaProfile(stringify(base), settings)).toThrow("concrete encrypted upstream");
   });
 
+  it("keeps a non-overlapping base resolver policy after the Rola entries", () => {
+    const base = parse(source);
+    base.dns["nameserver-policy"] = { "+.qq.com": ["https://223.5.5.5/dns-query"], "res.wx.qq.com": ["https://1.12.12.12/dns-query"] };
+    const policy = parse(prepareRolaProfile(stringify(base), settings).profile).dns["nameserver-policy"];
+    expect(Object.keys(policy).slice(0, 2)).toEqual(["+.claude.ai", "anthropic.auth0.com"]);
+    expect(policy["+.qq.com"]).toEqual(["https://223.5.5.5/dns-query"]);
+    expect(policy["res.wx.qq.com"]).toEqual(["https://1.12.12.12/dns-query"]);
+  });
+
   it("rejects empty/provider-only bases, conflicting DNS and recursive bootstrap", () => {
     const empty = parse(source);
     empty.proxies = [];
@@ -589,8 +598,10 @@ describe("local Rola preparation", () => {
     dns.dns["proxy-server-nameserver"] = ["https://1.1.1.1/dns-query#ROLA"];
     expect(() => prepareRolaProfile(stringify(dns), settings)).toThrow("independent");
     dns.dns["proxy-server-nameserver"] = ["system"];
-    dns.dns["nameserver-policy"] = { "+.claude.ai": "system" };
-    expect(() => prepareRolaProfile(stringify(dns), settings)).toThrow("overlaps");
+    for (const key of ["+.claude.ai", "+.Claude.AI", "api.claude.ai", "+.auth0.com", "geosite:cn"]) {
+      dns.dns["nameserver-policy"] = { [key]: "system" };
+      expect(() => prepareRolaProfile(stringify(dns), settings)).toThrow("overlaps");
+    }
     expect(() => prepareRolaProfile(source, { ...settings, server: "proxy.claude.ai" })).toThrow("overlap");
     const candidate = prepareRolaProfile(source, settings).profile;
     expect(() => prepareRolaProfile(candidate, settings)).toThrow("reserved Rola name");
