@@ -63,7 +63,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 34)).toEqual([
+    expect(config["+rules"].slice(0, 35)).toEqual([
       "PROCESS-NAME,ToDesk,DIRECT",
       "PROCESS-NAME,ToDesk_Service,DIRECT",
       "PROCESS-NAME,ToDesk_Session,DIRECT",
@@ -74,6 +74,7 @@ describe("Clash Party override", () => {
       "PROCESS-NAME,ToDesk_Service.exe,DIRECT",
       "PROCESS-NAME,WeChat,DIRECT",
       "PROCESS-NAME,WeChatAppEx,DIRECT",
+      "PROCESS-NAME,WeChatAppEx Helper,DIRECT",
       "PROCESS-NAME,QQ,DIRECT",
       "PROCESS-NAME,QQ Helper,DIRECT",
       "PROCESS-NAME,NeteaseMusic,DIRECT",

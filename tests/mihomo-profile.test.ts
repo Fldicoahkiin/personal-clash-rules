@@ -49,6 +49,7 @@ describe("createMihomoProfile", () => {
       "PROCESS-NAME,ToDesk_Service.exe,DIRECT",
       "PROCESS-NAME,WeChat,DIRECT",
       "PROCESS-NAME,WeChatAppEx,DIRECT",
+      "PROCESS-NAME,WeChatAppEx Helper,DIRECT",
       "PROCESS-NAME,QQ,DIRECT",
       "PROCESS-NAME,QQ Helper,DIRECT",
       "PROCESS-NAME,NeteaseMusic,DIRECT",
