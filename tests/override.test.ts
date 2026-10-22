@@ -5,13 +5,14 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import {
+  businessProxyGroupNames,
   displayMihomoGroup,
   displayMihomoRule,
   mihomoProxyGroups,
   mihomoProfileRuleProviders,
   mihomoProfileRules,
 } from "../src/config/mihomo-policy";
-import { displayedPolicyGroups } from "../src/app/lib/policy-groups";
+import { policyDisplayName, policyOptions } from "../src/app/lib/policy-groups";
 
 const overridePath = resolve(
   import.meta.dirname,
@@ -169,7 +170,7 @@ describe("Clash Party override", () => {
     expect(groups.get("🍎 Apple")?.proxies).toEqual(groups.get("🤖 AI")?.proxies);
   });
 
-  it("keeps the policy table aligned with the published override", async () => {
+  it("keeps the exits shown on the site aligned with the published override", async () => {
     const config = parse(await readFile(overridePath, "utf8")) as {
       "+proxy-groups": Array<{ name: string; proxies?: string[] }>;
     };
@@ -177,11 +178,9 @@ describe("Clash Party override", () => {
       config["+proxy-groups"].map((group) => [group.name, group]),
     );
 
-    for (const policy of displayedPolicyGroups) {
-      expect(groups.get(policy.name)?.proxies, policy.name).toEqual(
-        policy.options,
-      );
-      expect(policy.options[0], policy.name).toBe(policy.initial);
+    for (const policy of businessProxyGroupNames) {
+      const name = policyDisplayName(policy);
+      expect(groups.get(name)?.proxies, name).toEqual(policyOptions(policy));
     }
   });
 });

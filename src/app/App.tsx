@@ -1,57 +1,44 @@
-import { ArrowUpRight } from "@phosphor-icons/react";
 import { useState } from "react";
 import type { RuleSelection } from "../config/rule-templates";
 
 import { AppHeader } from "./components/AppHeader";
 import { ConverterWorkspace } from "./components/ConverterWorkspace";
 import { NetworkChecks } from "./components/NetworkChecks";
-import { PolicyMap } from "./components/PolicyMap";
+import { RouteMap } from "./components/RouteMap";
 import { RouteTester } from "./components/RouteTester";
-import { RulesCatalog } from "./components/RulesCatalog";
 import { SubscriptionImport } from "./components/SubscriptionImport";
 import { SiteVersion } from "./components/BuildDetails";
 import type { BuildInfo } from "../config/build-info";
+import type { StationMatch } from "./lib/route-stations";
 
 declare const __BUILD_INFO__: BuildInfo;
 
 export function App() {
   const [ruleSelection, setRuleSelection] = useState<RuleSelection>({ preset: "flacier", url: "" });
+  const [testRequest, setTestRequest] = useState<{ host: string; id: number } | null>(null);
+  const [match, setMatch] = useState<StationMatch | null>(null);
+  const [focus, setFocus] = useState<{ position: number; id: number } | null>(null);
   return (
     <div className="app-shell" id="top">
       <AppHeader />
       <main>
         <SubscriptionImport onRuleSelectionChange={setRuleSelection} />
         <NetworkChecks />
-        <RouteTester selection={ruleSelection} />
-        <RulesCatalog />
+        <RouteTester
+          selection={ruleSelection}
+          request={testRequest}
+          onMatch={setMatch}
+          onShowStation={position => setFocus({ position, id: Date.now() })}
+        />
+        <RouteMap
+          match={match}
+          focus={focus}
+          onTest={host => {
+            setTestRequest({ host, id: Date.now() });
+            document.getElementById("tester")?.scrollIntoView({ block: "start" });
+          }}
+        />
         <ConverterWorkspace />
-        <PolicyMap />
-
-        <section className="use-panel page-width" aria-labelledby="use-title">
-          <div>
-            <h2 id="use-title">规则文件</h2>
-            <p>YAML · manifest</p>
-          </div>
-          <div className="use-actions">
-            <a
-              className="button button-primary"
-              href="/overrides/clash-party.yaml"
-              download="flacier-clash-party.yaml"
-            >
-              Mihomo 覆写
-              <ArrowUpRight aria-hidden="true" />
-            </a>
-            <a
-              className="button button-secondary"
-              href="/rules/manifest.yaml"
-              target="_blank"
-              rel="noreferrer"
-            >
-              规则目录
-              <ArrowUpRight aria-hidden="true" />
-            </a>
-          </div>
-        </section>
       </main>
 
       <footer className="site-footer page-width">

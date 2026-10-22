@@ -10,7 +10,7 @@ export function AppHeader() {
           <a href="#subscription">转换</a>
           <a href="#network">网络检测</a>
           <a href="#tester">规则测试</a>
-          <a href="#rules">规则集</a>
+          <a href="#groups">分流线路</a>
           <a href="#converter">格式转换</a>
         </nav>
         <a

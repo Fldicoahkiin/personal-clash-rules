@@ -1,5 +1,28 @@
-.controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-block: 1.5rem; }
+.controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; padding: 4px 0 16px; }
 .controls button { justify-self: start; align-self: end; }
 .controls input, .controls select { width: 100%; min-width: 0; }
-.note { font-size: .875rem; color: var(--muted); overflow-wrap: anywhere; }
+.note { margin: 0 0 16px; font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; }
+
+.samples { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 12px; color: var(--muted); font-size: .74rem; }
+.samples button {
+  padding: 4px 9px; border: 1px solid var(--line); border-radius: 2px; background: transparent; color: var(--ink);
+  cursor: pointer; font-family: var(--mono); font-size: .72rem;
+  transition: border-color var(--fast) linear, background-color var(--fast) linear, transform var(--press) var(--ease-out);
+}
+.samples button:hover { border-color: var(--accent); background: var(--accent-soft); }
+.samples button:active { transform: scale(.97); }
+
+.conditions { margin-top: 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.conditions > summary { display: flex; align-items: baseline; gap: 12px; padding-block: 12px; cursor: pointer; list-style: none; }
+.conditions > summary::-webkit-details-marker { display: none; }
+.conditions > summary span { color: var(--ink); font-size: .76rem; font-weight: 680; }
+.conditions > summary small { min-width: 0; color: var(--muted); font-family: var(--mono); font-size: .7rem; overflow-wrap: anywhere; }
+
+.showStation {
+  display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 6px; padding: 0; border: 0; background: none;
+  color: var(--accent); cursor: pointer; font: inherit; font-size: .78rem; font-weight: 680;
+}
+.showStation svg { width: 14px; height: 14px; transition: transform var(--move) var(--ease-out); }
+.showStation:hover svg { transform: translateY(3px); }
+
 @media (max-width: 640px) { .controls { grid-template-columns: minmax(0, 1fr); } }

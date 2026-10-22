@@ -16,6 +16,14 @@ describe("createRouteSteps", () => {
     expect(html).toContain(">处理结果<");
   });
 
+  it("keeps every test input inside the form so Enter submits from any field", () => {
+    const html = renderToStaticMarkup(createElement(RouteTester));
+    const form = html.slice(html.indexOf("<form"), html.indexOf("</form>"));
+    for (const label of ["测试网址", "测试规则方案", "目标 IPv4（可选）", "进程名（可选）"]) {
+      expect(form, label).toContain(label);
+    }
+  });
+
   it("shows the concrete matching rule and proxy destination", () => {
     const result = {
       hostname: "api.openai.com",

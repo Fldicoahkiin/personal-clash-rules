@@ -26,7 +26,16 @@ describe("home page", () => {
   it("puts subscription conversion before secondary tools", () => {
     expect(positionOf('id="subscription"')).toBeLessThan(positionOf('id="network"'));
     expect(positionOf('id="network"')).toBeLessThan(positionOf('id="tester"'));
-    expect(positionOf('id="tester"')).toBeLessThan(positionOf('id="converter"'));
+    expect(positionOf('id="tester"')).toBeLessThan(positionOf('id="groups"'));
+    expect(positionOf('id="groups"')).toBeLessThan(positionOf('id="converter"'));
+  });
+
+  it("lists every rule station in order with its default exit", () => {
+    expect(positionOf('id="route-1"')).toBeLessThan(positionOf("📥 Apple 下载"));
+    expect(positionOf("📥 Apple 下载")).toBeLessThan(positionOf("⚙️ Apple 系统"));
+    expect(positionOf("⚙️ Apple 系统")).toBeLessThan(positionOf("🍎 Apple<"));
+    expect(page).toContain('href="/overrides/clash-party.yaml"');
+    expect(page).toContain('href="/rules/manifest.yaml"');
   });
 
   it("links to external DNS, WebRTC, IPv6 and connection checks", () => {
