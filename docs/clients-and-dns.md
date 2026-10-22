@@ -126,7 +126,7 @@ Apple 分成六组。「🍎 Apple」（账号与 App Store）、「☁️ iClou
 
 Telegram、X / Twitter、Reddit、Instagram / Threads、Facebook、LinkedIn、TikTok 分别有独立策略组，默认跟随全局代理；Discord 保持原独立组。每组均可选择手动、自动、国家、机场节点、已合并的家宽和 DIRECT，不会把整个社交类别改为直连。QQ／微信继续命中前置直连白名单，国内抖音走国内服务规则，与 TikTok 分开。
 
-这次把已有 `social.list` 的域名逐一分配到对应应用，保留汇总文件和 SOCIAL 组兼容旧链接；独立应用规则排在汇总之前。它不是所有应用端点的完整清单，新增遗漏需要根据实际请求补充。`cdninstagram.com` 与 `threads.net` 跟随 Instagram，`fbcdn.net` 统一归 Facebook；域名规则不能区分同一共享 CDN 的调用应用，如果需要 Meta 应用出口一致，请让 Facebook 和 Instagram 选择相同出口。
+这次把已有 `social.list` 的域名逐一分配到对应应用。汇总文件继续发布，兼容引用它的旧配置；它的域名全部会先被各应用组匹配，所以生成的配置不再包含 SOCIAL 组和这份规则源。它不是所有应用端点的完整清单，新增遗漏需要根据实际请求补充。`cdninstagram.com` 与 `threads.net` 跟随 Instagram，`fbcdn.net` 统一归 Facebook；域名规则不能区分同一共享 CDN 的调用应用，如果需要 Meta 应用出口一致，请让 Facebook 和 Instagram 选择相同出口。
 
 Mihomo 订阅、Clash Party 覆写、Shadowrocket 配套配置、Egern / sing-box 规则文件和网页规则测试来自同一规则注册表；手机需刷新并启用配套配置，单独刷新节点列表不会更新策略组。
 

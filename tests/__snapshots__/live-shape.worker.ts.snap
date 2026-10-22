@@ -781,24 +781,6 @@ proxy-groups:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
     empty-fallback: REJECT
-  - name: 💬 社交
-    type: select
-    proxies:
-      - GLOBAL
-      - 🖐 手动选择
-      - ♻️ 自动选择
-      - 🇺🇸 美国
-      - 🇯🇵 日本
-      - 🇸🇬 新加坡
-      - 🇭🇰 香港
-      - 🇹🇼 台湾
-      - 🇰🇷 韩国
-      - 🇪🇺 欧洲
-      - DIRECT
-      - 🇺🇸 美国固定 IP
-    include-all: true
-    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
-    empty-fallback: REJECT
   - name: 🐟 未匹配流量
     type: select
     proxies:
@@ -1072,13 +1054,6 @@ rule-providers:
     url: https://rules.flacier.com/rules/social/tiktok.list
     path: ./ruleset/personal/tiktok.list
     interval: 86400
-  social:
-    type: http
-    behavior: classical
-    format: text
-    url: https://rules.flacier.com/rules/social/social.list
-    path: ./ruleset/personal/social.list
-    interval: 86400
 rules:
   - AND,((IP-CIDR,203.0.113.10/32,no-resolve),(DST-PORT,9004)),DIRECT
   - AND,((IP-CIDR,198.51.100.11/32,no-resolve),(DST-PORT,5782)),DIRECT
@@ -1218,7 +1193,6 @@ rules:
   - RULE-SET,facebook,👥 Facebook
   - RULE-SET,linkedin,💼 LinkedIn
   - RULE-SET,tiktok,🎵 TikTok
-  - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
   - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量
@@ -1380,7 +1354,6 @@ RULE-SET,https://rules.flacier.com/rules/social/instagram.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/social/facebook.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/social/linkedin.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/social/tiktok.list,PROXY
-RULE-SET,https://rules.flacier.com/rules/social/social.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/ai/anthropic-ip.list,PROXY,no-resolve
 GEOIP,CN,DIRECT
 FINAL,PROXY

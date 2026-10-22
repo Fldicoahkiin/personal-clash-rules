@@ -240,13 +240,6 @@ rule-providers:
     url: https://rules.flacier.com/rules/social/tiktok.list
     path: ./ruleset/personal/tiktok.list
     interval: 86400
-  social:
-    type: http
-    behavior: classical
-    format: text
-    url: https://rules.flacier.com/rules/social/social.list
-    path: ./ruleset/personal/social.list
-    interval: 86400
 
 +proxy-groups:
   - name: 🖐 手动选择
@@ -730,23 +723,6 @@ rule-providers:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
-  - name: 💬 社交
-    type: select
-    proxies:
-      - GLOBAL
-      - 🖐 手动选择
-      - ♻️ 自动选择
-      - 🇺🇸 美国
-      - 🇯🇵 日本
-      - 🇸🇬 新加坡
-      - 🇭🇰 香港
-      - 🇹🇼 台湾
-      - 🇰🇷 韩国
-      - 🇪🇺 欧洲
-      - DIRECT
-    include-all: true
-    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
-    empty-fallback: REJECT
   - name: 🐟 未匹配流量
     type: select
     proxies:
@@ -822,7 +798,6 @@ rule-providers:
   - RULE-SET,facebook,👥 Facebook
   - RULE-SET,linkedin,💼 LinkedIn
   - RULE-SET,tiktok,🎵 TikTok
-  - RULE-SET,social,💬 社交
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
   - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量

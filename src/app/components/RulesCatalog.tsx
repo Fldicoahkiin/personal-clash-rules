@@ -150,8 +150,8 @@ const catalog = [
   },
   {
     category: "Social 兼容汇总",
-    coverage: "保留旧规则链接；以上应用的独立规则优先",
-    strategy: "SOCIAL",
+    coverage: "保留旧规则链接；域名全部由以上应用组匹配",
+    strategy: "不单独成组",
     href: "/rules/social/social.list",
     count: "1 个",
   },

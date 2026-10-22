@@ -33,7 +33,6 @@ const publishedRuleFiles = {
   facebook: "social/facebook.list",
   linkedin: "social/linkedin.list",
   tiktok: "social/tiktok.list",
-  social: "social/social.list",
 } as const;
 
 export const mihomoRuleProviders = Object.fromEntries(
@@ -71,7 +70,7 @@ export const mihomoPolicyDisplayNames: Record<string, string> = {
   "APPLE-DOWNLOAD": "📥 Apple 下载", "APPLE-SYSTEM": "⚙️ Apple 系统",
   STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
-  ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交", DEFAULT: "🐟 未匹配流量",
+  ANIGAMER: "📺 巴哈姆特", DEFAULT: "🐟 未匹配流量",
   TELEGRAM: "✈️ Telegram", X: "💬 X", REDDIT: "🗨️ Reddit", INSTAGRAM: "📷 Instagram",
   FACEBOOK: "👥 Facebook", LINKEDIN: "💼 LinkedIn", TIKTOK: "🎵 TikTok",
 };
@@ -165,7 +164,7 @@ export const businessProxyGroupNames = [
   "AI", "CLAUDE", "APPLE", "ICLOUD", "APPLE-MEDIA", "APPLE-INTELLIGENCE", "APPLE-DOWNLOAD", "APPLE-SYSTEM",
   "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
   "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "TELEGRAM", "X", "REDDIT", "INSTAGRAM",
-  "FACEBOOK", "LINKEDIN", "TIKTOK", "SOCIAL", "DEFAULT",
+  "FACEBOOK", "LINKEDIN", "TIKTOK", "DEFAULT",
 ] as const;
 
 function businessGroup(name: typeof businessProxyGroupNames[number], icon: string, initial = "GLOBAL") {
@@ -258,7 +257,6 @@ export const mihomoProxyGroups = [
   businessGroup("FACEBOOK", "chat"),
   businessGroup("LINKEDIN", "chat"),
   businessGroup("TIKTOK", "play"),
-  businessGroup("SOCIAL", "chat"),
   businessGroup("DEFAULT", "route"),
 ].map(group => ({
   ...group,
@@ -312,7 +310,6 @@ export const mihomoRules = [
   "RULE-SET,facebook,FACEBOOK",
   "RULE-SET,linkedin,LINKEDIN",
   "RULE-SET,tiktok,TIKTOK",
-  "RULE-SET,social,SOCIAL",
   "RULE-SET,ai-anthropic-ip,CLAUDE,no-resolve",
   "GEOIP,CN,DIRECT",
   "MATCH,DEFAULT",

@@ -152,8 +152,8 @@ ruleSets:
     policy: TIKTOK
     path: rules/social/tiktok.list
   - id: social
-    label: 社交服务
-    policy: SOCIAL
+    label: 社交兼容汇总（旧链接用，域名已由各应用组匹配）
+    policy: DEFAULT
     path: rules/social/social.list
   - id: china-exceptions
     label: 国内列表中的境外例外

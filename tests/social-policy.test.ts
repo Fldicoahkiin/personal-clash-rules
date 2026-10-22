@@ -31,12 +31,11 @@ describe("per-app social policies", () => {
     expect(matchUrl(host, sets)).toMatchObject({ matched: true, policy });
   });
 
-  it("places specific apps before the compatibility aggregate", () => {
+  it("routes every app by its own group and leaves the fully covered aggregate out of generated rules", () => {
     for (const id of apps) {
-      const index = mihomoRules.findIndex(rule => rule === `RULE-SET,${id},${id.toUpperCase()}`);
-      expect(index).toBeGreaterThan(-1);
-      expect(index).toBeLessThan(mihomoRules.indexOf("RULE-SET,social,SOCIAL"));
+      expect(mihomoRules, id).toContain(`RULE-SET,${id},${id.toUpperCase()}`);
     }
+    expect(mihomoRules.some(rule => rule.startsWith("RULE-SET,social,"))).toBe(false);
     expect(matchUrl("twitter.com.example.invalid", sets).matched).toBe(false);
   });
 
