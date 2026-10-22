@@ -247,12 +247,12 @@ describe("cloud Rola subscriptions", () => {
     const response = await fetchClient(data.url);
     expect(response.status).toBe(200);
     const profile = parse(await response.text());
-    for (const name of ["🖐 手动选择", "GLOBAL", "🤖 AI"]) {
+    for (const name of ["GLOBAL", "🤖 AI"]) {
       expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
     expect(profile.rules[2]).toBe("DOMAIN-SUFFIX,claude.ai,🧠 Claude");
     expect(profile.proxies.at(-1)["dialer-proxy"]).toBe("DIRECT");
-    expect(profile["proxy-groups"][2]).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
+    expect(profile["proxy-groups"][1]).toMatchObject({ name: input.groupName, "empty-fallback": "REJECT", proxies: ["ROLA-RESIDENTIAL"] });
     expect((await post("/api/rola/chains", { ...input, connectionMode: "automatic" })).status).toBe(422);
     expect((await post("/api/rola/chains", { ...input, connectionMode: undefined })).status).toBe(422);
   });

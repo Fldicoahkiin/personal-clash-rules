@@ -267,26 +267,9 @@ proxies:
     udp: false
     dialer-proxy: DIRECT
 proxy-groups:
-  - name: 🖐 手动选择
-    type: select
-    proxies:
-      - ♻️ 自动选择
-      - 🇺🇸 美国
-      - 🇯🇵 日本
-      - 🇸🇬 新加坡
-      - 🇭🇰 香港
-      - 🇹🇼 台湾
-      - 🇰🇷 韩国
-      - 🇪🇺 欧洲
-      - DIRECT
-      - 🇺🇸 美国固定 IP
-    include-all: true
-    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
-    empty-fallback: REJECT
   - name: GLOBAL
     type: select
     proxies:
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -371,7 +354,6 @@ proxy-groups:
     proxies:
       - 🇺🇸 美国固定 IP
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -389,7 +371,6 @@ proxy-groups:
     proxies:
       - 🤖 AI
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -407,7 +388,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -425,7 +405,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -443,7 +422,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -461,7 +439,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -480,7 +457,6 @@ proxy-groups:
     proxies:
       - DIRECT
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -498,7 +474,6 @@ proxy-groups:
     proxies:
       - DIRECT
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -515,7 +490,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -533,7 +507,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -551,7 +524,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -569,7 +541,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -587,7 +558,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -605,7 +575,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -624,7 +593,6 @@ proxy-groups:
     proxies:
       - DIRECT
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -642,7 +610,6 @@ proxy-groups:
     proxies:
       - 🇹🇼 台湾
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -659,7 +626,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -677,7 +643,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -695,7 +660,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -713,7 +677,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -731,7 +694,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -749,7 +711,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -767,7 +728,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本
@@ -785,7 +745,6 @@ proxy-groups:
     type: select
     proxies:
       - GLOBAL
-      - 🖐 手动选择
       - ♻️ 自动选择
       - 🇺🇸 美国
       - 🇯🇵 日本

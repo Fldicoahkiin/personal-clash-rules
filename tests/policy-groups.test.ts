@@ -6,7 +6,7 @@ import { businessProxyGroupNames, mihomoProxyGroups } from "../src/config/mihomo
 describe("business policy choices", () => {
   it("offers the same complete exits for every business policy without selector cycles", () => {
     const business = businessProxyGroupNames;
-    const eligible = ["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT"];
+    const eligible = ["GLOBAL", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT"];
     for (const name of business) {
       const group = mihomoProxyGroups.find(group => group.name === name);
       expect(group, name).toMatchObject({ "include-all": true });
@@ -27,7 +27,7 @@ describe("business policy choices", () => {
   });
 
   it("keeps explicit DIRECT selectable without adding direct nodes to automatic or country pools", () => {
-    for (const name of ["🖐 手动选择", "GLOBAL"]) {
+    for (const name of ["GLOBAL"]) {
       const group = mihomoProxyGroups.find(group => group.name === name);
       expect(group?.proxies, name).toContain("DIRECT");
       expect(group, name).not.toHaveProperty("exclude-type");

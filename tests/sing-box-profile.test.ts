@@ -64,12 +64,12 @@ describe("createSingBoxProfile", () => {
       expect.objectContaining({
         type: "selector",
         tag: "AI",
-        outbounds: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "DIRECT", "US-01", "JP-01"]),
+        outbounds: expect.arrayContaining(["GLOBAL", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "DIRECT", "US-01", "JP-01"]),
       }),
       expect.objectContaining({
         type: "selector",
         tag: "APPLE",
-        outbounds: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "DIRECT", "US-01", "JP-01"]),
+        outbounds: expect.arrayContaining(["GLOBAL", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "DIRECT", "US-01", "JP-01"]),
       }),
     ]));
     expect(config.http_clients).toEqual([

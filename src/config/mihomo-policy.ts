@@ -63,7 +63,6 @@ export const mihomoProfileRuleProviders = {
 };
 
 export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
-export const manualProxyGroupName = "🖐 手动选择";
 export const mihomoPolicyDisplayNames: Record<string, string> = {
   GLOBAL: "GLOBAL", AUTO: "♻️ 自动选择", AI: "🤖 AI", CLAUDE: "🧠 Claude", APPLE: "🍎 Apple",
   ICLOUD: "☁️ iCloud", "APPLE-MEDIA": "🎧 Apple 媒体", "APPLE-INTELLIGENCE": "✨ Apple 智能",
@@ -171,7 +170,7 @@ function businessGroup(name: typeof businessProxyGroupNames[number], icon: strin
   return {
     name,
     type: "select",
-    proxies: [...new Set([initial, "GLOBAL", manualProxyGroupName, "AUTO", ...Object.keys(countryGroupNames), "DIRECT"])],
+    proxies: [...new Set([initial, "GLOBAL", "AUTO", ...Object.keys(countryGroupNames), "DIRECT"])],
     "include-all": true,
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/${icon}.svg`,
@@ -180,17 +179,9 @@ function businessGroup(name: typeof businessProxyGroupNames[number], icon: strin
 
 export const mihomoProxyGroups = [
   {
-    name: manualProxyGroupName,
-    type: "select",
-    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
-    "include-all": true,
-    "exclude-filter": metadataFilter,
-    icon: `${policyIconBase}/route.svg`,
-  },
-  {
     name: "GLOBAL",
     type: "select",
-    proxies: [manualProxyGroupName, "AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
+    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
     "include-all": true,
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/globe.svg`,

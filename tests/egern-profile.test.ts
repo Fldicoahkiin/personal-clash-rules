@@ -37,8 +37,8 @@ proxies:
     expect(config.policy_groups).toEqual(expect.arrayContaining([
       { auto_test: expect.objectContaining({ name: "AUTO", policies: ["US-01"] }) },
       { select: expect.objectContaining({ name: "🇺🇸 美国", policies: ["US-01"] }) },
-      { select: expect.objectContaining({ name: "AI", policies: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "DIRECT", "US-01"]) }) },
-      { select: expect.objectContaining({ name: "APPLE", policies: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "AUTO", "🇺🇸 美国", "DIRECT", "US-01"]) }) },
+      { select: expect.objectContaining({ name: "AI", policies: expect.arrayContaining(["GLOBAL", "AUTO", "🇺🇸 美国", "DIRECT", "US-01"]) }) },
+      { select: expect.objectContaining({ name: "APPLE", policies: expect.arrayContaining(["GLOBAL", "AUTO", "🇺🇸 美国", "DIRECT", "US-01"]) }) },
     ]));
     expect(config.rules).toEqual(expect.arrayContaining([
       {

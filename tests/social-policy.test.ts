@@ -51,7 +51,7 @@ describe("per-app social policies", () => {
       const name = mihomoPolicyDisplayNames[id.toUpperCase()];
       const group = profile["proxy-groups"].find((group: { name: string }) => group.name === name);
       expect(group.proxies[0]).toBe("GLOBAL");
-      expect(group.proxies).toEqual(expect.arrayContaining(["ROLA", "🇺🇸 美国", "🖐 手动选择", "DIRECT"]));
+      expect(group.proxies).toEqual(expect.arrayContaining(["ROLA", "🇺🇸 美国", "♻️ 自动选择", "DIRECT"]));
       expect(group["include-all"]).toBe(true);
     }
   });

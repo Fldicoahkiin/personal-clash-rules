@@ -57,9 +57,9 @@ describe("local Rola preparation", () => {
     const text = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]").replaceAll("GLOBAL", "🌐 全局");
     const output = parse(prepareRolaProfile(text, settings).profile);
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "GLOBAL")).toMatchObject({
-      proxies: expect.arrayContaining([parseRolaSettings(settings).groupName, "🖐 手动选择"]),
+      proxies: expect.arrayContaining([parseRolaSettings(settings).groupName, "♻️ 自动选择"]),
     });
-    expect(output["proxy-groups"][1].name).toBe("GLOBAL");
+    expect(output["proxy-groups"][0].name).toBe("GLOBAL");
     expect(output["proxy-groups"].filter((group: { name: string }) => group.name === "GLOBAL")).toHaveLength(1);
     expect(JSON.stringify(output)).not.toContain("🌐 全局");
   });
@@ -82,7 +82,7 @@ describe("local Rola preparation", () => {
       { ...relay, name: "[Rola] 美国 · 203.0.113.12" },
     ] })));
     for (const group of original["proxy-groups"]) {
-      if (["DNS-PROXY", "🤖 AI", "🧠 Claude", "🖐 手动选择"].includes(group.name)) group["default-selected"] = "JP Airport";
+      if (["DNS-PROXY", "🤖 AI", "🧠 Claude", "GLOBAL"].includes(group.name)) group["default-selected"] = "JP Airport";
     }
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", residentialNodeNames };
     const base = stringify(original);
@@ -99,7 +99,7 @@ describe("local Rola preparation", () => {
       expect(new RegExp(us.filter.replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(true);
       expect(new RegExp(us["exclude-filter"].replace(/^\(\?i\)/u, ""), "iu").test(name)).toBe(false);
     }
-    for (const name of ["DNS-PROXY", "🤖 AI", "🧠 Claude", "🖐 手动选择"]) {
+    for (const name of ["DNS-PROXY", "🤖 AI", "🧠 Claude", "GLOBAL"]) {
       expect(output["proxy-groups"].find((group: { name: string }) => group.name === name)["default-selected"]).toBe("JP Airport");
     }
   });
@@ -177,7 +177,7 @@ describe("local Rola preparation", () => {
     expect(candidates("♻️ 自动选择")).toEqual(["Airport"]);
     expect(candidates("DNS-PROXY")).toEqual(["Airport", input.name, second.name]);
     expect(profile["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY")["default-selected"]).toBe("Airport");
-    for (const name of ["🖐 手动选择", "GLOBAL", "🤖 AI"]) {
+    for (const name of ["GLOBAL", "🤖 AI"]) {
       expect(profile["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain("ROLA");
     }
     expect(profile.rules.slice(0, 2)).toEqual([
@@ -451,7 +451,7 @@ describe("local Rola preparation", () => {
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
     const businessNames = ["🤖 AI", "🍎 Apple", "🎮 Steam", "📥 Steam 下载", "🕹️ Steam 联机", "💬 Discord", "🛠️ 开发服务", "🎬 流媒体", "📺 哔哩哔哩", "📺 巴哈姆特", "🐟 未匹配流量"];
-    const eligible = ["GLOBAL", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
+    const eligible = ["GLOBAL", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
     for (const name of businessNames) {
       const group = output["proxy-groups"].find((group: { name: string }) => group.name === name);
       expect(new Set(group.proxies), name).toEqual(new Set(eligible));
@@ -463,7 +463,7 @@ describe("local Rola preparation", () => {
       expect(group.proxies ?? []).not.toContain(input.groupName);
       expect(group["exclude-filter"]).toContain("ROLA-RESIDENTIAL");
     }
-    expect(output["proxy-groups"].slice(0, 3).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "GLOBAL", input.groupName]);
+    expect(output["proxy-groups"].slice(0, 2).map((group: { name: string }) => group.name)).toEqual(["GLOBAL", input.groupName]);
   });
 
   it("migrates stored settings to service selectors so Claude DNS follows its own exit", () => {
@@ -479,11 +479,11 @@ describe("local Rola preparation", () => {
     expect(dedicated.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#${input.groupName}`));
   });
 
-  it("exposes residential in manual, global, AI and Claude while keeping their DNS policies separate", () => {
+  it("exposes residential in global, AI and Claude while keeping their DNS policies separate", () => {
     const base = createMihomoProfile("proxies: [{name: Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
-    for (const name of ["🖐 手动选择", "GLOBAL", "🤖 AI", "🧠 Claude"]) {
+    for (const name of ["GLOBAL", "🤖 AI", "🧠 Claude"]) {
       expect(output["proxy-groups"].find((group: { name: string }) => group.name === name).proxies).toContain(input.groupName);
     }
     expect(output["proxy-groups"].find((group: { name: string }) => group.name === "🤖 AI").proxies[0]).toBe(input.groupName);

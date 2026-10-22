@@ -2,14 +2,16 @@ import { isIP } from "node:net";
 import { isMap, isScalar, isSeq, parseDocument, visit } from "yaml";
 
 import { defaultDnsSettings } from "../config/dns-settings";
-import { businessProxyGroupNames, countryGroupNames, manualProxyGroupName, metadataFilter, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
+import { businessProxyGroupNames, countryGroupNames, metadataFilter, mihomoPolicyDisplayNames, mihomoProxyGroups, mihomoRuleProviders } from "../config/mihomo-policy";
 import { dnsProxyGroupName } from "./mihomo-dns";
 import claudeDomains from "../../public/rules/sing-box/ai-anthropic.json";
 
 const nodeName = "ROLA-RESIDENTIAL";
 const groupName = "ROLA";
+// Uploaded snapshots of older Flacier profiles still carry the manual selector that GLOBAL replaced.
+const legacyManualGroupName = "🖐 手动选择";
 const residentialSelectableGroups = [
-  manualProxyGroupName, "GLOBAL", ...businessProxyGroupNames,
+  legacyManualGroupName, "GLOBAL", ...businessProxyGroupNames,
   mihomoPolicyDisplayNames.GLOBAL, ...businessProxyGroupNames.map(name => mihomoPolicyDisplayNames[name]),
 ];
 
@@ -508,7 +510,9 @@ export function prepareRolaProfile(source: string, value: unknown) {
     "empty-fallback": "REJECT", "disable-udp": true,
   }));
   const residentialGroup = groups.items.pop();
-  groups.items.splice(Math.min(2, groups.items.length), 0, residentialGroup);
+  // Directly after GLOBAL; bases without it keep the legacy third position.
+  const globalIndex = groups.items.findIndex(group => isMap(group) && group.get("name") === "GLOBAL");
+  groups.items.splice(globalIndex >= 0 ? globalIndex + 1 : Math.min(2, groups.items.length), 0, residentialGroup);
   for (const group of groups.items) {
     if (!isMap(group) || !residentialSelectableGroups.includes(String(group.get("name")))) continue;
     const members = group.get("proxies", true);

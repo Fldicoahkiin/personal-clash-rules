@@ -27,7 +27,7 @@ describe("createLoonProfile", () => {
     expect(output).toContain("[Proxy]\nUS-01=shadowsocks");
     expect(output).toContain("🇺🇸 美国 = select, US-01");
     expect(output).toContain("🇹🇼 台湾 = select, TW-01");
-    expect(output).toContain("AI = select, GLOBAL, 🖐 手动选择, AUTO, 🇺🇸 美国, 🇹🇼 台湾, DIRECT, US-01, TW-01");
+    expect(output).toContain("AI = select, GLOBAL, AUTO, 🇺🇸 美国, 🇹🇼 台湾, DIRECT, US-01, TW-01");
     expect(output).toContain("[Remote Rule]");
     expect(output).toContain(
       "https://rules.flacier.com/rules/ai/openai.list, policy=AI, tag=ai-openai, enabled=true, update-interval=43200",

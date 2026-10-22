@@ -4,18 +4,19 @@ import { parse } from "yaml";
 import { createMihomoProfile } from "../src/worker/mihomo-profile";
 
 describe("createMihomoProfile", () => {
-  it("uses one visible built-in GLOBAL in the original global position without business-group cycles", () => {
+  it("uses one visible built-in GLOBAL as the first group without business-group cycles", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     const groups = profile["proxy-groups"];
     expect(groups.filter((group: { name: string }) => group.name === "GLOBAL")).toHaveLength(1);
     expect(groups.find((group: { name: string }) => group.name === "GLOBAL")).toMatchObject({
       type: "select", "include-all": true,
-      proxies: expect.arrayContaining(["🖐 手动选择", "DIRECT"]),
+      proxies: expect.arrayContaining(["♻️ 自动选择", "DIRECT"]),
     });
-    expect(groups[1].name).toBe("GLOBAL");
-    expect(groups[1].hidden).not.toBe(true);
-    expect(groups[1].proxies).not.toContain("GLOBAL");
-    expect(groups[1].proxies).not.toContain("🧠 Claude");
+    expect(groups[0].name).toBe("GLOBAL");
+    expect(groups[0].hidden).not.toBe(true);
+    expect(groups[0].proxies).not.toContain("GLOBAL");
+    expect(groups[0].proxies).not.toContain("🧠 Claude");
+    expect(JSON.stringify(groups)).not.toContain("🖐 手动选择");
     expect(JSON.stringify(groups)).not.toContain("🌐 全局");
     expect(groups.find((group: { name: string }) => group.name === "🧠 Claude").hidden).not.toBe(true);
   });
@@ -62,11 +63,10 @@ describe("createMihomoProfile", () => {
     expect(profile.rules).not.toContain("PROCESS-NAME,Google Chrome,DIRECT");
     expect(profile.rules).toContain("PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI");
   });
-  it("puts manual selection before global and excludes quota notices from DNS choices", () => {
+  it("lets GLOBAL pick nodes directly and excludes quota notices from DNS choices", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}, {name: '剩余流量：1 TB', type: ss}]"));
-    expect(profile["proxy-groups"].slice(0, 2).map((group: { name: string }) => group.name)).toEqual(["🖐 手动选择", "GLOBAL"]);
-    expect(profile["proxy-groups"][0]).toMatchObject({ type: "select", "include-all": true, proxies: expect.arrayContaining(["♻️ 自动选择", "🇺🇸 美国"]) });
-    expect(profile["proxy-groups"][1].proxies[0]).toBe("🖐 手动选择");
+    expect(profile["proxy-groups"][0]).toMatchObject({ name: "GLOBAL", type: "select", "include-all": true, proxies: expect.arrayContaining(["♻️ 自动选择", "🇺🇸 美国"]) });
+    expect(profile["proxy-groups"][0].proxies[0]).toBe("♻️ 自动选择");
     const dns = profile["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
     expect(dns["exclude-filter"]).toContain("剩余");
   });
@@ -132,7 +132,7 @@ proxies:
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["GLOBAL", "🖐 手动选择", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾", "DIRECT"]), "include-all": true }),
+      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["GLOBAL", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾", "DIRECT"]), "include-all": true }),
       expect.objectContaining({ name: "📥 Steam 下载", proxies: expect.arrayContaining(["DIRECT"]) }),
       expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
     ]));

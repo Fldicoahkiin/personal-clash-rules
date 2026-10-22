@@ -14,9 +14,9 @@ describe("Surge-compatible profiles", () => {
     expect(output).toContain("#!MANAGED-CONFIG __FLACIER_SUBSCRIPTION_URL__ interval=43200");
     expect(output).toContain("[General]\n");
     expect(output).toContain("[Proxy]\nUS-01 = ss, us.example.com");
-    expect(output).toContain("[Proxy Group]\n🖐 手动选择 = select");
-    expect(output).toContain("\nGLOBAL = select, 🖐 手动选择");
-    expect(output).toContain("AI = select, GLOBAL, 🖐 手动选择, AUTO, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾, 🇰🇷 韩国, 🇪🇺 欧洲, DIRECT, include-all-proxies=true");
+    expect(output).toContain("[Proxy Group]\nGLOBAL = select, AUTO");
+    expect(output).not.toContain("🖐 手动选择");
+    expect(output).toContain("AI = select, GLOBAL, AUTO, 🇺🇸 美国, 🇯🇵 日本, 🇸🇬 新加坡, 🇭🇰 香港, 🇹🇼 台湾, 🇰🇷 韩国, 🇪🇺 欧洲, DIRECT, include-all-proxies=true");
     expect(output).toContain(
       "RULE-SET,https://rules.flacier.com/rules/ai/openai.list,AI,update-interval=43200",
     );
@@ -29,7 +29,7 @@ describe("Surge-compatible profiles", () => {
 
     expect(output).toContain("#!MANAGED-CONFIG __FLACIER_SUBSCRIPTION_URL__ interval=43200");
     expect(output).toContain("[Proxy]\nUS-01 = ss, us.example.com");
-    expect(output).toContain("ANIGAMER = select, 🇹🇼 台湾, GLOBAL, 🖐 手动选择, AUTO");
+    expect(output).toContain("ANIGAMER = select, 🇹🇼 台湾, GLOBAL, AUTO");
     expect(output).toContain("FINAL,DEFAULT,dns-failed");
   });
 
