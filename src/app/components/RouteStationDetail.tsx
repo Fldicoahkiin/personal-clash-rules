@@ -92,7 +92,8 @@ export function RouteStationDetail({ station, manifest, onTest, onSelect }: {
   const family = stationFamily(station);
   const providers = station.rules.flatMap(rule => rule.provider ? [rule.provider] : []);
   const inline = station.rules.filter(rule => !rule.provider);
-  const later = family.filter(item => item.first > station.last)
+  // Order only matters against later stops that send traffic elsewhere.
+  const later = family.filter(item => item.first > station.last && item.policy !== station.policy)
     .flatMap(item => item.rules.flatMap(rule => rule.provider ? [{ station: item, path: rule.provider.path }] : []));
   const { files, error, loading } = useRuleFiles([...providers.map(provider => provider.path), ...later.map(item => item.path)]);
   const laterFiles = later.flatMap(item => files.get(item.path) ?? []);
