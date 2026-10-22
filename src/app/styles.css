@@ -2223,6 +2223,33 @@ details[open] > summary::before {
   font-size: 0.76rem;
 }
 
+/* Shared motion */
+.button,
+.client-picker button,
+.text-button,
+.subscription-rename-add {
+  transition: background-color var(--fast) linear, border-color var(--fast) linear, color var(--fast) linear, transform var(--press) var(--ease-out);
+}
+
+.button:active:not(:disabled),
+.client-picker button:active,
+.subscription-rename-add:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.network-checks a {
+  transition: background-color var(--fast) linear;
+}
+
+.network-checks a > svg:last-child {
+  transition: transform var(--move) var(--ease-out), color var(--fast) linear;
+}
+
+.network-checks a:hover > svg:last-child {
+  color: var(--ink);
+  transform: translate(2px, -2px);
+}
+
 .route-result:not([data-filled]) .route-steps li {
   grid-template-rows: minmax(84px, auto) 54px;
 }
@@ -2231,10 +2258,53 @@ details[open] > summary::before {
   color: var(--faint);
 }
 
+.route-result[data-filled] .route-step-copy {
+  animation: rise-in var(--enter) var(--ease-out) backwards;
+}
+
+.route-result[data-filled] li:nth-child(2) .route-step-copy {
+  animation-delay: 70ms;
+}
+
+.route-result[data-filled] li:nth-child(3) .route-step-copy {
+  animation-delay: 140ms;
+}
+
+.route-result[data-filled] .route-line {
+  transform-origin: left;
+  animation: line-draw 560ms var(--ease-out) backwards;
+}
+
+.route-result[data-filled] .route-marker-matched {
+  animation: stop-arrive var(--enter) var(--ease-out) 120ms backwards;
+}
+
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  details::details-content {
+    height: 0;
+    overflow: clip;
+    transition: height var(--move) var(--ease-out), content-visibility var(--move) allow-discrete;
+  }
+
+  details[open]::details-content {
+    height: auto;
+  }
+}
+
 @keyframes rise-in {
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+
+@keyframes line-draw {
+  from {
+    transform: scaleX(0);
   }
 }
 
@@ -2723,5 +2793,16 @@ details[open] > summary::before {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  /* Keep state changes, drop the movement. */
+  *,
+  *::before,
+  *::after,
+  ::details-content {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
   }
 }
