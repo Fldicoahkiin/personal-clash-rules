@@ -11,7 +11,8 @@ import {
 
 const root = resolve(import.meta.dirname, "..");
 
-describe("generated client rule formats", () => {
+// Converts every published list, including the full domestic list (about 110,000 entries).
+describe("generated client rule formats", { timeout: 30_000 }, () => {
   it("stays aligned with every classical source rule", async () => {
     const manifest = parse(await readFile(resolve(root, "public/rules/manifest.yaml"), "utf8"));
 
