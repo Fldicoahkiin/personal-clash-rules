@@ -933,6 +933,18 @@ summary:focus-visible {
   max-width: 360px;
 }
 
+.subscription-section > .subscription-rule-preset {
+  margin-bottom: 22px;
+}
+
+.subscription-workspace {
+  max-width: 960px;
+}
+
+.subscription-workspace > .subscription-settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 360px));
+}
+
 .subscription-option-list {
   display: flex;
   flex-wrap: wrap;
