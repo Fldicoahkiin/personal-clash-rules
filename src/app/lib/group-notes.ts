@@ -62,7 +62,7 @@ export const groupNotes: Record<string, GroupNote> = {
   DEV: { purpose: "代码托管、软件包仓库、容器镜像与常用开发者网站。" },
   ANIGAMER: {
     purpose: "巴哈姆特动画疯。",
-    defaultReason: "默认使用「🇹🇼 台湾」节点组：动画疯按台湾地区提供内容。",
+    defaultReason: "默认使用「🇨🇳 台湾」节点组：动画疯按台湾地区提供内容。",
   },
   MEDIA: { purpose: "YouTube、Netflix、Disney+、Spotify、Twitch 等境外影音服务。" },
   TELEGRAM: { purpose: "Telegram、t.me 与 telegra.ph。" },
