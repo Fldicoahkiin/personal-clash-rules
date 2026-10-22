@@ -31,7 +31,10 @@ export async function createRulePreview(
       const content = id === "flacier" && assets
         ? await (async () => {
           const response = await assets.fetch(new Request(url));
-          if (!response.ok) throw new ApiError(502, "rule_preview_failed", "Published rules could not be read");
+          // A missing file falls back to the app's index.html with HTTP 200.
+          if (!response.ok || response.headers.get("content-type")?.startsWith("text/html")) {
+            throw new ApiError(502, "rule_preview_failed", "Published rules could not be read");
+          }
           return response.text();
         })()
         : (await readRemoteSource(url, "Flacier-Rules/1.0")).content;

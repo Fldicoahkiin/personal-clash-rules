@@ -99,7 +99,10 @@ export async function expandProfileRules(profile: string, assets?: Pick<Env["ASS
     let content: string;
     if (assets && url.origin === "https://rules.flacier.com" && url.pathname.startsWith("/rules/")) {
       const response = await assets.fetch(new Request(url));
-      if (!response.ok) throw new ApiError(502, "source_failed", "Published rules could not be read");
+      // A missing file falls back to the app's index.html with HTTP 200.
+      if (!response.ok || response.headers.get("content-type")?.startsWith("text/html")) {
+        throw new ApiError(502, "source_failed", "Published rules could not be read");
+      }
       content = await response.text();
     } else content = (await readRemoteSource(url.href, "Flacier-Rules/1.0")).content;
     bytes += new TextEncoder().encode(content).length;
