@@ -400,7 +400,7 @@ rule-providers:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
-  - name: 🎵 Apple 媒体
+  - name: 🎧 Apple 媒体
     type: select
     proxies:
       - GLOBAL
@@ -771,7 +771,7 @@ rule-providers:
   - RULE-SET,apple-system,⚙️ Apple 系统
   - RULE-SET,apple-services,🍎 Apple
   - RULE-SET,apple-icloud,☁️ iCloud
-  - RULE-SET,apple-media,🎵 Apple 媒体
+  - RULE-SET,apple-media,🎧 Apple 媒体
   - RULE-SET,apple-intelligence,✨ Apple 智能
   - RULE-SET,steam-download,📥 Steam 下载
   - RULE-SET,bilibili,📺 哔哩哔哩

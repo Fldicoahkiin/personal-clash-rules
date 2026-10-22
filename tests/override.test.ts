@@ -93,7 +93,7 @@ describe("Clash Party override", () => {
       "RULE-SET,apple-system,⚙️ Apple 系统",
       "RULE-SET,apple-services,🍎 Apple",
       "RULE-SET,apple-icloud,☁️ iCloud",
-      "RULE-SET,apple-media,🎵 Apple 媒体",
+      "RULE-SET,apple-media,🎧 Apple 媒体",
       "RULE-SET,apple-intelligence,✨ Apple 智能",
       "RULE-SET,steam-download,📥 Steam 下载",
       "RULE-SET,bilibili,📺 哔哩哔哩",

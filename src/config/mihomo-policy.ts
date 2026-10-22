@@ -66,7 +66,7 @@ export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 export const manualProxyGroupName = "🖐 手动选择";
 export const mihomoPolicyDisplayNames: Record<string, string> = {
   GLOBAL: "GLOBAL", AUTO: "♻️ 自动选择", AI: "🤖 AI", CLAUDE: "🧠 Claude", APPLE: "🍎 Apple",
-  ICLOUD: "☁️ iCloud", "APPLE-MEDIA": "🎵 Apple 媒体", "APPLE-INTELLIGENCE": "✨ Apple 智能",
+  ICLOUD: "☁️ iCloud", "APPLE-MEDIA": "🎧 Apple 媒体", "APPLE-INTELLIGENCE": "✨ Apple 智能",
   "APPLE-DOWNLOAD": "📥 Apple 下载", "APPLE-SYSTEM": "⚙️ Apple 系统",
   STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
