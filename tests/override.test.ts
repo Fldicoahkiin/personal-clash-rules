@@ -65,7 +65,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 42)).toEqual([
+    expect(config["+rules"].slice(0, 43)).toEqual([
       "PROCESS-NAME,ToDesk,DIRECT",
       "PROCESS-NAME,ToDesk_Service,DIRECT",
       "PROCESS-NAME,ToDesk_Session,DIRECT",
@@ -100,6 +100,7 @@ describe("Clash Party override", () => {
       "RULE-SET,apple-intelligence,✨ Apple 智能",
       "RULE-SET,steam-download,📥 Steam 下载",
       "RULE-SET,bilibili,📺 哔哩哔哩",
+      "RULE-SET,china-ip-lookup,🐟 未匹配流量",
       "RULE-SET,china-exceptions,🐟 未匹配流量",
       "RULE-SET,china-domains,DIRECT",
       "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🧠 Claude",

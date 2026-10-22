@@ -155,6 +155,10 @@ ruleSets:
     label: 社交兼容汇总（旧链接用，域名已由各应用组匹配）
     policy: DEFAULT
     path: rules/social/social.list
+  - id: china-ip-lookup
+    label: 国内 IP 查询（走代理）
+    policy: DEFAULT
+    path: rules/direct/china-ip-lookup.list
   - id: china-exceptions
     label: 国内列表中的境外例外
     policy: DEFAULT

@@ -30,6 +30,13 @@ rule-providers:
     url: https://rules.flacier.com/rules/direct/netease-music.list
     path: ./ruleset/personal/netease-music.list
     interval: 86400
+  china-ip-lookup:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/direct/china-ip-lookup.list
+    path: ./ruleset/personal/china-ip-lookup.list
+    interval: 86400
   china-exceptions:
     type: http
     behavior: classical
@@ -739,6 +746,7 @@ rule-providers:
   - RULE-SET,apple-intelligence,✨ Apple 智能
   - RULE-SET,steam-download,📥 Steam 下载
   - RULE-SET,bilibili,📺 哔哩哔哩
+  - RULE-SET,china-ip-lookup,🐟 未匹配流量
   - RULE-SET,china-exceptions,🐟 未匹配流量
   - RULE-SET,china-domains,DIRECT
   - PROCESS-NAME-REGEX,(?i)^claude(\.exe)?$,🧠 Claude

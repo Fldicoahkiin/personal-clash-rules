@@ -3,6 +3,7 @@ const publishedRuleFiles = {
   "private-ip": "local/private-ip.list",
   "tencent-messaging": "direct/tencent-messaging.list",
   "netease-music": "direct/netease-music.list",
+  "china-ip-lookup": "direct/china-ip-lookup.list",
   "china-exceptions": "direct/china-exceptions.list",
   "china-domains": "direct/china-domains.list",
   "apple-download": "apple/download.list",
@@ -280,6 +281,8 @@ export const mihomoRules = [
   // domestic list or its exceptions and keep their own selectable policy ahead of them.
   "RULE-SET,steam-download,STEAM-DOWNLOAD",
   "RULE-SET,bilibili,BILIBILI",
+  // Domestic IP lookups would show a page the home address, so they leave through the default proxy.
+  "RULE-SET,china-ip-lookup,DEFAULT",
   "RULE-SET,china-exceptions,DEFAULT",
   "RULE-SET,china-domains,DIRECT",
   "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,CLAUDE",

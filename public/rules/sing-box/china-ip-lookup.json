@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "ip138.com",
+        "ip.cn",
+        "cip.cc"
+      ],
+      "domain": [
+        "myip.ipip.net",
+        "ip.3322.net",
+        "members.3322.org",
+        "pv.sohu.com",
+        "whois.pconline.com.cn",
+        "ip.useragentinfo.com"
+      ]
+    }
+  ]
+}

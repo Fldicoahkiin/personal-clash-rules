@@ -1,0 +1,11 @@
+# Domestic IP lookup services. Any page can read the visitor's home address through them,
+# so they go through the default proxy instead of the domestic direct rules. Evaluated before them.
+DOMAIN-SUFFIX,ip138.com
+DOMAIN-SUFFIX,ip.cn
+DOMAIN-SUFFIX,cip.cc
+DOMAIN,myip.ipip.net
+DOMAIN,ip.3322.net
+DOMAIN,members.3322.org
+DOMAIN,pv.sohu.com
+DOMAIN,whois.pconline.com.cn
+DOMAIN,ip.useragentinfo.com

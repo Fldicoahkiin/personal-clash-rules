@@ -243,6 +243,7 @@ describe("Worker entrypoint", () => {
       ["osxapps.itunes.apple.com", "APPLE-DOWNLOAD"], ["updates.cdn-apple.com", "APPLE-DOWNLOAD"],
       ["p17-buy.itunes.apple.com", "APPLE"], ["appleid.cdn-apple.com", "APPLE"], ["gateway.icloud.com", "APPLE-SYSTEM"],
       ["www.icloud.com", "ICLOUD"], ["music.apple.com", "APPLE-MEDIA"], ["guzzoni.apple.com", "APPLE-INTELLIGENCE"],
+      ["2026.ip138.com", "DEFAULT"], ["myip.ipip.net", "DEFAULT"], ["www.ipip.net", "DIRECT"],
     ]) {
       expect(matchUrl(host, rules, { processName: "Mobile" }), host).toMatchObject({ matched: true, policy });
     }
