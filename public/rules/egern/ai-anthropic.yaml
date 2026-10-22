@@ -12,5 +12,9 @@ domain_set:
   - anthropic.auth0.com
   - anthropic-com.ghost.io
   - cdn.usefathom.com
+  - nexus-websocket-a.intercom.io
+  - api-iam.intercom.io
+  - widget.intercom.io
+  - js.intercomcdn.com
   - http-intake.logs.us5.datadoghq.com
   - browser-intake-us5-datadoghq.com

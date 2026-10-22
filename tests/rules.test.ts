@@ -77,7 +77,7 @@ describe("published rule sets", { timeout: 30_000 }, () => {
     }
   });
 
-  it("keeps Claude authentication, content and specific intake hosts on the AI policy", async () => {
+  it("keeps Claude authentication, content, support chat and specific intake hosts on the AI policy", async () => {
     const rules = [createRuleSet({
       id: "ai-anthropic", label: "Claude", policy: "AI", path: "rules/ai/anthropic.list",
     }, await read("public/rules/ai/anthropic.list"))];
@@ -94,6 +94,10 @@ describe("published rule sets", { timeout: 30_000 }, () => {
       "http-intake.logs.us5.datadoghq.com",
       "browser-intake-us5-datadoghq.com",
       "cdn.usefathom.com",
+      "nexus-websocket-a.intercom.io",
+      "api-iam.intercom.io",
+      "widget.intercom.io",
+      "js.intercomcdn.com",
     ]) {
       expect(matchUrl(hostname, rules), hostname).toMatchObject({ matched: true, policy: "AI" });
     }

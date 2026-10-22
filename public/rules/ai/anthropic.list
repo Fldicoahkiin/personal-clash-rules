@@ -13,6 +13,11 @@ DOMAIN,anthropic.com.cdn.cloudflare.net
 DOMAIN,anthropic.auth0.com
 DOMAIN,anthropic-com.ghost.io
 DOMAIN,cdn.usefathom.com
+# In-app support chat in the Claude apps (Intercom); shared hosts, so exact names only.
+DOMAIN,nexus-websocket-a.intercom.io
+DOMAIN,api-iam.intercom.io
+DOMAIN,widget.intercom.io
+DOMAIN,js.intercomcdn.com
 # Optional Claude Code telemetry; these shared intake hosts are not Claude-exclusive.
 DOMAIN,http-intake.logs.us5.datadoghq.com
 DOMAIN,browser-intake-us5-datadoghq.com
