@@ -63,7 +63,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 35)).toEqual([
+    expect(config["+rules"].slice(0, 39)).toEqual([
       "PROCESS-NAME,ToDesk,DIRECT",
       "PROCESS-NAME,ToDesk_Service,DIRECT",
       "PROCESS-NAME,ToDesk_Session,DIRECT",
@@ -89,8 +89,12 @@ describe("Clash Party override", () => {
       "RULE-SET,private-ip,DIRECT,no-resolve",
       "RULE-SET,tencent-messaging,DIRECT",
       "RULE-SET,netease-music,DIRECT",
-      "RULE-SET,apple-system,🍎 Apple",
+      "RULE-SET,apple-download,📥 Apple 下载",
+      "RULE-SET,apple-system,⚙️ Apple 系统",
       "RULE-SET,apple-services,🍎 Apple",
+      "RULE-SET,apple-icloud,☁️ iCloud",
+      "RULE-SET,apple-media,🎵 Apple 媒体",
+      "RULE-SET,apple-intelligence,✨ Apple 智能",
       "RULE-SET,steam-download,📥 Steam 下载",
       "RULE-SET,bilibili,📺 哔哩哔哩",
       "RULE-SET,china-exceptions,🐟 未匹配流量",
@@ -109,10 +113,10 @@ describe("Clash Party override", () => {
     expect(config["+rules"]).toContain("RULE-SET,bilibili,📺 哔哩哔哩");
     expect(config["+rules"]).toContain("RULE-SET,anigamer,📺 巴哈姆特");
     expect(config["+rules"]).toContain("RULE-SET,discord,💬 Discord");
-    expect(config["+rules"]).toContain("RULE-SET,apple-system,🍎 Apple");
+    expect(config["+rules"]).toContain("RULE-SET,apple-system,⚙️ Apple 系统");
     expect(config["+rules"]).toContain("RULE-SET,apple-services,🍎 Apple");
 
-    expect(config["+rules"].indexOf("RULE-SET,apple-system,🍎 Apple"))
+    expect(config["+rules"].indexOf("RULE-SET,apple-system,⚙️ Apple 系统"))
       .toBeLessThan(config["+rules"].indexOf("RULE-SET,apple-services,🍎 Apple"));
     expect(config["+rules"].indexOf("RULE-SET,steam-download,📥 Steam 下载"))
       .toBeLessThan(config["+rules"].indexOf("RULE-SET,steam-online,🕹️ Steam 联机"));

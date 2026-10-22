@@ -421,6 +421,96 @@ proxy-groups:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
     empty-fallback: REJECT
+  - name: ☁️ iCloud
+    type: select
+    proxies:
+      - GLOBAL
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+      - 🇺🇸 美国固定 IP
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
+    empty-fallback: REJECT
+  - name: 🎵 Apple 媒体
+    type: select
+    proxies:
+      - GLOBAL
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+      - 🇺🇸 美国固定 IP
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
+    empty-fallback: REJECT
+  - name: ✨ Apple 智能
+    type: select
+    proxies:
+      - GLOBAL
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - DIRECT
+      - 🇺🇸 美国固定 IP
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
+    empty-fallback: REJECT
+  - name: 📥 Apple 下载
+    type: select
+    proxies:
+      - DIRECT
+      - GLOBAL
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - 🇺🇸 美国固定 IP
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
+    empty-fallback: REJECT
+  - name: ⚙️ Apple 系统
+    type: select
+    proxies:
+      - DIRECT
+      - GLOBAL
+      - 🖐 手动选择
+      - ♻️ 自动选择
+      - 🇺🇸 美国
+      - 🇯🇵 日本
+      - 🇸🇬 新加坡
+      - 🇭🇰 香港
+      - 🇹🇼 台湾
+      - 🇰🇷 韩国
+      - 🇪🇺 欧洲
+      - 🇺🇸 美国固定 IP
+    include-all: true
+    exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
+    empty-fallback: REJECT
   - name: 🎮 Steam
     type: select
     proxies:
@@ -786,6 +876,13 @@ rule-providers:
     url: https://rules.flacier.com/rules/mihomo/china-domains.txt
     path: ./ruleset/personal/china-domains.domain.txt
     interval: 86400
+  apple-download:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/apple/download.list
+    path: ./ruleset/personal/apple-download.list
+    interval: 86400
   apple-system:
     type: http
     behavior: classical
@@ -799,6 +896,27 @@ rule-providers:
     format: text
     url: https://rules.flacier.com/rules/apple/services.list
     path: ./ruleset/personal/apple-services.list
+    interval: 86400
+  apple-icloud:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/apple/icloud.list
+    path: ./ruleset/personal/apple-icloud.list
+    interval: 86400
+  apple-media:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/apple/media.list
+    path: ./ruleset/personal/apple-media.list
+    interval: 86400
+  apple-intelligence:
+    type: http
+    behavior: classical
+    format: text
+    url: https://rules.flacier.com/rules/apple/intelligence.list
+    path: ./ruleset/personal/apple-intelligence.list
     interval: 86400
   ai-openai:
     type: http
@@ -1069,8 +1187,12 @@ rules:
   - RULE-SET,private-ip,DIRECT,no-resolve
   - RULE-SET,tencent-messaging,DIRECT
   - RULE-SET,netease-music,DIRECT
-  - RULE-SET,apple-system,🍎 Apple
+  - RULE-SET,apple-download,📥 Apple 下载
+  - RULE-SET,apple-system,⚙️ Apple 系统
   - RULE-SET,apple-services,🍎 Apple
+  - RULE-SET,apple-icloud,☁️ iCloud
+  - RULE-SET,apple-media,🎵 Apple 媒体
+  - RULE-SET,apple-intelligence,✨ Apple 智能
   - RULE-SET,steam-download,📥 Steam 下载
   - RULE-SET,bilibili,📺 哔哩哔哩
   - RULE-SET,china-exceptions,🐟 未匹配流量
@@ -1228,8 +1350,12 @@ RULE-SET,https://rules.flacier.com/rules/local/private-domain.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/local/private-ip.list,DIRECT,no-resolve
 RULE-SET,https://rules.flacier.com/rules/direct/tencent-messaging.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/direct/netease-music.list,DIRECT
-RULE-SET,https://rules.flacier.com/rules/apple/system.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/apple/download.list,DIRECT
+RULE-SET,https://rules.flacier.com/rules/apple/system.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/apple/services.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/apple/icloud.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/apple/media.list,PROXY
+RULE-SET,https://rules.flacier.com/rules/apple/intelligence.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/gaming/steam-download.list,PROXY
 RULE-SET,https://rules.flacier.com/rules/media/bilibili.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/direct/china-exceptions.list,PROXY

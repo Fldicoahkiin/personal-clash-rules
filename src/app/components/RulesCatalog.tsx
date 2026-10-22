@@ -38,10 +38,10 @@ const catalog = [
   },
   {
     category: "Apple",
-    coverage: "账户、iCloud、App Store、Siri 与系统端点",
-    strategy: "APPLE / DIRECT",
+    coverage: "账号与 App Store、iCloud、媒体、Siri 与 Apple 智能、下载、系统端点",
+    strategy: "APPLE 等 6 组，下载与系统默认 DIRECT",
     href: "/rules/apple/services.list",
-    count: "2 个",
+    count: "6 个",
   },
   {
     category: "Steam Platform",

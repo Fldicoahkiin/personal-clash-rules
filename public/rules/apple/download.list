@@ -1,0 +1,11 @@
+# Apple app and software downloads
+# Large files from Apple's content network; listed before the store and iCloud suffixes that contain them
+
+DOMAIN,osxapps.itunes.apple.com
+DOMAIN,iosapps.itunes.apple.com
+DOMAIN,appldnld.apple.com
+DOMAIN,oscdn.apple.com
+DOMAIN,swcdn.apple.com
+DOMAIN,swdownload.apple.com
+DOMAIN,updates.cdn-apple.com
+DOMAIN,updates-http.cdn-apple.com

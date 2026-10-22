@@ -5,8 +5,12 @@ const publishedRuleFiles = {
   "netease-music": "direct/netease-music.list",
   "china-exceptions": "direct/china-exceptions.list",
   "china-domains": "direct/china-domains.list",
+  "apple-download": "apple/download.list",
   "apple-system": "apple/system.list",
   "apple-services": "apple/services.list",
+  "apple-icloud": "apple/icloud.list",
+  "apple-media": "apple/media.list",
+  "apple-intelligence": "apple/intelligence.list",
   "ai-openai": "ai/openai.list",
   "ai-anthropic": "ai/anthropic.list",
   "ai-anthropic-ip": "ai/anthropic-ip.list",
@@ -63,6 +67,8 @@ export const metadataFilter = "(?i)(剩余|流量|到期|官网|客服|订阅)";
 export const manualProxyGroupName = "🖐 手动选择";
 export const mihomoPolicyDisplayNames: Record<string, string> = {
   GLOBAL: "GLOBAL", AUTO: "♻️ 自动选择", AI: "🤖 AI", CLAUDE: "🧠 Claude", APPLE: "🍎 Apple",
+  ICLOUD: "☁️ iCloud", "APPLE-MEDIA": "🎵 Apple 媒体", "APPLE-INTELLIGENCE": "✨ Apple 智能",
+  "APPLE-DOWNLOAD": "📥 Apple 下载", "APPLE-SYSTEM": "⚙️ Apple 系统",
   STEAM: "🎮 Steam", "STEAM-DOWNLOAD": "📥 Steam 下载", "STEAM-ONLINE": "🕹️ Steam 联机",
   DISCORD: "💬 Discord", DEV: "🛠️ 开发服务", MEDIA: "🎬 流媒体", BILIBILI: "📺 哔哩哔哩",
   ANIGAMER: "📺 巴哈姆特", SOCIAL: "💬 社交", DEFAULT: "🐟 未匹配流量",
@@ -156,7 +162,8 @@ function countryGroup(name: string, filter: string) {
 }
 
 export const businessProxyGroupNames = [
-  "AI", "CLAUDE", "APPLE", "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
+  "AI", "CLAUDE", "APPLE", "ICLOUD", "APPLE-MEDIA", "APPLE-INTELLIGENCE", "APPLE-DOWNLOAD", "APPLE-SYSTEM",
+  "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
   "DEV", "MEDIA", "BILIBILI", "ANIGAMER", "TELEGRAM", "X", "REDDIT", "INSTAGRAM",
   "FACEBOOK", "LINKEDIN", "TIKTOK", "SOCIAL", "DEFAULT",
 ] as const;
@@ -231,6 +238,11 @@ export const mihomoProxyGroups = [
   businessGroup("AI", "ai"),
   businessGroup("CLAUDE", "ai", "AI"),
   businessGroup("APPLE", "apple"),
+  businessGroup("ICLOUD", "apple"),
+  businessGroup("APPLE-MEDIA", "play"),
+  businessGroup("APPLE-INTELLIGENCE", "ai"),
+  businessGroup("APPLE-DOWNLOAD", "download", "DIRECT"),
+  businessGroup("APPLE-SYSTEM", "apple", "DIRECT"),
   businessGroup("STEAM", "steam"),
   businessGroup("STEAM-DOWNLOAD", "download"),
   businessGroup("STEAM-ONLINE", "game"),
@@ -266,8 +278,13 @@ export const mihomoRules = [
   "RULE-SET,private-ip,DIRECT,no-resolve",
   "RULE-SET,tencent-messaging,DIRECT",
   "RULE-SET,netease-music,DIRECT",
-  "RULE-SET,apple-system,APPLE",
+  // Classical lists match in order: the download hosts sit inside the store and iCloud suffixes.
+  "RULE-SET,apple-download,APPLE-DOWNLOAD",
+  "RULE-SET,apple-system,APPLE-SYSTEM",
   "RULE-SET,apple-services,APPLE",
+  "RULE-SET,apple-icloud,ICLOUD",
+  "RULE-SET,apple-media,APPLE-MEDIA",
+  "RULE-SET,apple-intelligence,APPLE-INTELLIGENCE",
   // Domestic domains go direct before the AI process rules. The two groups below overlap the
   // domestic list or its exceptions and keep their own selectable policy ahead of them.
   "RULE-SET,steam-download,STEAM-DOWNLOAD",

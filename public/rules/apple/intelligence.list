@@ -1,0 +1,13 @@
+# Apple Intelligence
+# Sources: https://support.apple.com/101555 and v2fly/domain-list-community
+
+# Maps, Siri, Search, and Apple Intelligence
+DOMAIN-SUFFIX,apple-mapkit.com
+DOMAIN-SUFFIX,maps.apple.com
+DOMAIN-SUFFIX,ls.apple.com
+DOMAIN,guzzoni.apple.com
+DOMAIN-SUFFIX,smoot.apple.com
+DOMAIN,apple-relay.cloudflare.com
+DOMAIN,apple-relay.fastly-edge.com
+DOMAIN,cp4.cloudflare.com
+DOMAIN,apple-relay.apple.com

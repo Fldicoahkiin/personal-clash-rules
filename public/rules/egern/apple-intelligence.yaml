@@ -1,0 +1,11 @@
+domain_suffix_set:
+  - apple-mapkit.com
+  - maps.apple.com
+  - ls.apple.com
+  - smoot.apple.com
+domain_set:
+  - guzzoni.apple.com
+  - apple-relay.cloudflare.com
+  - apple-relay.fastly-edge.com
+  - cp4.cloudflare.com
+  - apple-relay.apple.com

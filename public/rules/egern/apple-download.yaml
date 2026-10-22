@@ -1,0 +1,9 @@
+domain_set:
+  - osxapps.itunes.apple.com
+  - iosapps.itunes.apple.com
+  - appldnld.apple.com
+  - oscdn.apple.com
+  - swcdn.apple.com
+  - swdownload.apple.com
+  - updates.cdn-apple.com
+  - updates-http.cdn-apple.com

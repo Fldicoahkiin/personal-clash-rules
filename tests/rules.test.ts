@@ -155,21 +155,31 @@ describe("published rule sets", { timeout: 30_000 }, () => {
     expect(discord).toContain("DOMAIN-SUFFIX,discord.com");
   });
 
-  it("separates selectable Apple services from direct system endpoints", async () => {
-    const [services, system] = await Promise.all([
-      read("public/rules/apple/services.list"),
-      read("public/rules/apple/system.list"),
-    ]);
+  it("splits Apple into account, iCloud, media, intelligence, download and system lists", async () => {
+    const [services, icloud, media, intelligence, download, system] = await Promise.all(
+      ["services", "icloud", "media", "intelligence", "download", "system"].map(name => read(`public/rules/apple/${name}.list`)),
+    );
 
     expect(services).toContain("DOMAIN,gsa.apple.com");
     expect(services).toContain("DOMAIN,account.apple.com");
-    expect(services).toContain("DOMAIN-SUFFIX,icloud.com");
-    expect(services).toContain("DOMAIN,apple-relay.cloudflare.com");
+    expect(services).toContain("DOMAIN-SUFFIX,itunes.apple.com");
+    expect(icloud).toContain("DOMAIN-SUFFIX,icloud.com");
+    expect(media).toContain("DOMAIN-SUFFIX,music.apple.com");
+    expect(intelligence).toContain("DOMAIN,apple-relay.cloudflare.com");
+    expect(download).toContain("DOMAIN,osxapps.itunes.apple.com");
+    expect(download).toContain("DOMAIN,updates.cdn-apple.com");
     expect(system).toContain("DOMAIN,captive.apple.com");
     expect(system).toContain("DOMAIN-SUFFIX,push.apple.com");
     expect(system).toContain("DOMAIN,ocsp.apple.com");
-    expect(`${services}\n${system}`).not.toContain("icloud.com.cn");
-    expect(`${services}\n${system}`).not.toContain("apzones.com");
+    expect(system).not.toContain("DOMAIN,swcdn.apple.com");
+    const all = [services, icloud, media, intelligence, download, system].join("\n");
+    expect(all).not.toContain("icloud.com.cn");
+    expect(all).not.toContain("apzones.com");
+    // Download hosts are inside the store and iCloud suffixes, so their list has to match first.
+    const order = ["apple-download", "apple-system", "apple-services", "apple-icloud", "apple-media", "apple-intelligence"]
+      .map(id => mihomoRules.findIndex(rule => rule.startsWith(`RULE-SET,${id},`)));
+    expect(order).not.toContain(-1);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   it("keeps every text rule valid, unique and free of v2fly attributes", async () => {

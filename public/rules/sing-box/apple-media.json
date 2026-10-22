@@ -1,0 +1,15 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "music.apple.com",
+        "tv.apple.com",
+        "books.apple.com",
+        "podcasts.apple.com",
+        "fitness.apple.com",
+        "news.apple.com"
+      ]
+    }
+  ]
+}

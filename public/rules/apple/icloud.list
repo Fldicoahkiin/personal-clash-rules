@@ -1,0 +1,13 @@
+# Apple iCloud
+# Sources: https://support.apple.com/101555 and v2fly/domain-list-community
+
+# iCloud and CloudKit
+DOMAIN-SUFFIX,apple-cloudkit.com
+DOMAIN-SUFFIX,apple-livephotoskit.com
+DOMAIN-SUFFIX,cdn-apple.com
+DOMAIN-SUFFIX,gc.apple.com
+DOMAIN-SUFFIX,icloud.com
+DOMAIN-SUFFIX,icloud.apple.com
+DOMAIN-SUFFIX,icloud-content.com
+DOMAIN-SUFFIX,iwork.apple.com
+DOMAIN-SUFFIX,me.com

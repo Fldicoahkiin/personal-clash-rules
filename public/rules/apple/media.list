@@ -1,0 +1,9 @@
+# Apple media services
+# Sources: https://support.apple.com/101555 and v2fly/domain-list-community
+
+DOMAIN-SUFFIX,music.apple.com
+DOMAIN-SUFFIX,tv.apple.com
+DOMAIN-SUFFIX,books.apple.com
+DOMAIN-SUFFIX,podcasts.apple.com
+DOMAIN-SUFFIX,fitness.apple.com
+DOMAIN-SUFFIX,news.apple.com

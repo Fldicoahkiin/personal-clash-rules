@@ -39,14 +39,30 @@ ruleSets:
     label: 本地地址
     policy: DIRECT
     path: rules/local/private-ip.list
+  - id: apple-download
+    label: Apple 下载
+    policy: APPLE-DOWNLOAD
+    path: rules/apple/download.list
   - id: apple-system
     label: Apple 系统
-    policy: APPLE
+    policy: APPLE-SYSTEM
     path: rules/apple/system.list
   - id: apple-services
-    label: Apple 服务
+    label: Apple 账号与 App Store
     policy: APPLE
     path: rules/apple/services.list
+  - id: apple-icloud
+    label: iCloud
+    policy: ICLOUD
+    path: rules/apple/icloud.list
+  - id: apple-media
+    label: Apple 媒体
+    policy: APPLE-MEDIA
+    path: rules/apple/media.list
+  - id: apple-intelligence
+    label: Siri、地图与 Apple 智能
+    policy: APPLE-INTELLIGENCE
+    path: rules/apple/intelligence.list
   - id: ai-openai
     label: OpenAI
     policy: AI

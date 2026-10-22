@@ -223,7 +223,8 @@ describe("Worker entrypoint", () => {
     for (const label of ["tencent-messaging", "netease-music", "china-domains"]) {
       expect(preview.ruleSets.find(item => item.label === label)).toMatchObject({ policy: "DIRECT" });
     }
-    expect(preview.ruleSets.find(item => item.label === "apple-system")).toMatchObject({ policy: "APPLE" });
+    expect(preview.ruleSets.find(item => item.label === "apple-system")).toMatchObject({ policy: "APPLE-SYSTEM" });
+    expect(preview.ruleSets.find(item => item.label === "apple-download")).toMatchObject({ policy: "APPLE-DOWNLOAD" });
     const rules = preview.ruleSets.map(item => createRuleSet(item, item.content));
     expect(matchUrl("203.0.113.1", rules, { processName: "WeChat" })).toMatchObject({
       matched: true, policy: "DIRECT", rule: "PROCESS-NAME,WeChat",
@@ -233,6 +234,13 @@ describe("Worker entrypoint", () => {
     });
     for (const host of ["www.douyin.com", "v3.douyinvod.com", "sns-webpic.xhscdn.com"]) {
       expect(matchUrl(host, rules, { processName: "Mobile" }), host).toMatchObject({ matched: true, policy: "DIRECT" });
+    }
+    for (const [host, policy] of [
+      ["osxapps.itunes.apple.com", "APPLE-DOWNLOAD"], ["updates.cdn-apple.com", "APPLE-DOWNLOAD"],
+      ["p17-buy.itunes.apple.com", "APPLE"], ["appleid.cdn-apple.com", "APPLE"], ["gateway.icloud.com", "APPLE-SYSTEM"],
+      ["www.icloud.com", "ICLOUD"], ["music.apple.com", "APPLE-MEDIA"], ["guzzoni.apple.com", "APPLE-INTELLIGENCE"],
+    ]) {
+      expect(matchUrl(host, rules, { processName: "Mobile" }), host).toMatchObject({ matched: true, policy });
     }
   });
 

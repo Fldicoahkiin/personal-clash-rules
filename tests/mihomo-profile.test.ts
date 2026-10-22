@@ -89,11 +89,11 @@ describe("createMihomoProfile", () => {
     })).toThrow("DNS dependency");
   });
 
-  it("keeps empty groups closed and makes only the domestic media group direct-first", () => {
+  it("keeps empty groups closed and makes only domestic media, Apple downloads and Apple system direct-first", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: US, type: ss}]"));
     for (const group of profile["proxy-groups"]) {
       expect(group["empty-fallback"]).toBe("REJECT");
-      if (group.name === "📺 哔哩哔哩") expect(group.proxies?.[0]).toBe("DIRECT");
+      if (["📺 哔哩哔哩", "📥 Apple 下载", "⚙️ Apple 系统"].includes(group.name)) expect(group.proxies?.[0]).toBe("DIRECT");
       else expect(group.proxies?.[0]).not.toBe("DIRECT");
     }
     expect(profile.rules).not.toContain("RULE-SET,apple-system,DIRECT");
