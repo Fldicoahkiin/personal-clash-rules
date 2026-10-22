@@ -74,12 +74,14 @@ export const mihomoPolicyDisplayNames: Record<string, string> = {
   FACEBOOK: "👥 Facebook", LINKEDIN: "💼 LinkedIn", TIKTOK: "🎵 TikTok",
 };
 
+// Other groups carry an emoji in their names; GLOBAL must keep Mihomo's reserved name, so only it keeps its icon.
 export function displayMihomoGroup(group: { name: string; proxies?: readonly string[]; icon?: string }) {
-  const { icon: _icon, ...rest } = group;
+  const { icon, ...rest } = group;
   return {
     ...rest,
     name: mihomoPolicyDisplayNames[group.name] ?? group.name,
     ...(group.proxies ? { proxies: group.proxies.map(name => mihomoPolicyDisplayNames[name] ?? name) } : {}),
+    ...(group.name === "GLOBAL" && icon ? { icon } : {}),
   };
 }
 

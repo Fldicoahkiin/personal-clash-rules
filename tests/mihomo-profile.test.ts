@@ -136,9 +136,10 @@ proxies:
       expect.objectContaining({ name: "📥 Steam 下载", proxies: expect.arrayContaining(["DIRECT"]) }),
       expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
     ]));
-    expect((config["proxy-groups"] as Array<Record<string, unknown>>).every(
-      (group) => group.icon === undefined,
-    )).toBe(true);
+    const groups = config["proxy-groups"] as Array<Record<string, unknown>>;
+    expect(groups.filter((group) => group.icon !== undefined)).toEqual([
+      expect.objectContaining({ name: "GLOBAL", icon: "https://rules.flacier.com/policy-icons/globe.svg" }),
+    ]);
     expect(config["rule-providers"]).toMatchObject({
       "ai-openai": {
         behavior: "classical",

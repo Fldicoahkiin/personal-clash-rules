@@ -257,6 +257,7 @@ rule-providers:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)
     empty-fallback: REJECT
+    icon: https://rules.flacier.com/policy-icons/globe.svg
   - name: ♻️ 自动选择
     type: url-test
     include-all: true

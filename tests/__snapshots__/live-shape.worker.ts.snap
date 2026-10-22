@@ -283,6 +283,7 @@ proxy-groups:
     include-all: true
     exclude-filter: (?i)(剩余|流量|到期|官网|客服|订阅)|^\\[Rola\\] 美国 · 203\\.0\\.113\\.10$|^\\[Rola\\] 美国 Las Vegas · 198\\.51\\.100\\.11$|^\\[DigitalOcean\\] 美国 San Francisco · 192\\.0\\.2\\.50$
     empty-fallback: REJECT
+    icon: https://rules.flacier.com/policy-icons/globe.svg
   - name: 🇺🇸 美国固定 IP
     type: select
     proxies:
