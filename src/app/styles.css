@@ -145,28 +145,48 @@ summary:focus-visible {
 }
 
 .site-header nav {
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: stretch;
   align-self: stretch;
+  scrollbar-width: none;
+}
+
+.site-header nav::-webkit-scrollbar {
+  display: none;
 }
 
 .site-header nav a {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   padding-inline: 22px;
-  border-left: 1px solid transparent;
-  border-right: 1px solid transparent;
   color: var(--muted);
   font-size: 0.88rem;
   font-weight: 650;
   text-decoration: none;
+  transition: color var(--fast) linear;
 }
 
-.site-header nav a:hover {
-  border-color: var(--line);
-  background: var(--surface);
+.site-header nav a:hover,
+.site-header nav a[aria-current] {
   color: var(--ink);
+}
+
+/* Hovering one item quiets the others, so the pointer reads as the selection. */
+.site-header nav:has(a:hover) a:not(:hover) {
+  color: color-mix(in srgb, var(--muted) 70%, var(--paper));
+}
+
+.nav-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  transition: transform var(--move) var(--ease-out), width var(--move) var(--ease-out), opacity var(--fast) linear;
 }
 
 .header-github {
@@ -2506,8 +2526,31 @@ details[open] > summary::before {
     grid-template-columns: 1fr auto;
   }
 
+  .header-inner {
+    grid-template-areas: "brand github" "nav nav";
+    row-gap: 0;
+  }
+
+  .brand {
+    grid-area: brand;
+    min-height: 54px;
+  }
+
+  .header-github {
+    grid-area: github;
+  }
+
   .site-header nav {
-    display: none;
+    grid-area: nav;
+    min-height: 42px;
+    margin-inline: -12px;
+    padding-inline: 4px;
+    border-top: 1px solid var(--line);
+    overflow-x: auto;
+  }
+
+  html {
+    scroll-padding-top: 108px;
   }
 
   .route-map-stop-button {
