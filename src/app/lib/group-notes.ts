@@ -1,5 +1,8 @@
+import { countryGroupNames, mihomoPolicyDisplayNames } from "../../config/mihomo-policy";
+
 // The only hand-written copy about policy groups: what each group is for and why it starts where it does.
-// Rule order, exits, rule files and example domains are derived from the config and the published lists.
+// Rule order, exits, rule files and example domains are derived from the config and the published lists;
+// group names inside the copy come from the config too, so a rename needs no edit here.
 
 export interface GroupNote {
   purpose: string;
@@ -17,7 +20,7 @@ export const groupNotes: Record<string, GroupNote> = {
   DIRECT: {
     title: "直连白名单",
     purpose: "本机与局域网、远程控制和支付、QQ 与微信、网易云音乐，以及国内服务域名和国内 IP。",
-    defaultReason: "直连只来自这些规则；没有规则命中的流量不会回落直连，而是交给「🐟 未匹配流量」走代理。",
+    defaultReason: `直连只来自这些规则；没有规则命中的流量不会回落直连，而是交给「${mihomoPolicyDisplayNames.DEFAULT}」走代理。`,
     orderNote: "分三处：前置白名单最先匹配；国内域名列表排在 Apple、Steam 下载、哔哩哔哩和境外例外之后，让这些服务保留可选出口，又排在 AI 进程规则之前，Claude 或 Codex 访问国内网站时仍然直连；GEOIP,CN 在所有域名规则之后，用目标 IP 补判国内地址。",
   },
   "APPLE-DOWNLOAD": {
@@ -49,7 +52,7 @@ export const groupNotes: Record<string, GroupNote> = {
   },
   CLAUDE: {
     purpose: "Claude 应用、Claude Code 进程，以及 Anthropic 的网站与 API。",
-    defaultReason: "默认跟随「🤖 AI」，与其他 AI 服务用同一个出口；需要时可单独给 Claude 选节点。",
+    defaultReason: `默认跟随「${mihomoPolicyDisplayNames.AI}」，与其他 AI 服务用同一个出口；需要时可单独给 Claude 选节点。`,
     orderNote: "API 地址按 IP 匹配且不解析域名，放在所有域名规则之后，只兜底直接连 IP 的请求。",
   },
   AI: {
@@ -62,7 +65,7 @@ export const groupNotes: Record<string, GroupNote> = {
   DEV: { purpose: "代码托管、软件包仓库、容器镜像与常用开发者网站。" },
   ANIGAMER: {
     purpose: "巴哈姆特动画疯。",
-    defaultReason: "默认使用「🇨🇳 台湾」节点组：动画疯按台湾地区提供内容。",
+    defaultReason: `默认使用「${countryGroupNames.TW}」节点组：动画疯按台湾地区提供内容。`,
   },
   MEDIA: { purpose: "YouTube、Netflix、Disney+、Spotify、Twitch 等境外影音服务。" },
   TELEGRAM: { purpose: "Telegram、t.me 与 telegra.ph。" },

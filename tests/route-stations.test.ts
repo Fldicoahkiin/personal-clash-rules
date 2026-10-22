@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
 
-import { businessProxyGroupNames, mihomoProfileRules } from "../src/config/mihomo-policy";
+import { businessProxyGroupNames, countryGroupNames, mihomoPolicyDisplayNames as names, mihomoProfileRules } from "../src/config/mihomo-policy";
 import { groupNotes } from "../src/app/lib/group-notes";
 import { exitPath, policyOptions } from "../src/app/lib/policy-groups";
 import { routeStations, stationAt, stationFamily } from "../src/app/lib/route-stations";
@@ -65,15 +65,15 @@ describe("group notes", () => {
 
 describe("exitPath", () => {
   it("follows initial choices through business groups and stops at GLOBAL or a region", () => {
-    expect(exitPath("CLAUDE")).toEqual({ names: ["🧠 Claude", "🤖 AI", "GLOBAL"], direct: false });
-    expect(exitPath("APPLE-DOWNLOAD")).toEqual({ names: ["📥 Apple 下载", "DIRECT"], direct: true });
-    expect(exitPath("ANIGAMER")).toEqual({ names: ["📺 巴哈姆特", "🇨🇳 台湾"], direct: false });
+    expect(exitPath("CLAUDE")).toEqual({ names: [names.CLAUDE, names.AI, "GLOBAL"], direct: false });
+    expect(exitPath("APPLE-DOWNLOAD")).toEqual({ names: [names["APPLE-DOWNLOAD"], "DIRECT"], direct: true });
+    expect(exitPath("ANIGAMER")).toEqual({ names: [names.ANIGAMER, countryGroupNames.TW], direct: false });
     expect(exitPath("DIRECT")).toEqual({ names: ["DIRECT"], direct: true });
   });
 
   it("lists a group's selectable exits by display name", () => {
-    expect(policyOptions("CLAUDE").slice(0, 2)).toEqual(["🤖 AI", "GLOBAL"]);
-    expect(policyOptions("APPLE-DOWNLOAD")).toContain("🇨🇳 台湾");
+    expect(policyOptions("CLAUDE").slice(0, 2)).toEqual([names.AI, "GLOBAL"]);
+    expect(policyOptions("APPLE-DOWNLOAD")).toContain(countryGroupNames.TW);
     expect(policyOptions("DIRECT")).toEqual([]);
   });
 });
