@@ -301,6 +301,12 @@ export const mihomoRules = [
   "MATCH,DEFAULT",
 ] as const;
 
+// Mihomo skips a matched rule when the selected exit cannot carry UDP and, with nothing left, sends the packet DIRECT
+// from the home address. Only such UDP reaches rules after MATCH, and it is refused instead.
+export const mihomoUdpFallbackRules = [
+  "NETWORK,UDP,REJECT",
+] as const;
+
 // Exact executable names from the installed macOS apps, including their network helpers.
 // These cover IP-only connections without sending an entire shared cloud range directly.
 export const mihomoProfileRules = [
@@ -320,4 +326,5 @@ export const mihomoProfileRules = [
   "PROCESS-NAME,NeteaseMusic,DIRECT",
   "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
   ...mihomoRules,
+  ...mihomoUdpFallbackRules,
 ] as const;

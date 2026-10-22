@@ -195,7 +195,10 @@ describe("Worker entrypoint", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     const preview = await response.json<RulePreview>();
     expect(preview.fingerprint).toMatch(/^[A-Za-z0-9_-]{43}$/u);
-    expect(preview.ruleSets.at(-1)).toMatchObject({ content: "MATCH", policy: "DEFAULT" });
+    expect(preview.ruleSets.slice(-2).map(({ content, policy }) => ({ content, policy }))).toEqual([
+      { content: "MATCH", policy: "DEFAULT" },
+      { content: "NETWORK,UDP", policy: "REJECT" },
+    ]);
     expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
     expect(preview.ruleSets.slice(0, 15).map(({ content, policy }) => ({ content, policy }))).toEqual([
       { content: "PROCESS-NAME,ToDesk", policy: "DIRECT" },
@@ -270,7 +273,7 @@ describe("Worker entrypoint", () => {
     expect(preview.ruleSets[anthropicIp]).toMatchObject({
       policy: "CLAUDE", content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
     });
-    expect(preview.ruleSets.slice(anthropicIp + 1).map(set => set.label)).toEqual(["模板内规则", "默认规则"]);
+    expect(preview.ruleSets.slice(anthropicIp + 1).map(set => set.label)).toEqual(["模板内规则", "默认规则", "模板内规则"]);
   });
 
   it("rejects a private custom preview URL and unsupported HTTP methods", async () => {

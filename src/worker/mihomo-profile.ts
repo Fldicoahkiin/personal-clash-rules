@@ -6,6 +6,7 @@ import {
   mihomoProxyGroups,
   mihomoProfileRuleProviders,
   mihomoProfileRules,
+  mihomoUdpFallbackRules,
 } from "../config/mihomo-policy";
 import { readYamlProxyResource } from "./yaml-proxy-resource";
 import { ApiError } from "./api-error";
@@ -39,6 +40,7 @@ const globalRules = [
   "GEOSITE,private,DIRECT",
   "GEOIP,private,DIRECT,no-resolve",
   "MATCH,GLOBAL",
+  ...mihomoUdpFallbackRules,
 ] as const;
 
 function profileBody(

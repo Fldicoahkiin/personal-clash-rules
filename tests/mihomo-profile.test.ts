@@ -19,11 +19,12 @@ describe("createMihomoProfile", () => {
     expect(JSON.stringify(groups)).not.toContain("🌐 全局");
     expect(groups.find((group: { name: string }) => group.name === "🧠 Claude").hidden).not.toBe(true);
   });
-  it("sends domestic domains direct before the AI process rules and keeps the China IP fallback last", () => {
+  it("sends domestic domains direct before the AI process rules and keeps the China IP fallback before MATCH", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
-    expect(profile.rules.slice(-2)).toEqual([
+    expect(profile.rules.slice(-3)).toEqual([
       "GEOIP,CN,DIRECT",
       "MATCH,🐟 未匹配流量",
+      "NETWORK,UDP,REJECT",
     ]);
     const domestic = profile.rules.indexOf("RULE-SET,china-domains,DIRECT");
     expect(profile.rules[domestic - 1]).toBe("RULE-SET,china-exceptions,🐟 未匹配流量");
@@ -211,6 +212,7 @@ proxies:
       "GEOSITE,private,DIRECT",
       "GEOIP,private,DIRECT,no-resolve",
       "MATCH,GLOBAL",
+      "NETWORK,UDP,REJECT",
     ]);
   });
 

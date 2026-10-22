@@ -110,7 +110,7 @@ pnpm start:local
 
 Flacier 分流、ACL4SSR 默认、多国分组、无自动测速，以及自定义 HTTPS INI。远程模板在订阅刷新时读取；目前支持 `ruleset`、`custom_proxy_group`、`enable_rule_generator=true`、`overwrite_original_rules=true`。不支持的指令会报错，不会被忽略。
 
-Flacier 默认把 AI、开发、Apple、Steam 等业务流量及未知流量交给对应代理组；QQ／微信、网易云音乐和国内服务域名直连，Bilibili 组默认直连但仍能手动换出口。国内域名集合位于显式业务规则之后，随后用 `GEOIP,CN,DIRECT` 覆盖国内 IP 连接，最后仍是 `MATCH,DEFAULT` 代理。CN IP 依赖客户端自己的 GeoIP 数据；未命中前置域名规则时允许解析目标 IP，以便判断国内地址，解析仍遵循所配置的 DNS 路径。详见 [国内白名单来源及客户端边界](rola-residential.md#国内应用直连白名单)。Mihomo 策略组为空时使用 `REJECT`，不悄悄直连。ACL4SSR 和自定义模板保留其明确写出的规则，不改成 Flacier 的策略。
+Flacier 默认把 AI、开发、Apple、Steam 等业务流量及未知流量交给对应代理组；QQ／微信、网易云音乐和国内服务域名直连，Bilibili 组默认直连但仍能手动换出口。国内域名集合位于显式业务规则之后，随后用 `GEOIP,CN,DIRECT` 覆盖国内 IP 连接，最后仍是 `MATCH,DEFAULT` 代理。CN IP 依赖客户端自己的 GeoIP 数据；未命中前置域名规则时允许解析目标 IP，以便判断国内地址，解析仍遵循所配置的 DNS 路径。详见 [国内白名单来源及客户端边界](rola-residential.md#国内应用直连白名单)。Mihomo 策略组为空时使用 `REJECT`，不悄悄直连。所选出口不支持 UDP 时，Mihomo 会跳过对应规则，规则用完后默认直连，QUIC 和 WebRTC 会因此从本机地址发出；Flacier 和全局代理方案在 `MATCH` 之后加了一条只有这类 UDP 才会走到的拒绝规则，不再回落直连，也不预留直连例外。网页随之退回 TCP 走代理；语音、游戏和系统时间同步（UDP 123）等需要 UDP 的流量，要给对应分组选支持 UDP 的节点，确实连不上时再单独加规则。Shadowrocket 用 `udp-policy-not-supported-behaviour = REJECT` 达到同样效果。ACL4SSR 和自定义模板保留其明确写出的规则，不改成 Flacier 的策略。
 
 手机 Shadowrocket 需要更新并选中配套 `.conf`，全局路由选择「配置」；只刷新首页节点订阅或处于全局「代理」模式，不会应用国内直连规则。首页直接选择家宽或机场，代理规则与代理 DoH 都跟随该节点；无需再选国家、AI 或家宽策略组。
 
