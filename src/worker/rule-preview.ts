@@ -22,7 +22,8 @@ export async function createRulePreview(
     config = parse(applyRuleTemplate("proxies: []", remote.content));
   }
   const urls = [...new Set(Object.values(config["rule-providers"]).map(provider => provider.url))];
-  if (urls.length > 32) throw new ApiError(413, "rule_preview_too_large", "Preview supports at most 32 rule sources");
+  // Flacier publishes 35 lists; 40 plus the template fetch stays under the free plan's 50 subrequests.
+  if (urls.length > 40) throw new ApiError(413, "rule_preview_too_large", "Preview supports at most 40 rule sources");
   const contents = new Map<string, string>();
   let total = 0;
   for (let index = 0; index < urls.length; index += 4) {

@@ -86,7 +86,8 @@ export function applyRuleTemplate(profile: string, ini: string): string {
 export async function expandProfileRules(profile: string, assets?: Pick<Env["ASSETS"], "fetch">): Promise<string> {
   const config = parse(profile) as { rules: string[]; "rule-providers"?: Record<string, { url: string; format: string; behavior: string }> };
   const providers = Object.entries(config["rule-providers"] || {});
-  if (providers.length > 32) throw new ApiError(413, "output_too_large", "Rule expansion supports at most 32 sources");
+  // Flacier publishes 35 lists; 40 plus the template fetch stays under the free plan's 50 subrequests.
+  if (providers.length > 40) throw new ApiError(413, "output_too_large", "Rule expansion supports at most 40 sources");
   const expanded = new Map<string, string[]>();
   let bytes = 0;
   // Domain-behavior sets (the large domestic list) stay as rule providers; classical sets are inlined.
