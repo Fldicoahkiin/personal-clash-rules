@@ -316,6 +316,15 @@ export const mihomoUdpFallbackRules = [
   "NETWORK,UDP,REJECT",
 ] as const;
 
+// AI and Claude keep one exit: their UDP that the selected exit cannot carry is refused before AUTO, so QUIC falls back
+// to TCP on that exit instead of showing the services a second address.
+export const mihomoAiUdpRefusals = mihomoRules
+  .filter(rule => /^RULE-SET,[^,]+,(?:AI|CLAUDE)(?:,|$)/u.test(rule))
+  .map(rule => {
+    const [, set, , flag] = rule.split(",");
+    return `AND,((NETWORK,UDP),(RULE-SET,${set}${flag === "no-resolve" ? ",no-resolve" : ""})),REJECT`;
+  });
+
 // Exact executable names from the installed macOS apps, including their network helpers.
 // These cover IP-only connections without sending an entire shared cloud range directly.
 export const mihomoProfileRules = [
@@ -335,5 +344,6 @@ export const mihomoProfileRules = [
   "PROCESS-NAME,NeteaseMusic,DIRECT",
   "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
   ...mihomoRules,
+  ...mihomoAiUdpRefusals,
   ...mihomoUdpFallbackRules,
 ] as const;

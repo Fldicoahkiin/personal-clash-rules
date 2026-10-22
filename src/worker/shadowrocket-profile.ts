@@ -1,5 +1,5 @@
 import { defaultDnsSettings, type DnsSettings } from "../config/dns-settings";
-import { displayMihomoGroup, displayMihomoRule, mihomoProxyGroups, mihomoRuleProviders, mihomoRules, mihomoUdpFallbackRules } from "../config/mihomo-policy";
+import { displayMihomoGroup, displayMihomoRule, mihomoAiUdpRefusals, mihomoProxyGroups, mihomoRuleProviders, mihomoRules, mihomoUdpFallbackRules } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createProxyDns, domesticDoh } from "./mihomo-dns";
 import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
@@ -37,7 +37,7 @@ function homepagePolicy(policy: string): string {
 }
 
 // Prepared Mihomo profiles carry these with display group names.
-const mihomoUdpFallbackLines = new Set(mihomoUdpFallbackRules.flatMap(rule => [rule, displayMihomoRule(rule)]));
+const mihomoUdpFallbackLines = new Set([...mihomoAiUdpRefusals, ...mihomoUdpFallbackRules].flatMap(rule => [rule, displayMihomoRule(rule)]));
 
 function ruleLine(rule: string, providers: ShadowrocketRouting["providers"]): string[] {
   // udp-policy-not-supported-behaviour already refuses UDP that the home node cannot carry.

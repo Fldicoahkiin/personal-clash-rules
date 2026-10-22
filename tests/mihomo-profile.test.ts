@@ -22,9 +22,16 @@ describe("createMihomoProfile", () => {
   });
   it("sends domestic domains direct before the AI process rules and keeps the China IP fallback before MATCH", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
-    expect(profile.rules.slice(-4)).toEqual([
-      "GEOIP,CN,DIRECT",
-      "MATCH,🐟 未匹配流量",
+    const match = profile.rules.indexOf("MATCH,🐟 未匹配流量");
+    expect(profile.rules[match - 1]).toBe("GEOIP,CN,DIRECT");
+    expect(profile.rules.slice(match + 1)).toEqual([
+      "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-openai)),REJECT",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-xai)),REJECT",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-google)),REJECT",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-coding)),REJECT",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-general)),REJECT",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve)),REJECT",
       "NETWORK,UDP,♻️ 自动选择",
       "NETWORK,UDP,REJECT",
     ]);
