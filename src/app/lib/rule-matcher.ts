@@ -105,6 +105,8 @@ function matches(hostname: string, rule: RuleEntry, context: { ip?: string; proc
   }
   if (rule.type === "DOMAIN-KEYWORD") return hostname.includes(rule.value);
   if (rule.type === "MATCH" || rule.type === "FINAL") return true;
+  // The tester models a web request over TCP, so rules limited to UDP never apply.
+  if (rule.type === "AND" && rule.source.includes("(NETWORK,UDP)")) return false;
   if (rule.type === "GEOIP" && rule.source.endsWith(",no-resolve")
     && !context.ip && ipv4ToNumber(hostname) === null && !hostname.includes(":")) return false;
   if (rule.type === "IP-CIDR" || rule.type === "IP-CIDR6") {

@@ -325,6 +325,22 @@ export const mihomoAiUdpRefusals = mihomoRules
     return `AND,((NETWORK,UDP),(RULE-SET,${set}${flag === "no-resolve" ? ",no-resolve" : ""})),REJECT`;
   });
 
+// WebRTC learns its public address from STUN servers, and a domestic one would be reached through the domestic list or
+// GEOIP,CN and answer with the home address. Browser STUN goes through AUTO and is refused when AUTO cannot carry UDP;
+// the Claude app keeps one exit, so its STUN is refused outright. The patterns avoid parentheses inside AND rules.
+const stunPorts = "3478/5349/19302-19309";
+const browserProcessPattern = [
+  "^firefox$", "^firefox\\.exe$", "^plugin-container$", "^plugin-container\\.exe$",
+  "^Google Chrome Helper", "^chrome\\.exe$", "^Microsoft Edge Helper", "^msedge\\.exe$",
+  "^Brave Browser Helper", "^brave\\.exe$", "^com\\.apple\\.WebKit\\.",
+].join("|");
+const browserStun = `(NETWORK,UDP),(DST-PORT,${stunPorts}),(PROCESS-NAME-REGEX,${browserProcessPattern})`;
+export const mihomoStunRules = [
+  `AND,(${browserStun}),AUTO`,
+  `AND,(${browserStun}),REJECT`,
+  `AND,((NETWORK,UDP),(DST-PORT,${stunPorts}),(PROCESS-NAME-REGEX,^Claude Helper)),REJECT`,
+];
+
 // Exact executable names from the installed macOS apps, including their network helpers.
 // These cover IP-only connections without sending an entire shared cloud range directly.
 export const mihomoProfileRules = [
@@ -343,6 +359,7 @@ export const mihomoProfileRules = [
   "PROCESS-NAME,QQ Helper,DIRECT",
   "PROCESS-NAME,NeteaseMusic,DIRECT",
   "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
+  ...mihomoStunRules,
   ...mihomoRules,
   ...mihomoAiUdpRefusals,
   ...mihomoUdpFallbackRules,

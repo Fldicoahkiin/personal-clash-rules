@@ -47,6 +47,8 @@ const matchPosition = mihomoProfileRules.findIndex(rule => rule.startsWith("MATC
 export const routeStations: RouteStation[] = mihomoProfileRules
   .slice(0, matchPosition)
   .map((text, index) => parseRule(text, index + 1))
+  // Rules limited to UDP, such as browser STUN, do not decide where a web request goes.
+  .filter(rule => !rule.text.includes("(NETWORK,UDP)"))
   .reduce<RouteStation[]>((stations, { policy, ...rule }) => {
     const last = stations.at(-1);
     if (last?.policy === policy) {

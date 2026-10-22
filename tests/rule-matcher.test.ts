@@ -89,6 +89,15 @@ describe("matchUrl", () => {
     const rules = [createRuleSet(definitions[0], "GEOIP,CN\nDOMAIN-SUFFIX,openai.com")];
     expect(matchUrl("api.openai.com", rules)).toMatchObject({ rule: "GEOIP,CN", matched: false, uncertain: expect.stringContaining("GEOIP") });
   });
+  it("passes over UDP-only rules because the tester models a web request over TCP", () => {
+    const rules = [
+      createRuleSet({ id: "stun", label: "模板内规则", path: "", policy: "AUTO" },
+        "AND,((NETWORK,UDP),(DST-PORT,3478/5349/19302-19309),(PROCESS-NAME-REGEX,^firefox$))"),
+      createRuleSet({ id: "example", label: "模板内规则", path: "", policy: "DIRECT" }, "DOMAIN-SUFFIX,example.cn"),
+    ];
+    expect(matchUrl("www.example.cn", rules, { processName: "firefox" })).toMatchObject({ matched: true, policy: "DIRECT", ruleSetId: "example" });
+  });
+
   it("uses supplied target IP without performing DNS resolution", () => {
     const rules = [createRuleSet(definitions[1], "IP-CIDR,192.168.0.0/16")];
     expect(matchUrl("nas.example", rules).uncertain).toContain("目标 IP");

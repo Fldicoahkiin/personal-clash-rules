@@ -12,10 +12,12 @@ const manifest = parse(readFileSync(new URL("../public/rules/manifest.yaml", imp
 };
 
 describe("route stations", () => {
-  it("cover every rule up to MATCH once, in order, merging runs that share a policy", () => {
+  it("cover every web rule up to MATCH once, in order, merging runs that share a policy", () => {
     const positions = routeStations.flatMap(station => station.rules.map(rule => rule.position));
     const matchPosition = mihomoProfileRules.findIndex(rule => rule.startsWith("MATCH,")) + 1;
-    expect(positions).toEqual(Array.from({ length: matchPosition }, (_, index) => index + 1));
+    // UDP-only rules such as browser STUN do not route web requests and keep their real positions out of the map.
+    expect(positions).toEqual(mihomoProfileRules.slice(0, matchPosition)
+      .flatMap((rule, index) => rule.includes("(NETWORK,UDP)") ? [] : [index + 1]));
     for (const [index, station] of routeStations.entries()) {
       expect(station.first).toBe(station.rules[0].position);
       expect(station.last).toBe(station.rules.at(-1)!.position);

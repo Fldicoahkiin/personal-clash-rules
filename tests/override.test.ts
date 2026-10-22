@@ -11,6 +11,7 @@ import {
   mihomoProxyGroups,
   mihomoProfileRuleProviders,
   mihomoProfileRules,
+  mihomoStunRules,
 } from "../src/config/mihomo-policy";
 import { policyDisplayName, policyOptions } from "../src/app/lib/policy-groups";
 
@@ -64,7 +65,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 39)).toEqual([
+    expect(config["+rules"].slice(0, 42)).toEqual([
       "PROCESS-NAME,ToDesk,DIRECT",
       "PROCESS-NAME,ToDesk_Service,DIRECT",
       "PROCESS-NAME,ToDesk_Session,DIRECT",
@@ -80,6 +81,7 @@ describe("Clash Party override", () => {
       "PROCESS-NAME,QQ Helper,DIRECT",
       "PROCESS-NAME,NeteaseMusic,DIRECT",
       "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
+      ...mihomoStunRules.map(displayMihomoRule),
       "DOMAIN-SUFFIX,todesk.com,DIRECT",
       "DOMAIN-SUFFIX,todesk.cn,DIRECT",
       "DOMAIN-SUFFIX,alipay.com,DIRECT",
