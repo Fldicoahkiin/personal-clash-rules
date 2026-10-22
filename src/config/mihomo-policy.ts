@@ -319,8 +319,10 @@ export const mihomoRules = [
 ] as const;
 
 // Mihomo skips a matched rule when the selected exit cannot carry UDP and, with nothing left, sends the packet DIRECT
-// from the home address. Only such UDP reaches rules after MATCH, and it is refused instead.
+// from the home address. Only such UDP reaches rules after MATCH: it goes through the automatic proxy group instead,
+// and is refused only when that group's pick cannot carry UDP either, so it never falls back to DIRECT.
 export const mihomoUdpFallbackRules = [
+  "NETWORK,UDP,AUTO",
   "NETWORK,UDP,REJECT",
 ] as const;
 

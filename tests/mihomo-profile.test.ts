@@ -21,9 +21,10 @@ describe("createMihomoProfile", () => {
   });
   it("sends domestic domains direct before the AI process rules and keeps the China IP fallback before MATCH", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
-    expect(profile.rules.slice(-3)).toEqual([
+    expect(profile.rules.slice(-4)).toEqual([
       "GEOIP,CN,DIRECT",
       "MATCH,🐟 未匹配流量",
+      "NETWORK,UDP,♻️ 自动选择",
       "NETWORK,UDP,REJECT",
     ]);
     const domestic = profile.rules.indexOf("RULE-SET,china-domains,DIRECT");
@@ -212,6 +213,7 @@ proxies:
       "GEOSITE,private,DIRECT",
       "GEOIP,private,DIRECT,no-resolve",
       "MATCH,GLOBAL",
+      "NETWORK,UDP,♻️ 自动选择",
       "NETWORK,UDP,REJECT",
     ]);
   });

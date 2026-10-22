@@ -826,4 +826,5 @@ rule-providers:
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
   - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量
+  - NETWORK,UDP,♻️ 自动选择
   - NETWORK,UDP,REJECT

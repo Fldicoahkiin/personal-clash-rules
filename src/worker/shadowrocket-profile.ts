@@ -1,5 +1,5 @@
 import { defaultDnsSettings, type DnsSettings } from "../config/dns-settings";
-import { displayMihomoGroup, mihomoProxyGroups, mihomoRuleProviders, mihomoRules, mihomoUdpFallbackRules } from "../config/mihomo-policy";
+import { displayMihomoGroup, displayMihomoRule, mihomoProxyGroups, mihomoRuleProviders, mihomoRules, mihomoUdpFallbackRules } from "../config/mihomo-policy";
 import { ApiError } from "./api-error";
 import { createProxyDns, domesticDoh } from "./mihomo-dns";
 import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
@@ -36,9 +36,12 @@ function homepagePolicy(policy: string): string {
   return policy === "REJECT" ? "REJECT" : "PROXY";
 }
 
+// Prepared Mihomo profiles carry these with display group names.
+const mihomoUdpFallbackLines = new Set(mihomoUdpFallbackRules.flatMap(rule => [rule, displayMihomoRule(rule)]));
+
 function ruleLine(rule: string, providers: ShadowrocketRouting["providers"]): string[] {
   // udp-policy-not-supported-behaviour already refuses UDP that the home node cannot carry.
-  if (rule.startsWith("PROCESS-NAME") || (mihomoUdpFallbackRules as readonly string[]).includes(rule)) return [];
+  if (rule.startsWith("PROCESS-NAME") || mihomoUdpFallbackLines.has(rule)) return [];
   const udp = /^AND,\(\((DOMAIN(?:-SUFFIX)?),([a-z0-9.-]+)\),\(NETWORK,UDP\)\),REJECT$/iu.exec(rule);
   if (udp) return [`AND,((${udp[1]},${udp[2]}),(PROTOCOL,UDP)),REJECT`];
   const [type, value, policy, ...options] = rule.split(",");
