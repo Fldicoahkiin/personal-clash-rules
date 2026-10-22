@@ -94,7 +94,7 @@ export function displayMihomoRule(rule: string): string {
 const policyIconBase = "https://rules.flacier.com/policy-icons";
 export const countryGroupNames: Record<string, string> = {
   US: "🇺🇸 美国", JP: "🇯🇵 日本", SG: "🇸🇬 新加坡", HK: "🇭🇰 香港",
-  TW: "🇹🇼 台湾", KR: "🇰🇷 韩国", EU: "🇪🇺 欧洲",
+  TW: "🇨🇳 台湾", KR: "🇰🇷 韩国", EU: "🇪🇺 欧洲",
 };
 
 export const countryNodeFilters = {
@@ -128,7 +128,7 @@ export const countryFlagRules = [
   { flag: "🇯🇵", filter: countryNodeFilters.JP },
   { flag: "🇸🇬", filter: countryNodeFilters.SG },
   { flag: "🇭🇰", filter: countryNodeFilters.HK },
-  { flag: "🇹🇼", filter: countryNodeFilters.TW },
+  { flag: "🇨🇳", filter: countryNodeFilters.TW },
   { flag: "🇰🇷", filter: countryNodeFilters.KR },
   { flag: "🇬🇧", filter: countryNodeFilters.GB },
   { flag: "🇩🇪", filter: countryNodeFilters.DE },

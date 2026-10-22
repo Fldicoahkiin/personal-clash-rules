@@ -17,7 +17,7 @@ describe("createLoonProfile", () => {
     expect(groups).not.toContain("日本剩余流量");
     expect(groups).not.toContain("🇯🇵 日本");
     expect(groups).not.toContain("🇭🇰 香港");
-    expect(groups).toContain("🇹🇼 台湾 = select, TW-01");
+    expect(groups).toContain("🇨🇳 台湾 = select, TW-01");
     expect(() => createLoonProfile(quota)).toThrow("no selectable nodes");
   });
 
@@ -26,8 +26,8 @@ describe("createLoonProfile", () => {
 
     expect(output).toContain("[Proxy]\nUS-01=shadowsocks");
     expect(output).toContain("🇺🇸 美国 = select, US-01");
-    expect(output).toContain("🇹🇼 台湾 = select, TW-01");
-    expect(output).toContain("AI = select, GLOBAL, AUTO, 🇺🇸 美国, 🇹🇼 台湾, DIRECT, US-01, TW-01");
+    expect(output).toContain("🇨🇳 台湾 = select, TW-01");
+    expect(output).toContain("AI = select, GLOBAL, AUTO, 🇺🇸 美国, 🇨🇳 台湾, DIRECT, US-01, TW-01");
     expect(output).toContain("[Remote Rule]");
     expect(output).toContain(
       "https://rules.flacier.com/rules/ai/openai.list, policy=AI, tag=ai-openai, enabled=true, update-interval=43200",

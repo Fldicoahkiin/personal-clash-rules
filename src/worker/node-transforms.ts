@@ -135,7 +135,9 @@ export function parseNodeSettings(input: Record<string, unknown>): NodeSettings 
   };
 }
 
-function withCountryFlag(name: string): string {
+// Apple hides 🇹🇼 on devices set to the China mainland region, where it shows as an empty box.
+function withCountryFlag(source: string): string {
+  const name = source.replaceAll("🇹🇼", "🇨🇳");
   if (/^\p{Regional_Indicator}{2}\s*/u.test(name) || platformNamePrefix.test(name)) {
     return name;
   }

@@ -6,14 +6,14 @@ import { businessProxyGroupNames, mihomoProxyGroups } from "../src/config/mihomo
 describe("business policy choices", () => {
   it("offers the same complete exits for every business policy without selector cycles", () => {
     const business = businessProxyGroupNames;
-    const eligible = ["GLOBAL", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT"];
+    const eligible = ["GLOBAL", "AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT"];
     for (const name of business) {
       const group = mihomoProxyGroups.find(group => group.name === name);
       expect(group, name).toMatchObject({ "include-all": true });
       expect(group, name).not.toHaveProperty("exclude-type");
       expect(new Set(group?.proxies), name).toEqual(new Set(name === "CLAUDE" ? ["AI", ...eligible] : eligible));
       expect(group?.["exclude-filter"], name).toContain("剩余");
-      const initial: Record<string, string> = { CLAUDE: "AI", ANIGAMER: "🇹🇼 台湾", BILIBILI: "DIRECT", "APPLE-DOWNLOAD": "DIRECT", "APPLE-SYSTEM": "DIRECT" };
+      const initial: Record<string, string> = { CLAUDE: "AI", ANIGAMER: "🇨🇳 台湾", BILIBILI: "DIRECT", "APPLE-DOWNLOAD": "DIRECT", "APPLE-SYSTEM": "DIRECT" };
       expect(group?.proxies?.[0], name).toBe(initial[name] ?? "GLOBAL");
     }
     const byName = new Map(mihomoProxyGroups.map(group => [group.name, group]));
@@ -33,7 +33,7 @@ describe("business policy choices", () => {
       expect(group, name).not.toHaveProperty("exclude-type");
       expect(group?.["exclude-filter"], name).toContain("剩余");
     }
-    for (const name of ["AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
+    for (const name of ["AUTO", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
       expect(mihomoProxyGroups.find(group => group.name === name), name).toHaveProperty("exclude-type", "direct");
     }
   });

@@ -248,7 +248,7 @@ describe("local Rola preparation", () => {
     expect(prepared.summary.dnsSelection).toContain("已加入家宽选项");
     const group = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
     expect(group).toEqual({ ...before, "default-selected": defaultSelected ?? "Alpha Airport",
-      proxies: ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "ROLA"] });
+      proxies: ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "ROLA"] });
     const candidates = output.proxies.filter((node: { name: string; type: string }) => (
       !group["exclude-type"].split("|").includes(node.type)
       && new RegExp(group.filter.replace(/^\(\?i\)/u, ""), "iu").test(node.name)
@@ -280,7 +280,7 @@ describe("local Rola preparation", () => {
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "US Home" };
     const output = parse(prepareRolaProfile(base, input).profile);
     const dns = output["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY");
-    expect(dns.proxies).toEqual(["JP Airport", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "US Home"]);
+    expect(dns.proxies).toEqual(["JP Airport", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "US Home"]);
     expect(dns["default-selected"]).toBe("US Airport");
     for (const forbidden of ["DIRECT", "GLOBAL", "🖐 手动选择", "🤖 AI", "🐟 未匹配流量", "DNS-PROXY"]) expect(dns.proxies).not.toContain(forbidden);
   });
@@ -412,7 +412,7 @@ describe("local Rola preparation", () => {
     const base = createMihomoProfile("proxies: [{name: US Airport, type: trojan, server: airport.example, port: 443, password: demo}]");
     const input = { ...settings, authMode: "literal", connectionMode: "direct", upstreamNode: "", country, name };
     const output = parse(prepareRolaProfile(base, input).profile);
-    for (const groupName of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
+    for (const groupName of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
       const group = output["proxy-groups"].find((group: { name: string }) => group.name === groupName);
       const members: string[] = group.proxies ?? [];
       expect(members).not.toContain(name);
@@ -451,7 +451,7 @@ describe("local Rola preparation", () => {
     const input = { ...settings, connectionMode: "direct", upstreamNode: "", groupName: "🇺🇸 美国家宽", policyGroup: "AI" };
     const output = parse(prepareRolaProfile(base, input).profile);
     const businessNames = ["🤖 AI", "🍎 Apple", "🎮 Steam", "📥 Steam 下载", "🕹️ Steam 联机", "💬 Discord", "🛠️ 开发服务", "🎬 流媒体", "📺 哔哩哔哩", "📺 巴哈姆特", "🐟 未匹配流量"];
-    const eligible = ["GLOBAL", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
+    const eligible = ["GLOBAL", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲", "DIRECT", input.groupName];
     for (const name of businessNames) {
       const group = output["proxy-groups"].find((group: { name: string }) => group.name === name);
       expect(new Set(group.proxies), name).toEqual(new Set(eligible));

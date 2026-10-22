@@ -9,7 +9,7 @@ import chain from "./fixtures/live-shape/rola-chain.json";
 const chainId = "LiveShapeChain00000000000000001A";
 const origin = "https://example.com";
 const vpsName = chain.settings.residentialNodeNames[0];
-const airportNodes = ["🇯🇵 日本 AWS01", "🇯🇵 日本 AWS08", "🇺🇸 美国 01", "🇺🇸 美国 Hy2 01", "🇸🇬 新加坡 01", "🇭🇰 香港 01", "🇹🇼 台湾 01"];
+const airportNodes = ["🇯🇵 日本 AWS01", "🇯🇵 日本 AWS08", "🇺🇸 美国 01", "🇺🇸 美国 Hy2 01", "🇸🇬 新加坡 01", "🇭🇰 香港 01", "🇨🇳 台湾 01"];
 const secrets = ["fake-pass-01", "fake-pass-02", "fake-acc", "fake-hy2-password", "fake-token"];
 
 let client = 0;

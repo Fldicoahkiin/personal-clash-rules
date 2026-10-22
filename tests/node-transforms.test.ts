@@ -145,6 +145,15 @@ describe("applyNodeTransforms", () => {
       .toBe("[Rola] [VLESS] 美国 · 203.0.113.10 · VPS");
   });
 
+  it("shows Taiwan nodes with a flag that renders on China mainland region devices", () => {
+    const names = applyNodeTransforms([
+      { name: "🇹🇼台湾 | 避免晚高峰使用", type: "hysteria2", server: "tw-one.example" },
+      { name: "Taipei 02", type: "ss", server: "tw-two.example" },
+      { name: "🇯🇵 Tokyo 01", type: "ss", server: "jp.example" },
+    ], { ...defaultNodeSettings, addCountryFlag: true }).map(node => node.name);
+    expect(names).toEqual(["🇨🇳台湾 | 避免晚高峰使用", "🇨🇳 Taipei 02", "🇯🇵 Tokyo 01"]);
+  });
+
   it("enables XUDP only for VMess and VLESS nodes", () => {
     const nodes = [
       { name: "VMess", type: "vmess" },

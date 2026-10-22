@@ -73,7 +73,7 @@ describe("createMihomoProfile", () => {
   it("labels country groups with flags and updates all group references", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     const names = new Set(profile["proxy-groups"].map((group: { name: string }) => group.name));
-    for (const name of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇹🇼 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
+    for (const name of ["🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇭🇰 香港", "🇨🇳 台湾", "🇰🇷 韩国", "🇪🇺 欧洲"]) {
       expect(names.has(name)).toBe(true);
     }
     for (const group of profile["proxy-groups"]) {
@@ -132,9 +132,9 @@ proxies:
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["GLOBAL", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇹🇼 台湾", "DIRECT"]), "include-all": true }),
+      expect.objectContaining({ name: "🤖 AI", proxies: expect.arrayContaining(["GLOBAL", "♻️ 自动选择", "🇺🇸 美国", "🇯🇵 日本", "🇸🇬 新加坡", "🇨🇳 台湾", "DIRECT"]), "include-all": true }),
       expect.objectContaining({ name: "📥 Steam 下载", proxies: expect.arrayContaining(["DIRECT"]) }),
-      expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇹🇼 台湾"]) }),
+      expect.objectContaining({ name: "📺 巴哈姆特", proxies: expect.arrayContaining(["🇨🇳 台湾"]) }),
     ]));
     const groups = config["proxy-groups"] as Array<Record<string, unknown>>;
     expect(groups.filter((group) => group.icon !== undefined)).toEqual([
