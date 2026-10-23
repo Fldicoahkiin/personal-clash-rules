@@ -65,7 +65,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 43)).toEqual([
+    expect(config["+rules"].slice(0, 45)).toEqual([
       "PROCESS-NAME,ToDesk,DIRECT",
       "PROCESS-NAME,ToDesk_Service,DIRECT",
       "PROCESS-NAME,ToDesk_Session,DIRECT",
@@ -105,8 +105,10 @@ describe("Clash Party override", () => {
       "RULE-SET,china-domains,DIRECT",
       "PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🧠 Claude",
       "RULE-SET,ai-anthropic,🧠 Claude",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT",
       "PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI",
       "RULE-SET,ai-openai,🤖 AI",
+      "AND,((NETWORK,UDP),(RULE-SET,ai-openai)),REJECT",
     ]);
     expect(config["+rules"]).toContain("RULE-SET,ai-xai,🤖 AI");
     expect(config["+rules"]).toContain("RULE-SET,steam,🎮 Steam");

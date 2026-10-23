@@ -319,14 +319,15 @@ export const mihomoUdpFallbackRules = [
   "NETWORK,UDP,REJECT",
 ] as const;
 
-// AI and Claude keep one exit: their UDP that the selected exit cannot carry is refused before AUTO, so QUIC falls back
-// to TCP on that exit instead of showing the services a second address.
-export const mihomoAiUdpRefusals = mihomoRules
-  .filter(rule => /^RULE-SET,[^,]+,(?:AI|CLAUDE)(?:,|$)/u.test(rule))
-  .map(rule => {
-    const [, set, , flag] = rule.split(",");
-    return `AND,((NETWORK,UDP),(RULE-SET,${set}${flag === "no-resolve" ? ",no-resolve" : ""})),REJECT`;
-  });
+// AI and Claude keep one exit: each of their rule sets is followed by a refusal of the UDP its selected exit cannot carry.
+// Without it Mihomo keeps matching and a later rule, MATCH included, would send QUIC out of a second address; with it
+// QUIC falls back to TCP on the service's own exit.
+const aiUdpRefusal = (rule: string) => {
+  if (!/^RULE-SET,[^,]+,(?:AI|CLAUDE)(?:,|$)/u.test(rule)) return [];
+  const [, set, , flag] = rule.split(",");
+  return [`AND,((NETWORK,UDP),(RULE-SET,${set}${flag === "no-resolve" ? ",no-resolve" : ""})),REJECT`];
+};
+export const mihomoAiUdpRefusals = mihomoRules.flatMap(aiUdpRefusal);
 
 // WebRTC learns its public address from STUN servers, and a domestic one would be reached through the domestic list or
 // GEOIP,CN and answer with the home address. Browser STUN goes through AUTO and is refused when AUTO cannot carry UDP;
@@ -363,7 +364,6 @@ export const mihomoProfileRules = [
   "PROCESS-NAME,NeteaseMusic,DIRECT",
   "PROCESS-NAME,NeteaseMusic Helper,DIRECT",
   ...mihomoStunRules,
-  ...mihomoRules,
-  ...mihomoAiUdpRefusals,
+  ...mihomoRules.flatMap(rule => [rule, ...aiUdpRefusal(rule)]),
   ...mihomoUdpFallbackRules,
 ] as const;

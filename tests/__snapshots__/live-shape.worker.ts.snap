@@ -1145,12 +1145,18 @@ rules:
   - RULE-SET,china-domains,DIRECT
   - PROCESS-NAME-REGEX,(?i)^claude(\\.exe)?$,🧠 Claude
   - RULE-SET,ai-anthropic,🧠 Claude
+  - AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT
   - PROCESS-NAME-REGEX,(?i)^codex(\\.exe)?$,🤖 AI
   - RULE-SET,ai-openai,🤖 AI
+  - AND,((NETWORK,UDP),(RULE-SET,ai-openai)),REJECT
   - RULE-SET,ai-xai,🤖 AI
+  - AND,((NETWORK,UDP),(RULE-SET,ai-xai)),REJECT
   - RULE-SET,ai-google,🤖 AI
+  - AND,((NETWORK,UDP),(RULE-SET,ai-google)),REJECT
   - RULE-SET,ai-coding,🤖 AI
+  - AND,((NETWORK,UDP),(RULE-SET,ai-coding)),REJECT
   - RULE-SET,ai-general,🤖 AI
+  - AND,((NETWORK,UDP),(RULE-SET,ai-general)),REJECT
   - RULE-SET,steam-online,🕹️ Steam 联机
   - RULE-SET,steam,🎮 Steam
   - RULE-SET,discord,💬 Discord
@@ -1165,15 +1171,9 @@ rules:
   - RULE-SET,linkedin,💼 LinkedIn
   - RULE-SET,tiktok,🎵 TikTok
   - RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve
+  - AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve)),REJECT
   - GEOIP,CN,DIRECT
   - MATCH,🐟 未匹配流量
-  - AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT
-  - AND,((NETWORK,UDP),(RULE-SET,ai-openai)),REJECT
-  - AND,((NETWORK,UDP),(RULE-SET,ai-xai)),REJECT
-  - AND,((NETWORK,UDP),(RULE-SET,ai-google)),REJECT
-  - AND,((NETWORK,UDP),(RULE-SET,ai-coding)),REJECT
-  - AND,((NETWORK,UDP),(RULE-SET,ai-general)),REJECT
-  - AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve)),REJECT
   - NETWORK,UDP,♻️ 自动选择
   - NETWORK,UDP,REJECT
 "

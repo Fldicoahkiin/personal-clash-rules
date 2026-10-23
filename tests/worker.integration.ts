@@ -198,11 +198,11 @@ describe("Worker entrypoint", () => {
     const match = preview.ruleSets.findIndex(item => item.content === "MATCH");
     expect(preview.ruleSets[match]).toMatchObject({ policy: "DEFAULT" });
     expect(preview.ruleSets.slice(match + 1).map(({ content, policy }) => ({ content, policy }))).toEqual([
-      ...["ai-anthropic", "ai-openai", "ai-xai", "ai-google", "ai-coding", "ai-general"].map(set => ({ content: `AND,((NETWORK,UDP),(RULE-SET,${set}))`, policy: "REJECT" })),
-      { content: "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve))", policy: "REJECT" },
       { content: "NETWORK,UDP", policy: "AUTO" },
       { content: "NETWORK,UDP", policy: "REJECT" },
     ]);
+    const anthropic = preview.ruleSets.findIndex(item => item.label === "ai-anthropic");
+    expect(preview.ruleSets[anthropic + 1]).toMatchObject({ content: "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic))", policy: "REJECT" });
     expect(preview.ruleSets.some(item => item.content.startsWith("PROCESS-NAME-REGEX"))).toBe(true);
     expect(preview.ruleSets.slice(0, 15).map(({ content, policy }) => ({ content, policy }))).toEqual([
       { content: "PROCESS-NAME,ToDesk", policy: "DIRECT" },
@@ -286,7 +286,13 @@ describe("Worker entrypoint", () => {
     expect(preview.ruleSets[anthropicIp]).toMatchObject({
       policy: "CLAUDE", content: expect.stringContaining("IP-CIDR6,2607:6bc0::/48,no-resolve"),
     });
-    expect(preview.ruleSets.slice(anthropicIp + 1).map(set => set.label)).toEqual(["模板内规则", "默认规则", ...Array(9).fill("模板内规则")]);
+    expect(preview.ruleSets.slice(anthropicIp + 1).map(({ content, policy }) => ({ content, policy }))).toEqual([
+      { content: "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve))", policy: "REJECT" },
+      { content: "GEOIP,CN", policy: "DIRECT" },
+      { content: "MATCH", policy: "DEFAULT" },
+      { content: "NETWORK,UDP", policy: "AUTO" },
+      { content: "NETWORK,UDP", policy: "REJECT" },
+    ]);
   });
 
   it("rejects a private custom preview URL and unsupported HTTP methods", async () => {

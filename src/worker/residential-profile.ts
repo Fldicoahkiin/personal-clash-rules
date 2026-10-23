@@ -81,8 +81,10 @@ function claudePolicyMigration(base: Record<string, unknown>) {
     parts[index] = name;
     return [[rule, parts.join(",")]];
   });
+  // The UDP refusal that follows the Anthropic rule set moves with it, so it never lands ahead of the rule it guards.
   const priorityRules = [...(base.rules as string[]).map(rule => ruleChanges.find(([before]) => before === rule)?.[1] ?? rule)]
-    .filter(rule => /^(?:RULE-SET,ai-anthropic,|PROCESS-NAME-REGEX,\(\?i\)\^claude)/u.test(rule) && rule.endsWith(`,${name}`));
+    .filter(rule => (/^(?:RULE-SET,ai-anthropic,|PROCESS-NAME-REGEX,\(\?i\)\^claude)/u.test(rule) && rule.endsWith(`,${name}`))
+      || rule === "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT");
   return { name, newGroup, ruleChanges, priorityRules };
 }
 

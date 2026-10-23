@@ -25,16 +25,21 @@ describe("createMihomoProfile", () => {
     const match = profile.rules.indexOf("MATCH,🐟 未匹配流量");
     expect(profile.rules[match - 1]).toBe("GEOIP,CN,DIRECT");
     expect(profile.rules.slice(match + 1)).toEqual([
-      "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT",
-      "AND,((NETWORK,UDP),(RULE-SET,ai-openai)),REJECT",
-      "AND,((NETWORK,UDP),(RULE-SET,ai-xai)),REJECT",
-      "AND,((NETWORK,UDP),(RULE-SET,ai-google)),REJECT",
-      "AND,((NETWORK,UDP),(RULE-SET,ai-coding)),REJECT",
-      "AND,((NETWORK,UDP),(RULE-SET,ai-general)),REJECT",
-      "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve)),REJECT",
       "NETWORK,UDP,♻️ 自动选择",
       "NETWORK,UDP,REJECT",
     ]);
+    // UDP an AI exit cannot carry is refused right after its rule set, before later rules or MATCH could take it.
+    for (const [rule, refusal] of [
+      ["RULE-SET,ai-anthropic,🧠 Claude", "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic)),REJECT"],
+      ["RULE-SET,ai-openai,🤖 AI", "AND,((NETWORK,UDP),(RULE-SET,ai-openai)),REJECT"],
+      ["RULE-SET,ai-xai,🤖 AI", "AND,((NETWORK,UDP),(RULE-SET,ai-xai)),REJECT"],
+      ["RULE-SET,ai-google,🤖 AI", "AND,((NETWORK,UDP),(RULE-SET,ai-google)),REJECT"],
+      ["RULE-SET,ai-coding,🤖 AI", "AND,((NETWORK,UDP),(RULE-SET,ai-coding)),REJECT"],
+      ["RULE-SET,ai-general,🤖 AI", "AND,((NETWORK,UDP),(RULE-SET,ai-general)),REJECT"],
+      ["RULE-SET,ai-anthropic-ip,🧠 Claude,no-resolve", "AND,((NETWORK,UDP),(RULE-SET,ai-anthropic-ip,no-resolve)),REJECT"],
+    ]) {
+      expect(profile.rules[profile.rules.indexOf(rule) + 1]).toBe(refusal);
+    }
     const domestic = profile.rules.indexOf("RULE-SET,china-domains,DIRECT");
     expect(profile.rules[domestic - 1]).toBe("RULE-SET,china-exceptions,🐟 未匹配流量");
     expect(domestic).toBeLessThan(profile.rules.findIndex((rule: string) => rule.startsWith("PROCESS-NAME-REGEX,(?i)^claude")));
