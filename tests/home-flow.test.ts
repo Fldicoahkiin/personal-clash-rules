@@ -31,9 +31,10 @@ describe("home page", () => {
   });
 
   it("lists every rule station in order with its default exit", () => {
-    expect(positionOf('id="route-1"')).toBeLessThan(positionOf("📥 Apple 下载"));
-    expect(positionOf("📥 Apple 下载")).toBeLessThan(positionOf("⚙️ Apple 系统"));
-    expect(positionOf("⚙️ Apple 系统")).toBeLessThan(positionOf("🍎 Apple<"));
+    // Station names drop the group emoji; the Mihomo group names keep it.
+    expect(positionOf('id="route-1"')).toBeLessThan(positionOf("<strong>Apple 下载</strong>"));
+    expect(positionOf("<strong>Apple 下载</strong>")).toBeLessThan(positionOf("<strong>Apple 系统</strong>"));
+    expect(positionOf("<strong>Apple 系统</strong>")).toBeLessThan(positionOf("<strong>Apple</strong>"));
     expect(page).toContain('href="/overrides/clash-party.yaml"');
     expect(page).toContain('href="/rules/manifest.yaml"');
   });

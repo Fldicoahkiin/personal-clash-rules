@@ -2,6 +2,7 @@ import { ArrowUpRight, CaretRight, Check, DownloadSimple } from "@phosphor-icons
 import { type CSSProperties, type KeyboardEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { exitPath } from "../lib/policy-groups";
+import { plainName } from "../lib/route-sections";
 import { useRuleManifest, type RuleSetInfo } from "../lib/rule-files";
 import { routeStations, stationAt, stationPositions, stationTitle, type RouteStation, type StationMatch } from "../lib/route-stations";
 import { RouteStationDetail } from "./RouteStationDetail";
@@ -31,7 +32,7 @@ function stationSummary(station: RouteStation, manifest: ReadonlyMap<string, Rul
       : rule.type === "GEOIP" ? `GEOIP ${rule.value}` : inlineRuleLabels[rule.type] ?? rule.type;
     parts.set(label, (parts.get(label) ?? 0) + 1);
   }
-  const summary = [...parts].map(([label, count]) => count > 1 ? `${label} ${count}` : label).join(" · ");
+  const summary = [...parts].map(([label, count]) => count > 1 ? `${label} ${count}` : label).join("、");
   // "📥 Apple 下载" over "Apple 下载" says nothing new.
   return summary === stationTitle(station).replace(/^[^\p{L}\p{N}]+/u, "") ? "" : summary;
 }
@@ -135,11 +136,12 @@ export function RouteMap({ match, focus, onTest }: {
                 >
                   <span className="route-map-position">{station.first === station.last ? station.first : `${station.first}–${station.last}`}</span>
                   <span className="route-map-stop" aria-hidden="true">{state === "hit" ? <Check weight="bold" /> : null}</span>
+                  <span className="badge" data-mode={exit.direct ? "直连" : "代理"}>{exit.direct ? "直连" : "代理"}</span>
                   <span className="route-map-name">
-                    <strong>{stationTitle(station)}</strong>
+                    <strong>{plainName(stationTitle(station))}</strong>
                     {summary ? <small>{summary}</small> : null}
                   </span>
-                  <span className="route-map-exit">{exit.names.slice(1).join(" → ") || exit.names[0]}</span>
+                  <span className="route-map-exit">{exit.names.slice(1).map(plainName).join(" → ") || plainName(exit.names[0])}</span>
                   <CaretRight className="route-map-caret" aria-hidden="true" />
                 </button>
                 {!wide && isSelected ? (
@@ -159,11 +161,11 @@ export function RouteMap({ match, focus, onTest }: {
                 <h3>怎么读这条线路</h3>
                 <p>流量从第 1 条规则开始向下匹配，命中就停止，不再看后面的规则。所以同一个域名出现在两组时，排在前面的那组生效。</p>
                 <ul>
-                  <li><span className="route-map-stop" data-legend="direct" aria-hidden="true" />实心：默认直连</li>
-                  <li><span className="route-map-stop" aria-hidden="true" />空心：默认代理</li>
+                  <li><span className="badge" data-mode="直连">直连</span>默认直连，实心圆点</li>
+                  <li><span className="badge" data-mode="代理">代理</span>默认走代理，空心圆点</li>
                 </ul>
                 <p>选择左侧任意一站，查看用途、默认出口、全部规则和示例域名；示例可以直接送进规则测试。键盘上用 ↑ ↓ 切换。</p>
-                <p className="route-map-guide-count">{routeStations.length} 站 · {routeStations.at(-1)!.last} 条规则 · {stationPositions(routeStations.at(-1)!)}为兜底</p>
+                <p className="route-map-guide-count">共 {routeStations.length} 站、{routeStations.at(-1)!.last} 条规则，{stationPositions(routeStations.at(-1)!)}兜底。</p>
               </div>
             )}
           </aside>
