@@ -50,7 +50,8 @@ describe("home page", () => {
   });
 
   it("prefills the product name as an editable value", () => {
-    expect(page).toContain('<h1 id="subscription-title">Flacierの订阅转换</h1>');
+    expect(page).toContain('<h1 id="hero-title">把机场订阅转成分好流的配置</h1>');
+    expect(page).toContain('<h2 id="subscription-title">订阅转换</h2>');
     expect(page).toMatch(/<input[^>]*value="Flacierの分流规则"/u);
     expect(page).not.toContain('placeholder="留空时使用');
     expect(readFileSync(new URL("../index.html", import.meta.url), "utf8")).toContain("<title>Flacierの订阅转换</title>");

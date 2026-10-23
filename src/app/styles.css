@@ -629,10 +629,10 @@ summary:focus-visible {
   margin-bottom: 32px;
 }
 
-.subscription-heading h1 {
+.subscription-heading h2 {
   margin: 0;
   font-family: "Flacier Display", "Noto Sans SC", sans-serif;
-  font-size: clamp(2.8rem, 5vw, 4.6rem);
+  font-size: clamp(2.2rem, 3.6vw, 3.2rem);
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 0.96;
@@ -2895,5 +2895,504 @@ details[open] > summary::before {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) img[src="/brand/github-mark.svg"] {
     filter: invert(0.9);
+  }
+}
+
+/* ---------- Hero: convert and test on the left, the routing overview on the right ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+
+.ascii-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 64px;
+  align-items: start;
+  padding-block: 64px 112px;
+}
+
+.hero-copy h1 {
+  max-width: 9.5em;
+  margin: 0 0 18px;
+  font-family: "Flacier Display", "Noto Sans SC", sans-serif;
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.06;
+}
+
+.hero-copy p {
+  max-width: 32em;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.hero-test {
+  display: flex;
+  height: 48px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+  padding: 0 6px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  transition: border-color var(--fast) linear, box-shadow var(--fast) linear;
+}
+
+.hero-test:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.hero-prompt {
+  color: var(--faint);
+  font-family: var(--mono);
+  transition: color var(--fast) linear;
+}
+
+.hero-test:focus-within .hero-prompt {
+  color: var(--accent);
+}
+
+.hero-test input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.hero-test input:focus-visible {
+  outline: none;
+}
+
+.hero-test input::placeholder {
+  color: var(--faint);
+}
+
+.hero-test button {
+  height: 36px;
+  padding-inline: 16px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  font-weight: 650;
+  transition: background-color var(--fast) linear, transform var(--press) var(--ease-out);
+}
+
+.hero-test button:hover {
+  background: var(--accent-hover);
+}
+
+.hero-test button:active,
+.hero-try button:active {
+  transform: scale(0.98);
+}
+
+.hero-try {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.hero-try button {
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  transition: border-color var(--fast) linear, transform var(--press) var(--ease-out);
+}
+
+.hero-try button:hover {
+  border-color: var(--line-strong);
+}
+
+.hero-convert {
+  margin-top: 28px;
+}
+
+/* ---------- Routing overview: one row per purpose section, a trunk from the request node ---------- */
+.overview {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.overview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 14px 20px 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.overview-head h2 {
+  margin: 0;
+  font-family: "Flacier Display", "Noto Sans SC", sans-serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.overview-head span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.overview-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  padding: 16px 16px 10px 0;
+}
+
+.overview-root {
+  position: relative;
+  display: flex;
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding-left: 16px;
+}
+
+.overview-root::after {
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  width: 14px;
+  border-top: 1px solid var(--trunk);
+  content: "";
+}
+
+.overview-in {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.overview-root[data-busy] .overview-in {
+  animation: overview-blink 480ms steps(2, jump-none) infinite;
+}
+
+@keyframes overview-blink {
+  50% { opacity: 0.25; }
+}
+
+.overview-node {
+  color: var(--ink);
+  font-size: 1.02rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.overview-node b {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+.overview-tree {
+  position: relative;
+  margin: 0 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-tree::before {
+  position: absolute;
+  top: var(--trunk-top, 19px);
+  bottom: var(--trunk-bottom, 19px);
+  left: 0;
+  border-left: 1px solid var(--trunk);
+  content: "";
+}
+
+.overview-path {
+  position: absolute;
+  z-index: 2;
+  top: var(--trunk-top, 19px);
+  left: -0.5px;
+  width: 2px;
+  background: var(--accent);
+  transition: height 70ms linear;
+}
+
+.overview-packet {
+  position: absolute;
+  z-index: 3;
+  left: -4.5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: top 70ms linear, opacity 120ms linear;
+}
+
+.overview-tree > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 6.2em 7.6em 6.6ch minmax(2ch, 1fr) auto;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 10px 0 28px;
+}
+
+.overview-tree > li::before {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 0;
+  width: 20px;
+  border-top: 1px solid var(--trunk);
+  content: "";
+}
+
+.overview-tree > li::after {
+  position: absolute;
+  z-index: 0;
+  inset: 3px 0 3px 20px;
+  border-radius: 4px;
+  background: transparent;
+  content: "";
+  transition: background-color 150ms ease;
+}
+
+.overview-tree > li > * {
+  position: relative;
+  z-index: 1;
+}
+
+.overview-tree > li:hover::after,
+.overview-tree > li[data-state="hit"]::after {
+  background: var(--surface-muted);
+}
+
+.overview-modes {
+  white-space: nowrap;
+}
+
+.overview-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.overview-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.overview-range {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.overview-leader {
+  overflow: hidden;
+  padding-right: 10px;
+  color: var(--texture);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.overview-leader > span {
+  display: inline-block;
+}
+
+/* Hovering a section sets its leader marching toward the exit, two characters per cycle. */
+.overview-tree > li:hover .overview-leader > span {
+  animation: overview-march 160ms steps(2, end) infinite;
+}
+
+@keyframes overview-march {
+  from { transform: translateX(-2ch); }
+  to { transform: translateX(0); }
+}
+
+.overview-exit {
+  margin-right: -6px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background-color var(--fast) linear, color var(--fast) linear;
+}
+
+.overview-tree > li[data-state="hit"]::before {
+  border-top: 2px solid var(--accent);
+}
+
+.overview-tree > li[data-state="hit"] .overview-name {
+  font-weight: 650;
+}
+
+.overview-tree > li[data-state="hit"] .overview-leader {
+  color: var(--accent);
+}
+
+.overview-tree > li[data-state="hit"] .overview-exit {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 650;
+}
+
+.overview-tree > li[data-state="passed"] .overview-name,
+.overview-tree > li[data-state="passed"] .overview-exit {
+  color: var(--faint);
+}
+
+.overview-note {
+  min-height: 3.2em;
+  margin: 0;
+  padding: 10px 20px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Route badges: how a section or rule leaves, in words, never by colour alone. */
+.badge {
+  display: inline-block;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge + .badge {
+  margin-left: 4px;
+}
+
+.badge[data-mode="直连"] {
+  border-color: color-mix(in srgb, var(--ink) 28%, transparent);
+  color: var(--ink);
+}
+
+.badge[data-mode="代理"] {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+  color: var(--accent);
+}
+
+.badge[data-mode="拦下"] {
+  border-color: color-mix(in srgb, var(--danger) 32%, transparent);
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: var(--danger);
+}
+
+[data-state="passed"] .badge {
+  border-color: color-mix(in srgb, var(--faint) 30%, transparent);
+  background: transparent;
+  color: var(--faint);
+}
+
+@media (max-width: 1040px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    padding-block: 44px 56px;
+  }
+
+  .hero-copy h1 {
+    max-width: none;
+  }
+
+  .overview-body {
+    grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+
+  .overview-root::after {
+    top: 100%;
+    right: auto;
+    left: 30px;
+    width: 0;
+    height: 8px;
+    border-top: 0;
+    border-left: 1px solid var(--trunk);
+  }
+
+  .overview-tree {
+    margin: 8px 0 0 30px;
+  }
+}
+
+@media (max-width: 620px) {
+  .overview-tree > li {
+    grid-template-columns: 3.4em minmax(0, 1fr) auto;
+    column-gap: 8px;
+    padding-block: 4px;
+  }
+
+  .overview-modes .badge + .badge,
+  .overview-leader {
+    display: none;
+  }
+
+  .overview-name {
+    white-space: normal;
+  }
+
+  .overview-exit {
+    grid-column: 2 / -1;
+    justify-self: start;
+    margin: 0 0 0 -6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-path,
+  .overview-packet {
+    transition: none;
+  }
+
+  .overview-root[data-busy] .overview-in,
+  .overview-tree > li:hover .overview-leader > span {
+    animation: none;
   }
 }

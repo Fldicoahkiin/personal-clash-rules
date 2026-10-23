@@ -256,8 +256,8 @@ export function SubscriptionImport({ onRuleSelectionChange }: { onRuleSelectionC
       aria-labelledby="subscription-title"
     >
       <header className="subscription-heading">
-        <h1 id="subscription-title">Flacierの订阅转换</h1>
-        <p>合并订阅 · 选择规则 · 生成链接</p>
+        <h2 id="subscription-title">订阅转换</h2>
+        <p>可以合并多个订阅，选好规则后生成客户端链接。</p>
       </header>
 
       <label className="field subscription-rule-preset">

@@ -83,7 +83,7 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
 
   useEffect(() => {
     onMatch?.(station ? { position, uncertain: Boolean(result?.uncertain) } : null);
-  }, [station, position, result?.uncertain]);
+  }, [station, position, result?.uncertain, resultVersion]);
 
   useEffect(() => {
     function focusInput(event: KeyboardEvent) {
