@@ -1,6 +1,7 @@
+/* Smiley Sans, subset to the characters in the source by scripts/subset-display-font.py. */
 @font-face {
   font-family: "Flacier Display";
-  src: url("/fonts/SmileySans-Oblique.ttf.woff2") format("woff2");
+  src: url("./fonts/flacier-display.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
