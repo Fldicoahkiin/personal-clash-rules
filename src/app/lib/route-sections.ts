@@ -27,6 +27,8 @@ export interface RouteSection {
   modes: Array<"直连" | "代理">;
   /** Proxy groups the section sends traffic to, without emoji; empty when everything goes direct. */
   exits: string[];
+  /** Every rule is limited to UDP, so a web request never matches here. */
+  udpOnly: boolean;
 }
 
 function policyOf(rule: string): string {
@@ -34,7 +36,10 @@ function policyOf(rule: string): string {
   return parts.at(parts.at(-1) === "no-resolve" ? -2 : -1)!;
 }
 
-const plain = (name: string) => name.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+/** A Mihomo group name without its leading emoji, as the site shows it. */
+export function plainName(name: string): string {
+  return name.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+}
 
 const starts = sectionAnchors.map(section => {
   const index = mihomoProfileRules.findIndex(rule => rule.startsWith(section.anchor));
@@ -48,8 +53,9 @@ export const routeSections: RouteSection[] = sectionAnchors.map((section, i) => 
   const policies = mihomoProfileRules.slice(first - 1, last).map(policyOf).filter(policy => policy !== "REJECT");
   const paths = policies.map(policy => ({ policy, direct: exitPath(policy).direct }));
   const modes = (["直连", "代理"] as const).filter(mode => paths.some(path => path.direct === (mode === "直连")));
-  const exits = [...new Set(paths.filter(path => !path.direct && path.policy !== "DIRECT").map(path => plain(policyDisplayName(path.policy))))];
-  return { id: section.id, name: section.name, note: section.note, first, last, modes, exits };
+  const exits = [...new Set(paths.filter(path => !path.direct && path.policy !== "DIRECT").map(path => plainName(policyDisplayName(path.policy))))];
+  const udpOnly = mihomoProfileRules.slice(first - 1, last).every(rule => rule.includes("(NETWORK,UDP)"));
+  return { id: section.id, name: section.name, note: section.note, first, last, modes, exits, udpOnly };
 });
 
 export function sectionAt(position: number): RouteSection | undefined {

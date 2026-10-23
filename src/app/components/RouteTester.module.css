@@ -1,4 +1,4 @@
-.controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; padding: 4px 0 16px; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(12em, 1fr)); align-items: end; gap: 14px 16px; padding: 4px 0 16px; }
 .controls button { justify-self: start; align-self: end; }
 .controls input, .controls select { width: 100%; min-width: 0; }
 .note { margin: 0 0 16px; font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; }
@@ -12,11 +12,32 @@
 .samples button:hover { border-color: var(--accent); background: var(--accent-soft); }
 .samples button:active { transform: scale(.97); }
 
-.conditions { margin-top: 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.conditions > summary { display: flex; align-items: baseline; gap: 12px; padding-block: 12px; cursor: pointer; list-style: none; }
-.conditions > summary::-webkit-details-marker { display: none; }
-.conditions > summary span { color: var(--ink); font-size: .76rem; font-weight: 680; }
-.conditions > summary small { min-width: 0; color: var(--muted); font-family: var(--mono); font-size: .7rem; overflow-wrap: anywhere; }
+.environment { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.environmentTitle { margin: 0 0 10px; color: var(--ink); font-size: .76rem; font-weight: 680; }
+
+/* The match as a tree of purpose sections; box-drawing sits in its own column, text never inside the grid of characters. */
+.trace {
+  display: grid; grid-template-columns: 3ch 7ch minmax(6em, max-content) minmax(2ch, 1fr) auto;
+  margin: 22px 0 8px; padding: 0; list-style: none; color: var(--muted); font-family: var(--mono); font-size: .8rem; line-height: 1.85;
+}
+.trace > li { display: contents; }
+.trace > li > span { min-width: 0; padding: 2px 12px 2px 0; white-space: nowrap; animation: trace-in 240ms var(--ease-out) both; }
+.trace > li > span { animation-delay: calc(var(--row, 0) * 30ms); }
+.branch { color: var(--texture); padding-right: 6px !important; }
+.range { font-variant-numeric: tabular-nums; }
+.name { color: var(--ink); font-family: "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif; font-size: .88rem; }
+.leader { overflow: hidden; color: var(--texture); }
+.outcome { padding-right: 0 !important; font-family: "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif; font-size: .82rem; }
+.trace > li[data-state="skip"] .outcome { color: var(--faint); }
+.trace > li[data-state="hit"] .name, .trace > li[data-state="uncertain"] .name { font-weight: 680; }
+.trace > li[data-state="hit"] .leader { color: var(--accent); }
+.trace > li[data-state="hit"] .outcome { padding: 2px 8px !important; border-radius: 2px; background: var(--accent); color: var(--on-accent); font-weight: 680; }
+.trace > li[data-state="uncertain"] .outcome { color: var(--danger); font-weight: 680; }
+.detail { grid-column: 3 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; white-space: normal !important; }
+.detail code { color: var(--ink); font-size: .8rem; overflow-wrap: anywhere; }
+.detail small { color: var(--muted); font-family: "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif; font-size: .76rem; }
+.detail strong { color: var(--accent); font-family: "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif; font-size: .88rem; font-weight: 650; }
+@keyframes trace-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 
 .showStation {
   display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 6px; padding: 0; border: 0; background: none;
@@ -25,4 +46,11 @@
 .showStation svg { width: 14px; height: 14px; transition: transform var(--move) var(--ease-out); }
 .showStation:hover svg { transform: translateY(3px); }
 
-@media (max-width: 640px) { .controls { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .controls { grid-template-columns: minmax(0, 1fr); }
+  .trace { grid-template-columns: 3ch 7ch minmax(0, 1fr); }
+  .leader { display: none; }
+  .outcome { grid-column: 3; justify-self: start; }
+  .detail { grid-column: 2 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .trace > li > span { animation: none; } }

@@ -19,7 +19,7 @@ describe("createRouteSteps", () => {
   it("keeps every test input inside the form so Enter submits from any field", () => {
     const html = renderToStaticMarkup(createElement(RouteTester));
     const form = html.slice(html.indexOf("<form"), html.indexOf("</form>"));
-    for (const label of ["测试网址", "测试规则方案", "目标 IPv4（可选）", "进程名（可选）"]) {
+    for (const label of ["测试网址", "规则方案", "来源应用", "目标 IP"]) {
       expect(form, label).toContain(label);
     }
   });

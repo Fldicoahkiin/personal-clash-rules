@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowRight, Check } from "@phosphor-icons/react";
-import { type FormEvent, useEffect, useReducer, useRef } from "react";
+import { type CSSProperties, type FormEvent, useEffect, useReducer, useRef } from "react";
 
 import {
   loadRulePreview,
@@ -9,6 +9,8 @@ import {
   type RouteMatch,
 } from "../lib/rule-matcher";
 import { createRouteSteps } from "../lib/route-steps";
+import { exitPath } from "../lib/policy-groups";
+import { plainName, routeSections, sectionAt } from "../lib/route-sections";
 import { useRuleManifest } from "../lib/rule-files";
 import { stationAt, type StationMatch } from "../lib/route-stations";
 import { ruleTemplates, type RuleTemplateId, type RuleSelection } from "../../config/rule-templates";
@@ -27,7 +29,7 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
 } = {}) {
   const [state, update] = useReducer((state: TesterState, patch: Partial<TesterState>) => ({ ...state, ...patch }), {
     input: "", ip: "", processName: "", preset: "flacier", customUrl: "",
-    request: null, active: false, pendingTest: false, preview: null, ruleSets: [], result: null,
+    request: null, active: false, loading: false, pendingTest: false, preview: null, ruleSets: [], result: null,
     message: "", resultVersion: 0,
   });
   const { input, ruleSets, result, message, resultVersion } = state;
@@ -55,14 +57,15 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
     if (!state.request) return;
     let disposed = false;
     const timeout = window.setTimeout(() => controller.abort(), 60000);
-    update({ message: "规则加载中", result: null, ruleSets: [], preview: null });
+    update({ message: "规则加载中", loading: true, result: null, ruleSets: [], preview: null });
     void loadRulePreview(state.request.preset, state.request.url, controller.signal)
       .then((loaded) => {
-        if (!disposed) update({ preview: loaded, ruleSets: loaded.ruleSets.map(rule => createRuleSet(rule, rule.content)), message: "" });
+        if (!disposed) update({ loading: false, preview: loaded, ruleSets: loaded.ruleSets.map(rule => createRuleSet(rule, rule.content)), message: "" });
       })
       .catch((error: unknown) => {
-        if (!disposed) update({ message: error instanceof DOMException && error.name === "AbortError"
-          ? "规则加载超时，请重新加载" : error instanceof Error ? error.message : "规则加载失败" });
+        // A failed load leaves the test ready to retry: the next test or the reload button asks again.
+        if (!disposed) update({ loading: false, pendingTest: false, message: error instanceof DOMException && error.name === "AbortError"
+          ? "规则加载超时，再点一次测试重试" : `规则加载失败：${error instanceof Error ? error.message : "未知错误"}。再点一次测试重试` });
       })
       .finally(() => window.clearTimeout(timeout));
 
@@ -107,8 +110,9 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
       update({ input: value, message: "填写远程规则地址后加载" });
       return;
     }
+    // While a load is running the test waits for it; otherwise a fresh request starts one, also after a failure.
     update({ input: value, result: null, active: true, pendingTest: true,
-      request: state.request ?? { preset: state.preset, url: state.customUrl } });
+      request: state.loading && state.request ? state.request : { preset: state.preset, url: state.customUrl } });
   }
 
   function testRoute(event: FormEvent<HTMLFormElement>) {
@@ -130,18 +134,13 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
     ? { ...result, ruleSetLabel: rule.provider ? manifest?.get(rule.provider.id)?.label ?? rule.provider.id : "配置内规则" }
     : result;
   const steps = createRouteSteps(shownResult);
-  const conditions = [
-    ruleTemplates.find(template => template.id === state.preset)?.name,
-    state.processName.trim() ? `进程 ${state.processName.trim()}` : "浏览器访问",
-    state.ip.trim() ? `IP ${state.ip.trim()}` : "",
-  ].filter(Boolean).join(" · ");
 
   return (
     <section className="route-section page-width" id="tester" aria-labelledby="tester-title">
       <div className="route-main">
         <div className="route-intro">
           <h2 id="tester-title">规则测试</h2>
-          <p>按所选方案的规则顺序模拟，不读取客户端的实时出口。</p>
+          <p>按规则顺序模拟一次匹配，看网址会走哪一组。结果来自规则本身，不是客户端当前选的节点。</p>
         </div>
 
         <form className="route-form" onSubmit={testRoute}>
@@ -159,7 +158,7 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
               aria-keyshortcuts="/"
             />
             <kbd className="route-shortcut" aria-hidden="true">/</kbd>
-            <button type="submit" disabled={state.pendingTest || (Boolean(state.request) && ruleSets.length === 0)}>
+            <button type="submit" disabled={state.pendingTest}>
               {state.pendingTest ? "加载规则" : "测试"}
               <ArrowRight aria-hidden="true" />
             </button>
@@ -172,13 +171,10 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
             ))}
           </div>
 
-          <details className={styles.conditions}>
-            <summary>
-              <span>测试条件</span>
-              <small>{conditions}</small>
-            </summary>
+          <div className={styles.environment} role="group" aria-labelledby="tester-environment">
+            <p className={styles.environmentTitle} id="tester-environment">测试环境</p>
             <div className={styles.controls}>
-              <label className="field"><span>测试规则方案</span>
+              <label className="field"><span>规则方案</span>
                 <select value={state.preset} onChange={event => {
                   const preset = event.target.value as RuleTemplateId;
                   update(reload(preset, "", state.active));
@@ -186,18 +182,21 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
                   {ruleTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
                 </select>
               </label>
-              {state.preset === "custom" ? <label className="field"><span>测试用远程规则地址</span>
+              <label className="field"><span>来源应用</span><input value={state.processName} onChange={event => update({ processName: event.target.value, result: null })} placeholder="不填就按浏览器访问" /></label>
+              <label className="field"><span>目标 IP</span><input value={state.ip} onChange={event => update({ ip: event.target.value, result: null })} placeholder="不填就只按域名判断" /></label>
+              {state.preset === "custom" ? <label className="field"><span>远程规则地址</span>
                 <input type="url" value={state.customUrl} placeholder="https://example.com/rules.ini" onChange={event => update({ customUrl: event.target.value, request: null, ruleSets: [], result: null, preview: null })} />
               </label> : null}
               <button type="button" className="button button-secondary" onClick={() => update({ active: true, request: { preset: state.preset, url: state.customUrl } })}>重新加载规则</button>
-              <label className="field"><span>目标 IPv4（可选）</span><input value={state.ip} onChange={event => update({ ip: event.target.value, result: null })} placeholder="仅供模拟，不会发起 DNS 查询" /></label>
-              <label className="field"><span>进程名（可选）</span><input value={state.processName} onChange={event => update({ processName: event.target.value, result: null })} placeholder="例如 Firefox 或 Codex" /></label>
             </div>
-            {state.preview ? <p className={styles.note}>{state.preview.name} · 规则快照 {state.preview.fingerprint.slice(0, 12)}。未填进程名时按浏览器访问处理；需要 IP 或地理数据的规则显示“无法确定”。</p> : null}
-            {state.preset !== "flacier" ? <p className={styles.note}>远程方案保留原有分流意图，可能包含中国站点直连。测试结果显示配置的默认策略，不代表你的客户端当前选择。</p> : null}
-          </details>
+            {state.preview ? <p className={styles.note}>规则快照 {state.preview.fingerprint.slice(0, 12)}。来源应用和目标 IP 只用于模拟，不会真的发起连接或 DNS 查询；需要 IP 的规则在没填 IP 时显示“无法确定”。</p> : null}
+            {state.preset !== "flacier" ? <p className={styles.note}>远程方案保留它自己的分流思路，可能让国内网站直连。结果显示的是配置里的默认出口，不是你客户端当前选的节点。</p> : null}
+          </div>
         </form>
 
+        {flacier && result && station && shownResult ? (
+          <SectionTrace result={shownResult} position={position} key={resultVersion} />
+        ) : (
         <div className="route-result" aria-live="polite" data-filled={result ? "" : undefined} key={resultVersion}>
           <span className="route-line" aria-hidden="true" />
           <ol className="route-steps" aria-label="规则处理过程">
@@ -274,10 +273,11 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
             })}
           </ol>
         </div>
+        )}
 
         {station && onShowStation ? (
           <button type="button" className={styles.showStation} onClick={() => onShowStation(position)}>
-            在分流线路中查看 · 第 {position} 条
+            在分流线路里查看第 {position} 条
             <ArrowDown aria-hidden="true" />
           </button>
         ) : null}
@@ -287,10 +287,48 @@ export function RouteTester({ selection, request = null, onMatch, onShowStation 
   );
 }
 
+// The rule list as a tree of purpose sections: the ones passed over, then the hit and where it leads.
+function SectionTrace({ result, position }: { result: RouteMatch; position: number }) {
+  const hit = sectionAt(position)!;
+  const passed = routeSections.slice(0, routeSections.indexOf(hit));
+  const exits = result.uncertain ? [] : exitPath(result.policy).names.map(plainName);
+  const missed = (section: (typeof routeSections)[number]) => section.udpOnly ? "跳过：只管 UDP"
+    : section.id === "process" && result.skippedProcessRules ? "跳过：没有指定来源应用" : "不匹配";
+  return (
+    <ol className={styles.trace} aria-live="polite" aria-label="匹配过程">
+      {passed.map((section, index) => (
+        <li key={section.id} style={{ "--row": index } as CSSProperties} data-state={section.udpOnly || (section.id === "process" && result.skippedProcessRules) ? "skip" : "miss"}>
+          <span className={styles.branch} aria-hidden="true">├─</span>
+          <span className={styles.range}>{section.first === section.last ? `#${section.first}` : `#${section.first}-${section.last}`}</span>
+          <span className={styles.name}>{section.name}</span>
+          <span className={styles.leader} aria-hidden="true">{". ".repeat(80)}</span>
+          <span className={styles.outcome}>{missed(section)}</span>
+        </li>
+      ))}
+      <li style={{ "--row": passed.length } as CSSProperties} data-state={result.uncertain ? "uncertain" : "hit"}>
+        <span className={styles.branch} aria-hidden="true">└─</span>
+        <span className={styles.range}>#{position}</span>
+        <span className={styles.name}>{hit.name}</span>
+        <span className={styles.leader} aria-hidden="true">{`${"=".repeat(160)}>`}</span>
+        <span className={styles.outcome}>{result.uncertain ? "无法确定" : "命中"}</span>
+      </li>
+      <li style={{ "--row": passed.length + 1 } as CSSProperties} data-state="detail">
+        <span />
+        <span className={styles.branch} aria-hidden="true">└-&gt;</span>
+        <span className={styles.detail}>
+          <code>{result.rule}</code>
+          {result.ruleSetLabel ? <small>{result.ruleSetLabel}</small> : null}
+          {result.uncertain ? <strong>{result.uncertain}</strong> : <strong>{exits.join(" → ")}</strong>}
+        </span>
+      </li>
+    </ol>
+  );
+}
+
 type TesterState = {
   input: string; ip: string; processName: string; preset: RuleTemplateId; customUrl: string;
   request: { preset: RuleTemplateId; url: string } | null;
-  active: boolean; pendingTest: boolean;
+  active: boolean; loading: boolean; pendingTest: boolean;
   preview: RulePreview | null; ruleSets: LoadedRuleSet[]; result: RouteMatch | null;
   message: string; resultVersion: number;
 };
