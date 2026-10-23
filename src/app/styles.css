@@ -10,25 +10,31 @@
 :root {
   font-family:
     "SF Pro Text", "Avenir Next", "PingFang SC", "Noto Sans SC", sans-serif;
-  color: #091e37;
-  background: #faf8f4;
+  color: var(--ink);
+  background: var(--paper);
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --paper: #faf8f4;
-  --surface: #faf8f4;
-  --surface-muted: #e8efed;
-  --ink: #091e37;
-  --muted: #4a5e6e;
-  --faint: #65959c;
-  --line: #b6c5c8;
-  --line-strong: #091e37;
-  --accent: #085f68;
-  --accent-hover: #064e56;
-  --accent-soft: #d3e4e1;
-  --success: #237a4b;
-  --danger: #a23e46;
-  --code: #152a3b;
-  --code-ink: #eef2ef;
+  /* Moraine: warm stone greys with one mineral blue. Dark values below follow the system or the header toggle. */
+  --paper: #eeede8;
+  --surface: #f8f7f3;
+  --surface-muted: #e4e3dd;
+  --ink: #1e1d1a;
+  --muted: #4d4b45;
+  --faint: #66635b;
+  --line: #d3d1c9;
+  --line-strong: #a9a69c;
+  --accent: #2e5a7e;
+  --accent-hover: #244a69;
+  --accent-soft: #dce3e9;
+  --on-accent: #ffffff;
+  --success: #3b6e46;
+  --danger: #a73838;
+  --code: #26251f;
+  --code-ink: #eceae4;
+  /* Character art: tree lines and the background field, mixed from the tokens above. */
+  --trunk: color-mix(in srgb, var(--muted) 42%, var(--surface));
+  --texture: color-mix(in srgb, var(--faint) 58%, var(--paper));
   --mono: "SFMono-Regular", Consolas, monospace;
   /* Motion: colour changes are quick and linear; movement settles with an exponential ease-out. */
   --ease-out: cubic-bezier(0.19, 1, 0.22, 1);
@@ -36,6 +42,48 @@
   --press: 100ms;
   --move: 240ms;
   --enter: 420ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #1b1a18;
+    --surface: #23221f;
+    --surface-muted: #141311;
+    --ink: #eceae4;
+    --muted: #b5b1a7;
+    --faint: #918d83;
+    --line: #34322e;
+    --line-strong: #57544d;
+    --accent: #9dbcd9;
+    --accent-hover: #b7cfe6;
+    --accent-soft: #2a3540;
+    --on-accent: #12202b;
+    --success: #9fcda5;
+    --danger: #ec9090;
+    --code: #141311;
+    --code-ink: #eceae4;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1b1a18;
+  --surface: #23221f;
+  --surface-muted: #141311;
+  --ink: #eceae4;
+  --muted: #b5b1a7;
+  --faint: #918d83;
+  --line: #34322e;
+  --line-strong: #57544d;
+  --accent: #9dbcd9;
+  --accent-hover: #b7cfe6;
+  --accent-soft: #2a3540;
+  --on-accent: #12202b;
+  --success: #9fcda5;
+  --danger: #ec9090;
+  --code: #141311;
+  --code-ink: #eceae4;
 }
 
 * {
@@ -139,10 +187,41 @@ summary:focus-visible {
   text-decoration: none;
 }
 
-.brand img {
+.brand-mark {
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
+}
+
+.brand-mark-tile {
+  fill: var(--ink);
+}
+
+.brand-mark-glyph {
+  fill: var(--paper);
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-theme {
+  min-height: 36px;
+  padding-inline: 12px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 650;
+  transition: color var(--fast) linear, border-color var(--fast) linear;
+}
+
+.header-theme:hover {
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .site-header nav {
@@ -323,7 +402,7 @@ summary:focus-visible {
   border: 1px solid var(--accent);
   border-radius: 2px;
   background: var(--accent);
-  color: #f7faf8;
+  color: var(--on-accent);
   cursor: pointer;
   font-weight: 720;
   transition: background-color var(--fast) linear, border-color var(--fast) linear, transform var(--press) var(--ease-out);
@@ -1261,7 +1340,7 @@ summary:focus-visible {
 .button-primary {
   border-color: var(--accent);
   background: var(--accent);
-  color: #f7faf8;
+  color: var(--on-accent);
 }
 
 .button-primary:hover {
@@ -2805,5 +2884,16 @@ details[open] > summary::before {
     animation-delay: 0s !important;
     transition-duration: 1ms !important;
     transition-delay: 0s !important;
+  }
+}
+
+/* The GitHub mark is a black glyph; dark themes lighten it. */
+:root[data-theme="dark"] img[src="/brand/github-mark.svg"] {
+  filter: invert(0.9);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) img[src="/brand/github-mark.svg"] {
+    filter: invert(0.9);
   }
 }
