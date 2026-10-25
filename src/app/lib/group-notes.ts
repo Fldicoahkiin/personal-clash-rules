@@ -19,7 +19,7 @@ export const followsGlobalReason = "默认跟随 GLOBAL：直连只来自白名�
 export const groupNotes: Record<string, GroupNote> = {
   DIRECT: {
     title: "直连白名单",
-    purpose: "本机与局域网、远程控制和支付、QQ 与微信、网易云音乐，以及国内服务域名和国内 IP。",
+    purpose: "本机与局域网、远程控制和支付、工行网银、QQ 与微信、网易云音乐，以及国内服务域名和国内 IP。",
     defaultReason: `直连只来自这些规则；没有规则命中的流量不会回落直连，而是交给「${mihomoPolicyDisplayNames.DEFAULT}」走代理。`,
     orderNote: "分三处：前置白名单最先匹配；国内域名列表排在 Apple、Steam 下载、哔哩哔哩和境外例外之后，让这些服务保留可选出口，又排在 AI 进程规则之前，Claude 或 Codex 访问国内网站时仍然直连；GEOIP,CN 在所有域名规则之后，用目标 IP 补判国内地址。",
   },

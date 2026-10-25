@@ -8,6 +8,9 @@ export const dnsProxyGroupName = "DNS-PROXY";
 export const domesticDoh = ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"];
 // WeChat and QQ fetch media by the address they receive; fake IPs or overseas CDN answers stall them.
 const tencentMediaDomains = ["qq.com", "qpic.cn", "qlogo.cn", "gtimg.cn", "gtimg.com", "wechat.com"].map(domain => `+.${domain}`);
+// ICBC online banking connects to the addresses it resolves; it gets real answers from the domestic resolvers.
+const bankDomains = ["icbc.com.cn", "icbc.com", "95588.com"].map(domain => `+.${domain}`);
+const realAddressDomains = [...tencentMediaDomains, ...bankDomains];
 
 export function dnsProxyGroup(providerNames: string[] = []) {
   return {
@@ -81,11 +84,11 @@ export function createProxyDns(settings: DnsSettings = defaultDnsSettings, upstr
     ipv6: settings.ipv6,
     "enhanced-mode": "fake-ip",
     "fake-ip-range": "198.18.0.1/16",
-    "fake-ip-filter": ["*.lan", "*.local", "localhost", ...tencentMediaDomains],
+    "fake-ip-filter": ["*.lan", "*.local", "localhost", ...realAddressDomains],
     "default-nameserver": resolverBootstrap,
     "proxy-server-nameserver": bootstrap,
     nameserver: proxied,
-    "nameserver-policy": Object.fromEntries(tencentMediaDomains.map(domain => [domain, [...domesticDoh]])),
+    "nameserver-policy": Object.fromEntries(realAddressDomains.map(domain => [domain, [...domesticDoh]])),
     // Only connections already routed DIRECT resolve here; rule matching and proxied traffic keep the proxied resolvers.
     "direct-nameserver": [...domesticDoh],
     "use-system-hosts": false,

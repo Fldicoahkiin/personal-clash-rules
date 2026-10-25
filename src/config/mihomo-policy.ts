@@ -266,6 +266,12 @@ export const mihomoRules = [
   "DOMAIN-SUFFIX,alipayobjects.com,DIRECT",
   "DOMAIN-SUFFIX,alicdn.com,DIRECT",
   "DOMAIN-SUFFIX,jinhefilm.com,DIRECT",
+  // ICBC online banking: its domains and two online banking server ranges go direct before any other rule.
+  "DOMAIN-SUFFIX,icbc.com.cn,DIRECT",
+  "DOMAIN-SUFFIX,icbc.com,DIRECT",
+  "DOMAIN-SUFFIX,95588.com,DIRECT",
+  "IP-CIDR,117.131.49.0/24,DIRECT,no-resolve",
+  "IP-CIDR,120.204.111.0/24,DIRECT,no-resolve",
   "RULE-SET,private-domain,DIRECT",
   "RULE-SET,private-ip,DIRECT,no-resolve",
   "RULE-SET,tencent-messaging,DIRECT",

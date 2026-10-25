@@ -65,7 +65,7 @@ describe("Clash Party override", () => {
       "+rules": string[];
     };
 
-    expect(config["+rules"].slice(0, 45)).toEqual([
+    expect(config["+rules"].slice(0, 50)).toEqual([
       "PROCESS-NAME,ToDesk,DIRECT",
       "PROCESS-NAME,ToDesk_Service,DIRECT",
       "PROCESS-NAME,ToDesk_Session,DIRECT",
@@ -88,6 +88,11 @@ describe("Clash Party override", () => {
       "DOMAIN-SUFFIX,alipayobjects.com,DIRECT",
       "DOMAIN-SUFFIX,alicdn.com,DIRECT",
       "DOMAIN-SUFFIX,jinhefilm.com,DIRECT",
+      "DOMAIN-SUFFIX,icbc.com.cn,DIRECT",
+      "DOMAIN-SUFFIX,icbc.com,DIRECT",
+      "DOMAIN-SUFFIX,95588.com,DIRECT",
+      "IP-CIDR,117.131.49.0/24,DIRECT,no-resolve",
+      "IP-CIDR,120.204.111.0/24,DIRECT,no-resolve",
       "RULE-SET,private-domain,DIRECT",
       "RULE-SET,private-ip,DIRECT,no-resolve",
       "RULE-SET,tencent-messaging,DIRECT",

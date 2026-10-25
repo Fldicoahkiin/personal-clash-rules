@@ -23,6 +23,9 @@ dns:
     - +.gtimg.cn
     - +.gtimg.com
     - +.wechat.com
+    - +.icbc.com.cn
+    - +.icbc.com
+    - +.95588.com
   default-nameserver: &a1
     - system
   proxy-server-nameserver: *a1
@@ -126,6 +129,15 @@ dns:
       - https://223.5.5.5/dns-query
       - https://1.12.12.12/dns-query
     +.wechat.com:
+      - https://223.5.5.5/dns-query
+      - https://1.12.12.12/dns-query
+    +.icbc.com.cn:
+      - https://223.5.5.5/dns-query
+      - https://1.12.12.12/dns-query
+    +.icbc.com:
+      - https://223.5.5.5/dns-query
+      - https://1.12.12.12/dns-query
+    +.95588.com:
       - https://223.5.5.5/dns-query
       - https://1.12.12.12/dns-query
   direct-nameserver:
@@ -1128,6 +1140,11 @@ rules:
   - DOMAIN-SUFFIX,alipayobjects.com,DIRECT
   - DOMAIN-SUFFIX,alicdn.com,DIRECT
   - DOMAIN-SUFFIX,jinhefilm.com,DIRECT
+  - DOMAIN-SUFFIX,icbc.com.cn,DIRECT
+  - DOMAIN-SUFFIX,icbc.com,DIRECT
+  - DOMAIN-SUFFIX,95588.com,DIRECT
+  - IP-CIDR,117.131.49.0/24,DIRECT,no-resolve
+  - IP-CIDR,120.204.111.0/24,DIRECT,no-resolve
   - RULE-SET,private-domain,DIRECT
   - RULE-SET,private-ip,DIRECT,no-resolve
   - RULE-SET,tencent-messaging,DIRECT
@@ -1299,6 +1316,11 @@ DOMAIN-SUFFIX,alipay.com,DIRECT
 DOMAIN-SUFFIX,alipayobjects.com,DIRECT
 DOMAIN-SUFFIX,alicdn.com,DIRECT
 DOMAIN-SUFFIX,jinhefilm.com,DIRECT
+DOMAIN-SUFFIX,icbc.com.cn,DIRECT
+DOMAIN-SUFFIX,icbc.com,DIRECT
+DOMAIN-SUFFIX,95588.com,DIRECT
+IP-CIDR,117.131.49.0/24,DIRECT,no-resolve
+IP-CIDR,120.204.111.0/24,DIRECT,no-resolve
 RULE-SET,https://rules.flacier.com/rules/local/private-domain.list,DIRECT
 RULE-SET,https://rules.flacier.com/rules/local/private-ip.list,DIRECT,no-resolve
 RULE-SET,https://rules.flacier.com/rules/direct/tencent-messaging.list,DIRECT

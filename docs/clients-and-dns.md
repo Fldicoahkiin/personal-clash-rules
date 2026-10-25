@@ -33,6 +33,7 @@
 | 普通网站域名查询 | 可编辑 HTTPS DoH 地址，默认 Cloudflare 和 Google，经 `DNS-PROXY` | 不添加系统或直连解析备用；代理不可用时查询可能失败，需要修复代理或引导路径。 |
 | 直连连接的目标地址 | 固定阿里 `223.5.5.5`、腾讯 `1.12.12.12` 的 HTTPS DoH，不经代理（`direct-nameserver`） | 只用于规则已判定 DIRECT 的连接，包括 `GEOIP,CN` 兜底和手动切到 DIRECT 的组，让国内 CDN 返回国内地址。分流判断和代理流量仍用上一行。这些解析器能看到直连的域名；运营商本来也能从 TLS 的 SNI 看到它们。 |
 | 微信、QQ 媒体域名 | `qq.com`、`qpic.cn`、`qlogo.cn`、`gtimg.cn`、`gtimg.com`、`wechat.com` 写入 `fake-ip-filter`，经 `nameserver-policy` 用同一组国内 DoH | 微信按拿到的地址直接取图，假 IP 或海外 CDN 地址会让图片一直转圈。这些域名本来就按腾讯规则直连。 |
+| 工行网银 | `icbc.com.cn`、`icbc.com`、`95588.com` 写入 `fake-ip-filter`，经 `nameserver-policy` 用同一组国内 DoH | 这三个域名和 `117.131.49.0/24`、`120.204.111.0/24` 两个网银服务器网段排在所有规则最前面直连，网银拿到的是真实地址。这两个网段的流量仍会经过 TUN；要让它们不进 TUN，需要在客户端自己的 TUN 设置里排除，Clash Party 会用它自己的 TUN 设置覆盖订阅里的同名字段。 |
 
 “允许 IPv6”默认关闭，同时写入 Mihomo 顶层与 DNS 设置，包括继承机场 DNS 时。不修改操作系统 IPv6、TUN 或嗅探设置。旧链接没有保存这些字段时使用新默认值；需要固定引导策略的链接，应重新生成并保存选择。
 

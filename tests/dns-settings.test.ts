@@ -21,7 +21,7 @@ describe("DNS dependency boundary", () => {
     const config = parse(createMihomoProfile(nodes));
     const domestic = ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"];
     expect(config.dns["direct-nameserver"]).toEqual(domestic);
-    expect(config.dns["fake-ip-filter"]).toEqual(["*.lan", "*.local", "localhost", "+.qq.com", "+.qpic.cn", "+.qlogo.cn", "+.gtimg.cn", "+.gtimg.com", "+.wechat.com"]);
+    expect(config.dns["fake-ip-filter"]).toEqual(["*.lan", "*.local", "localhost", "+.qq.com", "+.qpic.cn", "+.qlogo.cn", "+.gtimg.cn", "+.gtimg.com", "+.wechat.com", "+.icbc.com.cn", "+.icbc.com", "+.95588.com"]);
     expect(config.dns["nameserver-policy"]).toEqual(Object.fromEntries(config.dns["fake-ip-filter"].slice(3).map((domain: string) => [domain, domestic])));
     expect(config.dns.fallback).toBeUndefined();
     expect(config.dns["direct-nameserver-follow-policy"]).toBeUndefined();
