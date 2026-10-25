@@ -330,8 +330,9 @@ const aiUdpRefusal = (rule: string) => {
 export const mihomoAiUdpRefusals = mihomoRules.flatMap(aiUdpRefusal);
 
 // WebRTC learns its public address from STUN servers, and a domestic one would be reached through the domestic list or
-// GEOIP,CN and answer with the home address. Browser STUN goes through AUTO and is refused when AUTO cannot carry UDP;
-// the Claude app keeps one exit, so its STUN is refused outright. The patterns avoid parentheses inside AND rules.
+// GEOIP,CN and answer with the home address. Browser STUN leaves through DEFAULT, the exit web pages use, so WebRTC and
+// HTTP show one address; when that exit cannot carry UDP the STUN is refused rather than sent out of a second exit.
+// The Claude app keeps one exit, so its STUN is refused outright. The patterns avoid parentheses inside AND rules.
 const stunPorts = "3478/5349/19302-19309";
 const browserProcessPattern = [
   "^firefox$", "^firefox\\.exe$", "^plugin-container$", "^plugin-container\\.exe$",
@@ -340,7 +341,7 @@ const browserProcessPattern = [
 ].join("|");
 const browserStun = `(NETWORK,UDP),(DST-PORT,${stunPorts}),(PROCESS-NAME-REGEX,${browserProcessPattern})`;
 export const mihomoStunRules = [
-  `AND,(${browserStun}),AUTO`,
+  `AND,(${browserStun}),DEFAULT`,
   `AND,(${browserStun}),REJECT`,
   `AND,((NETWORK,UDP),(DST-PORT,${stunPorts}),(PROCESS-NAME-REGEX,^Claude Helper)),REJECT`,
 ];

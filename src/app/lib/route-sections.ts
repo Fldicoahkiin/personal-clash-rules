@@ -5,7 +5,7 @@ import { exitPath, policyDisplayName } from "./policy-groups";
 // prefix and runs to the next section, so a rule added inside a section joins it without an edit here.
 const sectionAnchors = [
   { id: "process", name: "进程白名单", anchor: "PROCESS-NAME,", note: "ToDesk、微信、QQ、网易云音乐这些应用，按进程名直连。" },
-  { id: "stun", name: "浏览器 STUN", anchor: "AND,((NETWORK,UDP),(DST-PORT", note: "网页视频通话用 STUN 探测公网地址。这组只管 UDP：浏览器的走代理，代理带不动就拦下；Claude 桌面端的直接拦下。" },
+  { id: "stun", name: "浏览器 STUN", anchor: "AND,((NETWORK,UDP),(DST-PORT", note: "网页视频通话用 STUN 探测公网地址。这组只管 UDP：浏览器的跟网页走同一个出口，那个出口带不动 UDP 就拦下，不换出口；Claude 桌面端的直接拦下。" },
   { id: "allowlist", name: "直连白名单", anchor: "DOMAIN-SUFFIX,todesk.com,", note: "支付宝、ToDesk、局域网、腾讯通讯和网易云音乐的域名。" },
   { id: "apple", name: "Apple", anchor: "RULE-SET,apple-download,", note: "系统更新和 App 下载直连；Apple 账号、iCloud、媒体和 Apple 智能走代理。" },
   { id: "domestic", name: "国内与例外", anchor: "RULE-SET,steam-download,", note: "Steam 下载和哔哩哔哩各自成组；IP 查询这类例外走代理；其余国内网站直连。" },

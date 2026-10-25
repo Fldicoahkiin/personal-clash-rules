@@ -20,6 +20,13 @@ describe("createMihomoProfile", () => {
     expect(JSON.stringify(groups)).not.toContain("🌐 全局");
     expect(groups.find((group: { name: string }) => group.name === "🧠 Claude").hidden).not.toBe(true);
   });
+  it("sends browser STUN out of the default exit and refuses it there instead of switching exits", () => {
+    const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
+    const stun = profile.rules.filter((rule: string) => rule.includes("(DST-PORT,3478/5349/19302-19309)"));
+    expect(stun.map((rule: string) => rule.slice(rule.lastIndexOf(",") + 1))).toEqual(["🐟 未匹配流量", "REJECT", "REJECT"]);
+    expect(stun[0].slice(0, stun[0].lastIndexOf(","))).toBe(stun[1].slice(0, stun[1].lastIndexOf(",")));
+    expect(stun.join("\n")).not.toContain("自动选择");
+  });
   it("sends domestic domains direct before the AI process rules and keeps the China IP fallback before MATCH", () => {
     const profile = parse(createMihomoProfile("proxies: [{name: JP-01, type: ss}]"));
     const match = profile.rules.indexOf("MATCH,🐟 未匹配流量");
