@@ -9,7 +9,9 @@ const nodes = "proxies: [{name: JP, type: ss, server: node.example, port: 443, c
 describe("DNS dependency boundary", () => {
   it("separates bootstrap from business queries without enabling TUN or sniffing", () => {
     const config = parse(createMihomoProfile(nodes));
-    expect(config.dns["proxy-server-nameserver"]).toEqual(["system"]);
+    // Bootstrap is DoH by IP address: UDP 53 to the system resolver is answered with fake IPs under TUN DNS hijacking.
+    expect(config.dns["proxy-server-nameserver"]).toEqual(["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"]);
+    expect(config.dns["default-nameserver"]).toEqual(["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"]);
     expect(config.dns.nameserver.every((url: string) => url.endsWith("#DNS-PROXY"))).toBe(true);
     expect(config["proxy-groups"].find((group: { name: string }) => group.name === "DNS-PROXY")).toMatchObject({ "empty-fallback": "REJECT", "include-all": true, "exclude-type": "direct|reject" });
     expect(config.ipv6).toBe(false);
@@ -62,6 +64,12 @@ describe("DNS dependency boundary", () => {
   });
   it("does not silently make proxy DNS direct for a direct-only legacy preset", () => {
     expect(() => createMihomoProfile(nodes, "direct")).toThrow("Proxy DNS cannot");
+  });
+  it("migrates the stored system bootstrap to domestic DoH by IP address", () => {
+    const stored = parseDnsSettings({ bootstrapMode: "system", bootstrap: [], nameservers: ["https://1.1.1.1/dns-query"], ipv6: false });
+    expect(stored.bootstrapMode).toBe("domestic");
+    const config = parse(createMihomoProfile(nodes, "flacier", 6, "doh", undefined, stored));
+    expect(config.dns["proxy-server-nameserver"]).toEqual(["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"]);
   });
   it("rejects unsafe or injected custom resolver parameters", () => {
     for (const value of ["http://1.1.1.1/dns-query", "https://a:b@1.1.1.1/dns-query", "https://1.1.1.1/dns-query#DIRECT"]) {

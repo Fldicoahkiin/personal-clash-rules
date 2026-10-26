@@ -18,7 +18,7 @@ describe("Shadowrocket paired configuration", () => {
   it("keeps node bootstrap separate and does not leave business DNS fallback empty or system", () => {
     const output = createShadowrocketProfile(["US-01"]);
     expect(output).toContain("ipv6 = false");
-    expect(output).toContain("proxy-dns-server = system");
+    expect(output).toContain("proxy-dns-server = https://223.5.5.5/dns-query, https://1.12.12.12/dns-query");
     for (const key of ["dns-server", "fallback-dns-server"]) {
       expect(output).toContain(`${key} = https://1.1.1.1/dns-query#proxy, https://8.8.8.8/dns-query#proxy`);
     }

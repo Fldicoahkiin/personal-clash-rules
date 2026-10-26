@@ -10,11 +10,11 @@ export const MihomoDnsSettings: FC<MihomoDnsSettingsProps> = ({ settings, onChan
       <label className="field">
         <span>节点引导 DNS</span>
         <select value={settings.bootstrapMode} onChange={event => onChange({ ...settings, bootstrapMode: event.target.value as DnsSettings["bootstrapMode"] })}>
-          <option value="system">系统 DNS · 仅用于建立代理</option>
+          <option value="domestic">阿里、腾讯 DoH · 仅用于建立代理</option>
           {!shadowrocket || settings.bootstrapMode === "upstream" ? <option value="upstream">继承机场的独立节点 DNS{shadowrocket ? "（此客户端不支持）" : ""}</option> : null}
           <option value="custom">自定义 · IP 地址 DoH</option>
         </select>
-        <small>解析节点和 DNS 服务的域名，不处理普通网站查询。系统 DNS 可能由本地运营商提供；若它指回 Mihomo，请改用可直达的引导 DNS，避免循环。</small>
+        <small>解析节点和 DNS 服务的域名，不处理普通网站查询。默认按 IP 直连阿里、腾讯的 DoH；不用系统 DNS，因为客户端开着 TUN 时，发往 53 端口的查询会被它自己接管，节点域名拿到的是假地址，节点连不上。</small>
       </label>
       {settings.bootstrapMode === "custom" ? <label className="field">
         <span>引导 DoH 地址</span>

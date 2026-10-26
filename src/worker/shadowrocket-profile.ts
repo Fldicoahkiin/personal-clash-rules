@@ -73,7 +73,7 @@ export function createShadowrocketProfile(
     throw new ApiError(422, "shadowrocket_node_name", "Rename node names containing INI separators before generating a Shadowrocket configuration");
   }
   if (dnsMode === "upstream" || (dnsMode === "doh" && settings.bootstrapMode === "upstream")) {
-    throw new ApiError(422, "shadowrocket_dns_mode", "Mihomo upstream DNS cannot be copied into Shadowrocket; choose system or custom bootstrap DNS");
+    throw new ApiError(422, "shadowrocket_dns_mode", "Mihomo upstream DNS cannot be copied into Shadowrocket; choose domestic or custom bootstrap DNS");
   }
   const groups = routing?.groups ?? mihomoProxyGroups;
   if (groups.some(group => !iniName(group.name) || !["select", "url-test"].includes(group.type) || group.proxies?.some(name => !iniName(name)))) {

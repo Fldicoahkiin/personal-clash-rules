@@ -75,7 +75,9 @@ export function createProxyDns(settings: DnsSettings = defaultDnsSettings, upstr
     }
     resolverBootstrap = bootstrap;
   } else {
-    bootstrap = ["system"];
+    // Node and resolver domains go to AliDNS and DNSPod over DoH by IP address: TCP that needs no lookup of its own and
+    // that TUN DNS hijacking leaves alone, unlike UDP port 53 to the system resolver.
+    bootstrap = [...domesticDoh];
     resolverBootstrap = bootstrap;
   }
   const proxied = settings.nameservers.map(url => `${url}#${dnsProxyGroupName}`);

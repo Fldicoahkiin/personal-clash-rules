@@ -1,12 +1,12 @@
 export type DnsSettings = {
-  bootstrapMode: "system" | "upstream" | "custom";
+  bootstrapMode: "domestic" | "upstream" | "custom";
   bootstrap: string[];
   nameservers: string[];
   ipv6: boolean;
 };
 
 export const defaultDnsSettings: DnsSettings = {
-  bootstrapMode: "system",
+  bootstrapMode: "domestic",
   bootstrap: [],
   nameservers: ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"],
   ipv6: false,
@@ -16,8 +16,10 @@ export function parseDnsSettings(value: unknown): DnsSettings {
   if (value === undefined) return structuredClone(defaultDnsSettings);
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid DNS settings");
   const input = value as Record<string, unknown>;
-  const mode = input.bootstrapMode;
-  if (!["system", "upstream", "custom"].includes(String(mode)) || typeof input.ipv6 !== "boolean") {
+  // Records saved before "domestic" existed used "system": plain UDP to the OS resolver, which a client running TUN
+  // with DNS hijacking answers from its own fake-ip pool, so node domains resolved to fake addresses. They migrate here.
+  const mode = input.bootstrapMode === "system" ? "domestic" : input.bootstrapMode;
+  if (!["domestic", "upstream", "custom"].includes(String(mode)) || typeof input.ipv6 !== "boolean") {
     throw new Error("Invalid DNS settings");
   }
   function resolvers(value: unknown, optional = false): string[] {

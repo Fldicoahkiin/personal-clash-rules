@@ -145,9 +145,7 @@ proxies:
         "https://1.1.1.1/dns-query#DNS-PROXY",
         "https://8.8.8.8/dns-query#DNS-PROXY",
       ],
-      "proxy-server-nameserver": [
-        "system",
-      ],
+      "proxy-server-nameserver": ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"],
     });
     expect(config.proxies).toHaveLength(2);
     expect(config["proxy-groups"]).toEqual(expect.arrayContaining([

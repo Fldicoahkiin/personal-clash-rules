@@ -51,7 +51,7 @@ describe("residential mobile rendering resource budget", () => {
         .toBe(`${key} = https://1.1.1.1/dns-query#proxy`);
     }
     expect(config).toContain("direct-dns-server = https://223.5.5.5/dns-query, https://1.12.12.12/dns-query\n");
-    expect(config).toContain("proxy-dns-server = system\n");
+    expect(config).toContain("proxy-dns-server = https://223.5.5.5/dns-query, https://1.12.12.12/dns-query\n");
     expect(config).not.toContain("[Proxy Group]");
     expect(config).not.toContain("#proxy=");
   });
