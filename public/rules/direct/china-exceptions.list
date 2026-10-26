@@ -2,7 +2,7 @@
 # Modified by Flacier (2026-10-19): only entries covered by china-domains are kept; no warranty.
 # Artifact license: GPL-3.0; source license: MetaCubeX/meta-rules-dat GPL-3.0. License text: /rules/licenses/MetaCubeX-GPL-3.0.txt
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-!cn.list
-# Source SHA-256: 78c30864e0114e970e7b07b9c4b1cb33d8a7d80f1154123cb8f017ef824f91ee
+# Source SHA-256: de5ce9fce40977fa01a2e249579f4a084d06939a6cd8774f9b736423db6d8972
 DOMAIN,databank.worldbank.org
 DOMAIN,gitlab-assets.oss-cn-hongkong.aliyuncs.com
 DOMAIN,licdn.cn.cdn20.com
@@ -96,20 +96,20 @@ DOMAIN-SUFFIX,hp-ww.com
 DOMAIN-SUFFIX,hp.com
 DOMAIN-SUFFIX,hpconnected.com
 DOMAIN-SUFFIX,hpstore-china.com
+DOMAIN-SUFFIX,xn--74q035i.xn--hxt814e
 DOMAIN-SUFFIX,hshsxkj.com
 DOMAIN-SUFFIX,huati.cc
-DOMAIN-SUFFIX,hummingbird.ms
-DOMAIN-SUFFIX,xn--74q035i.xn--hxt814e
 DOMAIN-SUFFIX,xn--2vxsp6vi4j.com
+DOMAIN-SUFFIX,hummingbird.ms
 DOMAIN-SUFFIX,icbcmoscow.ru
 DOMAIN-SUFFIX,icevirtuallibrary.com
 DOMAIN-SUFFIX,ieee.org
 DOMAIN-SUFFIX,igkbroker.com
 DOMAIN-SUFFIX,ilife.wang
 DOMAIN-SUFFIX,images-amazon.com
+DOMAIN-SUFFIX,xiaomiflash.com
 DOMAIN-SUFFIX,infoq.com
 DOMAIN-SUFFIX,inshotapp.com
-DOMAIN-SUFFIX,xiaomiflash.com
 DOMAIN-SUFFIX,iop.org
 DOMAIN-SUFFIX,ipad.wang
 DOMAIN-SUFFIX,iphone.wang
@@ -173,8 +173,8 @@ DOMAIN-SUFFIX,prts.plus
 DOMAIN-SUFFIX,qiao-cn.com
 DOMAIN-SUFFIX,qoder.com
 DOMAIN-SUFFIX,quantil.com
-DOMAIN-SUFFIX,rarbg.to
 DOMAIN-SUFFIX,webofknowledge.com
+DOMAIN-SUFFIX,rarbg.to
 DOMAIN-SUFFIX,rsc.org
 DOMAIN-SUFFIX,rsg.ms
 DOMAIN-SUFFIX,sagepub.com
@@ -206,7 +206,6 @@ DOMAIN-SUFFIX,un.org
 DOMAIN-SUFFIX,visa.com.ms
 DOMAIN-SUFFIX,ru.ccb.com
 DOMAIN-SUFFIX,ntp.nat.ms
-DOMAIN-SUFFIX,m.moegirl.org
 DOMAIN-SUFFIX,hk.chinamobile.com
 DOMAIN-SUFFIX,cg.play-analytics.com
 DOMAIN-SUFFIX,c.mi.com
