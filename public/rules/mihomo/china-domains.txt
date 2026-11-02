@@ -4,9 +4,9 @@
 # Artifact license: GPL-3.0; source licenses: MetaCubeX/meta-rules-dat GPL-3.0, v2fly/domain-list-community MIT.
 # License texts: /rules/licenses/MetaCubeX-GPL-3.0.txt and /rules/licenses/v2fly-MIT.txt
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/cn.list
-# Source SHA-256: 8c94f7388600a6827be7dee07bbcd77ca1f03ba552d6cb16a55f951f9064f79b
+# Source SHA-256: 64d115b13c843307c2fc29378972cc1be7950ce5cde85e46d7cd4c6be75abacd
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list
-# Source SHA-256: b28740be65afe6436aa96f2be37899ddec51b2119ff7e9402f53f8c326896d94
+# Source SHA-256: df3fec332b1517cbcbe812c0585b7e0a501cd29cec3bfc7d04cc1704a9d9ee0c
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/xiaohongshu
 # Source SHA-256: c02829a3660e6ddcc24e53a86b33735accf42613d493757564b59d217a06065d
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/askdiandian
@@ -16,17 +16,17 @@
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/dingtalk
 # Source SHA-256: 3e067a02023add491519aa6d0d6714b74e073c01e6572de42e01cca69582da45
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/bytedance
-# Source SHA-256: 506ea3c05a846bdf7d193cb149d02112dc0a8da1160c169221f5de9e91ca1e65
+# Source SHA-256: 333067707eabbfe623d9060abc95479dfd322e38df6f6c2eb0128dfe49f6f7c3
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/alibaba
-# Source SHA-256: 88a45906e66809666bf23ff2d7e1ba105be792cf56fbd2ee62d09ccf223052e6
+# Source SHA-256: aa9b99855ef5a7fc92d51d4429575656a2f84362a0fa8a2ad771f533539bccc9
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/aliyun
 # Source SHA-256: d01109fb8cd401f8ae80d37ddbfe72e9bb6dd5e717853fdf8d1871c5878fb863
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/jd
 # Source SHA-256: 03a48dfe95eb53ea210f3edf629b2f0f711c535177cc92f7fb4521b97e84aee3
 # Omitted 3 DOMAIN-REGEX rules for the shared mobile/domain format:
+# DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$
 # DOMAIN-REGEX,.+\.awsdns-cn-[0-9][0-9]\.(biz|com|net|top)$
 # DOMAIN-REGEX,.+\.awsdns-cn-[0-9][a-e0-9]\.cn$
-# DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$
 +.alibaba
 +.yun
 +.xn--zfr164b
@@ -79,8 +79,8 @@
 +.baidu
 +.anquan
 +.alipay
-+.soliao.com
-+.kbrightlaw.com
++.solepic.com
++.hangzhoueda.com
 +.028office.com
 +.028px.com
 +.028pxw.com
@@ -410,7 +410,7 @@
 +.0712fang.com
 +.0714.com
 +.0714110.xin
-+.0715fc.com
++.jszhiping.com
 +.0715rc.com
 +.0715zp.com
 +.0716fw.com
@@ -33514,6 +33514,7 @@
 +.fillersmart.com
 +.fillseo.com
 +.film-yuelongchina.com
++.filmorigin.com
 +.fily.fun
 +.fim34s.com
 +.fimmu.com
@@ -42379,7 +42380,7 @@
 +.hangyecloud.com
 +.hangzhiqiao.com
 +.hangzhouboiler.com
-+.hangzhoueda.com
++.jszhaobiao.com
 +.hangzhouexpo.com
 +.hangzhoufujikura.com
 +.hangzhoujizhang.com
@@ -55139,10 +55140,10 @@
 +.jszcqy.com
 +.jszdlssws.com
 +.jszf.org
-+.w0663.com
++.jszfy.com
++.zjdianying.com
 +.028ltzx.com
-+.pinzhikeji.net
-+.jszhiping.com
++.0715fc.com
 +.jszhjsjtgs.com
 +.jszhongci.com
 +.jszjcg.com
@@ -56296,6 +56297,7 @@
 +.kakappt.com
 +.kakashuzi.net
 +.kakatx.com
++.kakaxing.com
 +.kakayuy.net
 +.kaken-china.com
 +.kaku-scdn.com
@@ -56585,7 +56587,7 @@
 +.kbmlifesci.com
 +.kbn-zhejiang.com
 +.kboth.com
-+.jszg.org
++.kbrightlaw.com
 +.kbscd.net
 +.kbscloud.com
 +.kbsml.com
@@ -71568,7 +71570,7 @@
 +.pinyuan.cc
 +.pinyuew.com
 +.pinzhi365.com
-+.jszhaobiao.com
++.pinzhikeji.net
 +.pinzs.com
 +.pioneer-pharma.com
 +.pioneer-pku.com
@@ -82588,9 +82590,9 @@
 +.solasmat.com
 +.soldeazy.com
 +.solelybio.com
-+.solepic.com
-+.soletower.com
 +.0.zone
++.soletower.com
++.soliao.com
 +.solidifyk.com
 +.solidigm-asdf.com
 +.solidigm-nvme.com
@@ -92230,7 +92232,7 @@
 +.w0028.cc
 +.w032.com
 +.w03voavpa5.com
-+.jszfy.com
++.w0663.com
 +.w0x9r0k2l1.com
 +.w0y.com
 +.w10a.com
@@ -108222,7 +108224,7 @@
 +.zjdfc.com
 +.zjdg.com
 +.zjdhky.com
-+.zjdianying.com
++.jszg.org
 +.zjdjc.com
 +.zjdjqc.com
 +.zjdjxh.com
@@ -110202,7 +110204,6 @@ api.blipsandchitz.me
 end-api.shallow.ink
 end.shallow.ink
 +.lufax.com
-+.xycdn.com
 +.to8to.com
 +.netbig.top
 +.edgemonix.top
@@ -110261,6 +110262,7 @@ end.shallow.ink
 +.linkvans.com
 +.manhuatai.com
 +.meiqia.com
++.miaozhen.com
 +.nxog.top
 +.oadz.com
 +.oneapm.com
@@ -110291,75 +110293,79 @@ end.shallow.ink
 +.zhiziyun.com
 +.zzzcaculator.top
 +.bdcat.top
-+.lgstatic.com
-+.jtexpress.top
-+.coolab.top
-+.baidustatic.com
-+.duapp.com
-+.duapps.com
-+.hao222.com
-+.quyaoya.com
-+.goodq.top
-+.admin5.com
-+.hnol.net
-+.vcbeat.top
-+.yto.top
-+.juejin.im
-+.szbdyd.com
-+.tapnow.top
-+.miaozhen.com
-+.diandianlife.top
-+.meitustat.com
-+.yccdn.com
 +.51zmt.top
 +.baozoumanhua.com
 +.bsbsb.top
 +.goka.top
 +.qwapp.top
-+.gmanhua.com
 +.manhuaren.com
-+.koowo.com
-+.shuqistat.com
-+.ku6.com
-+.chat.top
-+.kuaikanmanhua.com
-+.tgpro.top
-+.vrzwk.top
++.gmanhua.com
 +.kskwai.com
 +.kuaishouzt.com
++.chat.top
++.ku6.com
++.koowo.com
++.tgpro.top
++.vrzwk.top
++.kuaikanmanhua.com
++.juejin.im
++.jutongbao.top
++.tclai.top
++.saduck.top
++.tendcloud.com
++.talkingdata.com
++.talkinggame.com
++.cpatrk.net
++.jtexpress.top
++.yto.top
++.goodq.top
++.admin5.com
++.hnol.net
++.vcbeat.top
++.baidustatic.com
++.duapp.com
++.duapps.com
++.hao222.com
++.quyaoya.com
++.zymls.com
++.busyming.com
 +.fengkongcloud.com
-+.gepush.com
-+.getui.com
-+.getui.net
-+.igehuo.com
-+.igetui.com
-+.igexin.com
++.lgstatic.com
++.yccdn.com
++.gio.ren
++.giocdn.com
++.growingio.com
 +.5566ua.com
 +.easytomessage.com
 +.jmlk.co
 +.jpush.io
 +.jpushoa.com
 +.pushcfg.com
-+.jutongbao.top
-+.share123.top
-+.tendcloud.com
-+.talkingdata.com
-+.talkinggame.com
-+.cpatrk.net
-+.openinstall.io
-+.appjiagu.com
-+.tclai.top
++.jsj.top
++.tapnow.top
++.favonis.cloud
++.favonis.com
++.favonis.space
++.diandianlife.top
++.doubaoapps.com
++.coolab.top
++.xycdn.com
 +.staticfile.net
 +.staticfile.org
 +.bootcdn.net
 +.bootcss.com
-+.saduck.top
-+.jsj.top
++.gepush.com
++.getui.com
++.getui.net
++.igehuo.com
++.igetui.com
++.igexin.com
++.szbdyd.com
++.openinstall.io
++.appjiagu.com
 +.mob.com
 +.dutils.com
-+.gio.ren
-+.giocdn.com
-+.growingio.com
++.share123.top
 +.aloys233.top
 +.lg3000.top
 +.misaka-net.top
@@ -110367,10 +110373,12 @@ end.shallow.ink
 +.tianhw.top
 +.topwd.top
 +.zway.top
++.shuqistat.com
 time.izatcloud.net
 time.xtracloud.net
 izattime.qcomgeo2.com
 xtratime.qcomgeo2.com
++.meitustat.com
 +.xhsrcdn.com
 +.amap.net
 +.ztna-dingtalk.com

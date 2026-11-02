@@ -4,9 +4,9 @@
 # Artifact license: GPL-3.0; source licenses: MetaCubeX/meta-rules-dat GPL-3.0, v2fly/domain-list-community MIT.
 # License texts: /rules/licenses/MetaCubeX-GPL-3.0.txt and /rules/licenses/v2fly-MIT.txt
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/cn.list
-# Source SHA-256: 8c94f7388600a6827be7dee07bbcd77ca1f03ba552d6cb16a55f951f9064f79b
+# Source SHA-256: 64d115b13c843307c2fc29378972cc1be7950ce5cde85e46d7cd4c6be75abacd
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list
-# Source SHA-256: b28740be65afe6436aa96f2be37899ddec51b2119ff7e9402f53f8c326896d94
+# Source SHA-256: df3fec332b1517cbcbe812c0585b7e0a501cd29cec3bfc7d04cc1704a9d9ee0c
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/xiaohongshu
 # Source SHA-256: c02829a3660e6ddcc24e53a86b33735accf42613d493757564b59d217a06065d
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/askdiandian
@@ -16,17 +16,17 @@
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/dingtalk
 # Source SHA-256: 3e067a02023add491519aa6d0d6714b74e073c01e6572de42e01cca69582da45
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/bytedance
-# Source SHA-256: 506ea3c05a846bdf7d193cb149d02112dc0a8da1160c169221f5de9e91ca1e65
+# Source SHA-256: 333067707eabbfe623d9060abc95479dfd322e38df6f6c2eb0128dfe49f6f7c3
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/alibaba
-# Source SHA-256: 88a45906e66809666bf23ff2d7e1ba105be792cf56fbd2ee62d09ccf223052e6
+# Source SHA-256: aa9b99855ef5a7fc92d51d4429575656a2f84362a0fa8a2ad771f533539bccc9
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/aliyun
 # Source SHA-256: d01109fb8cd401f8ae80d37ddbfe72e9bb6dd5e717853fdf8d1871c5878fb863
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/jd
 # Source SHA-256: 03a48dfe95eb53ea210f3edf629b2f0f711c535177cc92f7fb4521b97e84aee3
 # Omitted 3 DOMAIN-REGEX rules for the shared mobile/domain format:
+# DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$
 # DOMAIN-REGEX,.+\.awsdns-cn-[0-9][0-9]\.(biz|com|net|top)$
 # DOMAIN-REGEX,.+\.awsdns-cn-[0-9][a-e0-9]\.cn$
-# DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$
 DOMAIN-SUFFIX,alibaba
 DOMAIN-SUFFIX,yun
 DOMAIN-SUFFIX,xn--zfr164b
@@ -79,8 +79,8 @@ DOMAIN-SUFFIX,citic
 DOMAIN-SUFFIX,baidu
 DOMAIN-SUFFIX,anquan
 DOMAIN-SUFFIX,alipay
-DOMAIN-SUFFIX,soliao.com
-DOMAIN-SUFFIX,kbrightlaw.com
+DOMAIN-SUFFIX,solepic.com
+DOMAIN-SUFFIX,hangzhoueda.com
 DOMAIN-SUFFIX,028office.com
 DOMAIN-SUFFIX,028px.com
 DOMAIN-SUFFIX,028pxw.com
@@ -410,7 +410,7 @@ DOMAIN-SUFFIX,0708.com
 DOMAIN-SUFFIX,0712fang.com
 DOMAIN-SUFFIX,0714.com
 DOMAIN-SUFFIX,0714110.xin
-DOMAIN-SUFFIX,0715fc.com
+DOMAIN-SUFFIX,jszhiping.com
 DOMAIN-SUFFIX,0715rc.com
 DOMAIN-SUFFIX,0715zp.com
 DOMAIN-SUFFIX,0716fw.com
@@ -33514,6 +33514,7 @@ DOMAIN-SUFFIX,filfox.info
 DOMAIN-SUFFIX,fillersmart.com
 DOMAIN-SUFFIX,fillseo.com
 DOMAIN-SUFFIX,film-yuelongchina.com
+DOMAIN-SUFFIX,filmorigin.com
 DOMAIN-SUFFIX,fily.fun
 DOMAIN-SUFFIX,fim34s.com
 DOMAIN-SUFFIX,fimmu.com
@@ -42379,7 +42380,7 @@ DOMAIN-SUFFIX,hangyang.com
 DOMAIN-SUFFIX,hangyecloud.com
 DOMAIN-SUFFIX,hangzhiqiao.com
 DOMAIN-SUFFIX,hangzhouboiler.com
-DOMAIN-SUFFIX,hangzhoueda.com
+DOMAIN-SUFFIX,jszhaobiao.com
 DOMAIN-SUFFIX,hangzhouexpo.com
 DOMAIN-SUFFIX,hangzhoufujikura.com
 DOMAIN-SUFFIX,hangzhoujizhang.com
@@ -55139,10 +55140,10 @@ DOMAIN-SUFFIX,jszca.com
 DOMAIN-SUFFIX,jszcqy.com
 DOMAIN-SUFFIX,jszdlssws.com
 DOMAIN-SUFFIX,jszf.org
-DOMAIN-SUFFIX,w0663.com
+DOMAIN-SUFFIX,jszfy.com
+DOMAIN-SUFFIX,zjdianying.com
 DOMAIN-SUFFIX,028ltzx.com
-DOMAIN-SUFFIX,pinzhikeji.net
-DOMAIN-SUFFIX,jszhiping.com
+DOMAIN-SUFFIX,0715fc.com
 DOMAIN-SUFFIX,jszhjsjtgs.com
 DOMAIN-SUFFIX,jszhongci.com
 DOMAIN-SUFFIX,jszjcg.com
@@ -56296,6 +56297,7 @@ DOMAIN-SUFFIX,kakamobi.com
 DOMAIN-SUFFIX,kakappt.com
 DOMAIN-SUFFIX,kakashuzi.net
 DOMAIN-SUFFIX,kakatx.com
+DOMAIN-SUFFIX,kakaxing.com
 DOMAIN-SUFFIX,kakayuy.net
 DOMAIN-SUFFIX,kaken-china.com
 DOMAIN-SUFFIX,kaku-scdn.com
@@ -56585,7 +56587,7 @@ DOMAIN-SUFFIX,kblin.com
 DOMAIN-SUFFIX,kbmlifesci.com
 DOMAIN-SUFFIX,kbn-zhejiang.com
 DOMAIN-SUFFIX,kboth.com
-DOMAIN-SUFFIX,jszg.org
+DOMAIN-SUFFIX,kbrightlaw.com
 DOMAIN-SUFFIX,kbscd.net
 DOMAIN-SUFFIX,kbscloud.com
 DOMAIN-SUFFIX,kbsml.com
@@ -71568,7 +71570,7 @@ DOMAIN-SUFFIX,pinyinxiang.com
 DOMAIN-SUFFIX,pinyuan.cc
 DOMAIN-SUFFIX,pinyuew.com
 DOMAIN-SUFFIX,pinzhi365.com
-DOMAIN-SUFFIX,jszhaobiao.com
+DOMAIN-SUFFIX,pinzhikeji.net
 DOMAIN-SUFFIX,pinzs.com
 DOMAIN-SUFFIX,pioneer-pharma.com
 DOMAIN-SUFFIX,pioneer-pku.com
@@ -82588,9 +82590,9 @@ DOMAIN-SUFFIX,solarzoom.com
 DOMAIN-SUFFIX,solasmat.com
 DOMAIN-SUFFIX,soldeazy.com
 DOMAIN-SUFFIX,solelybio.com
-DOMAIN-SUFFIX,solepic.com
-DOMAIN-SUFFIX,soletower.com
 DOMAIN-SUFFIX,0.zone
+DOMAIN-SUFFIX,soletower.com
+DOMAIN-SUFFIX,soliao.com
 DOMAIN-SUFFIX,solidifyk.com
 DOMAIN-SUFFIX,solidigm-asdf.com
 DOMAIN-SUFFIX,solidigm-nvme.com
@@ -92230,7 +92232,7 @@ DOMAIN-SUFFIX,w.biz
 DOMAIN-SUFFIX,w0028.cc
 DOMAIN-SUFFIX,w032.com
 DOMAIN-SUFFIX,w03voavpa5.com
-DOMAIN-SUFFIX,jszfy.com
+DOMAIN-SUFFIX,w0663.com
 DOMAIN-SUFFIX,w0x9r0k2l1.com
 DOMAIN-SUFFIX,w0y.com
 DOMAIN-SUFFIX,w10a.com
@@ -108222,7 +108224,7 @@ DOMAIN-SUFFIX,zjdetong.com
 DOMAIN-SUFFIX,zjdfc.com
 DOMAIN-SUFFIX,zjdg.com
 DOMAIN-SUFFIX,zjdhky.com
-DOMAIN-SUFFIX,zjdianying.com
+DOMAIN-SUFFIX,jszg.org
 DOMAIN-SUFFIX,zjdjc.com
 DOMAIN-SUFFIX,zjdjqc.com
 DOMAIN-SUFFIX,zjdjxh.com
@@ -110202,7 +110204,6 @@ DOMAIN,api.blipsandchitz.me
 DOMAIN,end-api.shallow.ink
 DOMAIN,end.shallow.ink
 DOMAIN-SUFFIX,lufax.com
-DOMAIN-SUFFIX,xycdn.com
 DOMAIN-SUFFIX,to8to.com
 DOMAIN-SUFFIX,netbig.top
 DOMAIN-SUFFIX,edgemonix.top
@@ -110261,6 +110262,7 @@ DOMAIN-SUFFIX,laomaotao.net
 DOMAIN-SUFFIX,linkvans.com
 DOMAIN-SUFFIX,manhuatai.com
 DOMAIN-SUFFIX,meiqia.com
+DOMAIN-SUFFIX,miaozhen.com
 DOMAIN-SUFFIX,nxog.top
 DOMAIN-SUFFIX,oadz.com
 DOMAIN-SUFFIX,oneapm.com
@@ -110291,75 +110293,79 @@ DOMAIN-SUFFIX,zhanzhang.net
 DOMAIN-SUFFIX,zhiziyun.com
 DOMAIN-SUFFIX,zzzcaculator.top
 DOMAIN-SUFFIX,bdcat.top
-DOMAIN-SUFFIX,lgstatic.com
-DOMAIN-SUFFIX,jtexpress.top
-DOMAIN-SUFFIX,coolab.top
-DOMAIN-SUFFIX,baidustatic.com
-DOMAIN-SUFFIX,duapp.com
-DOMAIN-SUFFIX,duapps.com
-DOMAIN-SUFFIX,hao222.com
-DOMAIN-SUFFIX,quyaoya.com
-DOMAIN-SUFFIX,goodq.top
-DOMAIN-SUFFIX,admin5.com
-DOMAIN-SUFFIX,hnol.net
-DOMAIN-SUFFIX,vcbeat.top
-DOMAIN-SUFFIX,yto.top
-DOMAIN-SUFFIX,juejin.im
-DOMAIN-SUFFIX,szbdyd.com
-DOMAIN-SUFFIX,tapnow.top
-DOMAIN-SUFFIX,miaozhen.com
-DOMAIN-SUFFIX,diandianlife.top
-DOMAIN-SUFFIX,meitustat.com
-DOMAIN-SUFFIX,yccdn.com
 DOMAIN-SUFFIX,51zmt.top
 DOMAIN-SUFFIX,baozoumanhua.com
 DOMAIN-SUFFIX,bsbsb.top
 DOMAIN-SUFFIX,goka.top
 DOMAIN-SUFFIX,qwapp.top
-DOMAIN-SUFFIX,gmanhua.com
 DOMAIN-SUFFIX,manhuaren.com
-DOMAIN-SUFFIX,koowo.com
-DOMAIN-SUFFIX,shuqistat.com
-DOMAIN-SUFFIX,ku6.com
-DOMAIN-SUFFIX,chat.top
-DOMAIN-SUFFIX,kuaikanmanhua.com
-DOMAIN-SUFFIX,tgpro.top
-DOMAIN-SUFFIX,vrzwk.top
+DOMAIN-SUFFIX,gmanhua.com
 DOMAIN-SUFFIX,kskwai.com
 DOMAIN-SUFFIX,kuaishouzt.com
+DOMAIN-SUFFIX,chat.top
+DOMAIN-SUFFIX,ku6.com
+DOMAIN-SUFFIX,koowo.com
+DOMAIN-SUFFIX,tgpro.top
+DOMAIN-SUFFIX,vrzwk.top
+DOMAIN-SUFFIX,kuaikanmanhua.com
+DOMAIN-SUFFIX,juejin.im
+DOMAIN-SUFFIX,jutongbao.top
+DOMAIN-SUFFIX,tclai.top
+DOMAIN-SUFFIX,saduck.top
+DOMAIN-SUFFIX,tendcloud.com
+DOMAIN-SUFFIX,talkingdata.com
+DOMAIN-SUFFIX,talkinggame.com
+DOMAIN-SUFFIX,cpatrk.net
+DOMAIN-SUFFIX,jtexpress.top
+DOMAIN-SUFFIX,yto.top
+DOMAIN-SUFFIX,goodq.top
+DOMAIN-SUFFIX,admin5.com
+DOMAIN-SUFFIX,hnol.net
+DOMAIN-SUFFIX,vcbeat.top
+DOMAIN-SUFFIX,baidustatic.com
+DOMAIN-SUFFIX,duapp.com
+DOMAIN-SUFFIX,duapps.com
+DOMAIN-SUFFIX,hao222.com
+DOMAIN-SUFFIX,quyaoya.com
+DOMAIN-SUFFIX,zymls.com
+DOMAIN-SUFFIX,busyming.com
 DOMAIN-SUFFIX,fengkongcloud.com
-DOMAIN-SUFFIX,gepush.com
-DOMAIN-SUFFIX,getui.com
-DOMAIN-SUFFIX,getui.net
-DOMAIN-SUFFIX,igehuo.com
-DOMAIN-SUFFIX,igetui.com
-DOMAIN-SUFFIX,igexin.com
+DOMAIN-SUFFIX,lgstatic.com
+DOMAIN-SUFFIX,yccdn.com
+DOMAIN-SUFFIX,gio.ren
+DOMAIN-SUFFIX,giocdn.com
+DOMAIN-SUFFIX,growingio.com
 DOMAIN-SUFFIX,5566ua.com
 DOMAIN-SUFFIX,easytomessage.com
 DOMAIN-SUFFIX,jmlk.co
 DOMAIN-SUFFIX,jpush.io
 DOMAIN-SUFFIX,jpushoa.com
 DOMAIN-SUFFIX,pushcfg.com
-DOMAIN-SUFFIX,jutongbao.top
-DOMAIN-SUFFIX,share123.top
-DOMAIN-SUFFIX,tendcloud.com
-DOMAIN-SUFFIX,talkingdata.com
-DOMAIN-SUFFIX,talkinggame.com
-DOMAIN-SUFFIX,cpatrk.net
-DOMAIN-SUFFIX,openinstall.io
-DOMAIN-SUFFIX,appjiagu.com
-DOMAIN-SUFFIX,tclai.top
+DOMAIN-SUFFIX,jsj.top
+DOMAIN-SUFFIX,tapnow.top
+DOMAIN-SUFFIX,favonis.cloud
+DOMAIN-SUFFIX,favonis.com
+DOMAIN-SUFFIX,favonis.space
+DOMAIN-SUFFIX,diandianlife.top
+DOMAIN-SUFFIX,doubaoapps.com
+DOMAIN-SUFFIX,coolab.top
+DOMAIN-SUFFIX,xycdn.com
 DOMAIN-SUFFIX,staticfile.net
 DOMAIN-SUFFIX,staticfile.org
 DOMAIN-SUFFIX,bootcdn.net
 DOMAIN-SUFFIX,bootcss.com
-DOMAIN-SUFFIX,saduck.top
-DOMAIN-SUFFIX,jsj.top
+DOMAIN-SUFFIX,gepush.com
+DOMAIN-SUFFIX,getui.com
+DOMAIN-SUFFIX,getui.net
+DOMAIN-SUFFIX,igehuo.com
+DOMAIN-SUFFIX,igetui.com
+DOMAIN-SUFFIX,igexin.com
+DOMAIN-SUFFIX,szbdyd.com
+DOMAIN-SUFFIX,openinstall.io
+DOMAIN-SUFFIX,appjiagu.com
 DOMAIN-SUFFIX,mob.com
 DOMAIN-SUFFIX,dutils.com
-DOMAIN-SUFFIX,gio.ren
-DOMAIN-SUFFIX,giocdn.com
-DOMAIN-SUFFIX,growingio.com
+DOMAIN-SUFFIX,share123.top
 DOMAIN-SUFFIX,aloys233.top
 DOMAIN-SUFFIX,lg3000.top
 DOMAIN-SUFFIX,misaka-net.top
@@ -110367,10 +110373,12 @@ DOMAIN-SUFFIX,pljzy.top
 DOMAIN-SUFFIX,tianhw.top
 DOMAIN-SUFFIX,topwd.top
 DOMAIN-SUFFIX,zway.top
+DOMAIN-SUFFIX,shuqistat.com
 DOMAIN,time.izatcloud.net
 DOMAIN,time.xtracloud.net
 DOMAIN,izattime.qcomgeo2.com
 DOMAIN,xtratime.qcomgeo2.com
+DOMAIN-SUFFIX,meitustat.com
 DOMAIN-SUFFIX,xhsrcdn.com
 DOMAIN-SUFFIX,amap.net
 DOMAIN-SUFFIX,ztna-dingtalk.com
