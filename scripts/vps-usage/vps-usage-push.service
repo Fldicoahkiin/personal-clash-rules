@@ -1,0 +1,11 @@
+[Unit]
+Description=Send this month's VPS outbound traffic to rules.flacier.com
+After=network-online.target vnstat.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/vps-usage-push.env
+ExecStart=/usr/local/bin/vps-usage-push
+DynamicUser=yes
+NoNewPrivileges=yes

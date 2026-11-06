@@ -1,0 +1,26 @@
+#!/bin/sh
+# Sends this month's outbound bytes on the VPS public interface to rules.flacier.com,
+# which shows them as a usage group in the main subscription link.
+# Settings come from /etc/vps-usage-push.env (see vps-usage-push.service).
+set -eu
+
+: "${VPS_USAGE_TOKEN:?missing in /etc/vps-usage-push.env}"
+: "${VPS_USAGE_SERVER:?missing in /etc/vps-usage-push.env}"
+: "${VPS_USAGE_QUOTA_GIB:?missing in /etc/vps-usage-push.env}"
+interface="${VPS_USAGE_INTERFACE:-eth0}"
+url="${VPS_USAGE_URL:-https://rules.flacier.com/api/vps-usage}"
+
+# vnstat --oneline b: field 8 is the current month (UTC on this host, like DigitalOcean's billing month),
+# field 10 is the bytes transmitted in it. Providers bill outbound traffic only.
+line=$(vnstat --oneline b -i "$interface")
+month=$(printf '%s\n' "$line" | cut -d ';' -f 8)
+tx=$(printf '%s\n' "$line" | cut -d ';' -f 10)
+case "$month" in [0-9][0-9][0-9][0-9]-[0-9][0-9]) ;; *) echo "unexpected vnstat month: $month" >&2; exit 1 ;; esac
+case "$tx" in '' | *[!0-9]*) echo "unexpected vnstat tx bytes: $tx" >&2; exit 1 ;; esac
+quota=$((VPS_USAGE_QUOTA_GIB * 1073741824))
+
+# The token goes through stdin so it never appears in the process list.
+printf 'Authorization: Bearer %s\n' "$VPS_USAGE_TOKEN" | curl -fsS --max-time 20 -X PUT "$url" \
+  -H @- -H 'Content-Type: application/json' \
+  --data "{\"server\":\"$VPS_USAGE_SERVER\",\"month\":\"$month\",\"txBytes\":$tx,\"quotaBytes\":$quota}"
+echo

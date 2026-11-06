@@ -1,5 +1,6 @@
 import { routeSubscriptionRequest } from "./worker/subscriptions";
 import { routeCloudRola } from "./worker/rola";
+import { routeVpsUsage } from "./worker/vps-usage";
 import { isBuildInfo, type VersionInfo } from "./config/build-info";
 
 const securityHeaders = {
@@ -70,7 +71,7 @@ export default {
     }
 
     const subscriptionResponse = url.pathname === "/api/version"
-      ? null : await routeCloudRola(request, url, env) ?? await routeSubscriptionRequest(request, url, env);
+      ? null : await routeCloudRola(request, url, env) ?? await routeVpsUsage(request, url, env) ?? await routeSubscriptionRequest(request, url, env);
     if (subscriptionResponse) {
       const response = withResponseHeaders(subscriptionResponse, url.pathname);
       if (url.pathname.startsWith("/api/") && origin) {

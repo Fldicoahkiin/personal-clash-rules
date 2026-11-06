@@ -146,6 +146,29 @@ pnpm rola usage --proxy http://127.0.0.1:实际混合端口
 
 机场与 Rola 是串联资源，同一流量经过两者，**不能把两份额度相加作为一个 `Subscription-Userinfo`**。机场原用量继续来自自己的订阅头，Rola 用量来自这次 API 查询；此工具不改变原订阅卡片。多个独立机场订阅的合并额度是另一个场景。
 
+## 自建 VPS 流量：只显示，不参与分流
+
+自建 VPS（例如 DigitalOcean）按出站流量计费，机场的 `Subscription-Userinfo` 反映不了它。VPS 每 30 分钟把本月公网网卡的发送字节数推给 `PUT /api/vps-usage`，主链接的 Mihomo 完整配置里就多出一个分组：
+
+- 名字形如 `📊 VPS 本月 123.4 / 1000 GiB`，排在家宽分组后面，成员是 `server` 与上报地址相同的节点。
+- 没有规则引用它，其他分组也不包含它；选中它只是走同一个 VPS 节点，分流不变。
+- 只有上报月份等于当前 UTC 月份、配置里也有对应节点时才出现。数字随客户端刷新订阅更新，不是实时的。
+- Shadowrocket 的配套配置没有分组，手机上不显示。
+
+请求带 `Authorization: Bearer 口令`。Worker 只保存口令的 SHA-256（`wrangler.jsonc` 里的 `VPS_USAGE_TOKEN_SHA256`），口令原文只在 VPS 的 `/etc/vps-usage-push.env`（权限 600）。请求体为 `{"server":"159.65.98.103","month":"2026-11","txBytes":…,"quotaBytes":…}`。
+
+VPS 端使用 `scripts/vps-usage/` 里的脚本和 systemd 定时器，由 vnstat 计数。服务器时区为 UTC，月份与 DigitalOcean 的账期一致。vnstat 从安装时开始计数，安装当月会少算安装前的流量。
+
+```sh
+apt-get install -y vnstat
+install -m 755 vps-usage-push /usr/local/bin/
+install -m 644 vps-usage-push.service vps-usage-push.timer /etc/systemd/system/
+# /etc/vps-usage-push.env（600）：VPS_USAGE_TOKEN、VPS_USAGE_SERVER、VPS_USAGE_QUOTA_GIB；可选 VPS_USAGE_INTERFACE（默认 eth0）
+systemctl daemon-reload && systemctl enable --now vps-usage-push.timer
+```
+
+更换口令时，把新口令写入 env 文件，再把它的 SHA-256（base64url，无填充）更新到 `wrangler.jsonc` 并部署。
+
 ## 购买后验收顺序
 
 1. 保留当前可用配置，确认实际套餐、网关协议/端口和国家；先核对一个目标网站，不同时修改 DNS/TUN/嗅探/PAC。

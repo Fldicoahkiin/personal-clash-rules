@@ -2,6 +2,8 @@ import { env, exports } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSourceCache } from "./helpers/source-cache";
 import { routeCloudRola } from "../src/worker/rola";
+import { hashText } from "../src/worker/secrets";
+import { routeVpsUsage } from "../src/worker/vps-usage";
 import { parse, stringify } from "yaml";
 
 let testClient = 0;
@@ -453,5 +455,62 @@ describe("cloud Rola subscriptions", () => {
     const bad = await post("/api/rola/chains", { baseId: p.baseId, exit, upstreamNode: "DIRECT", rules, dns });
     expect(bad.status).toBe(422);
     expect(await bad.text()).not.toContain(exit.password);
+  });
+
+  it("stores VPS usage only with the configured token and a well-formed body", async () => {
+    await env.SUBSCRIPTIONS.delete("vps-usage");
+    const local = { ...env, VPS_USAGE_TOKEN_SHA256: await hashText("test-usage-token") };
+    const usage = { server: "203.0.113.30", month: "2026-11", txBytes: 5 * 2 ** 30, quotaBytes: 1000 * 2 ** 30 };
+    const put = (token: string, body: unknown) => routeVpsUsage(new Request(`${origin}/api/vps-usage`, {
+      method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(body),
+    }), new URL(`${origin}/api/vps-usage`), local);
+    expect((await put("wrong-token", usage))?.status).toBe(401);
+    // The deployed route only knows the production token's hash.
+    expect((await fetchClient(`${origin}/api/vps-usage`, { method: "PUT", headers: { Authorization: "Bearer test-usage-token" }, body: JSON.stringify(usage) })).status).toBe(401);
+    expect(await env.SUBSCRIPTIONS.get("vps-usage")).toBeNull();
+    for (const invalid of [{ ...usage, txBytes: -1 }, { ...usage, txBytes: 1.5 }, { ...usage, month: "2026-13" }, { ...usage, server: "a,b" }, { ...usage, quotaBytes: 0 }]) {
+      expect((await put("test-usage-token", invalid))?.status).toBe(400);
+    }
+    const stored = await put("test-usage-token", usage);
+    expect(stored?.status).toBe(200);
+    await expect(stored?.json()).resolves.toEqual({ stored: true, group: "📊 VPS 本月 5.0 / 1000 GiB" });
+    expect(await env.SUBSCRIPTIONS.get("vps-usage", "json")).toMatchObject(usage);
+  });
+
+  it("shows this month's VPS usage as an unused group beside the residential group and refreshes the cached link", async () => {
+    await env.SUBSCRIPTIONS.delete("vps-usage");
+    const relayName = "Relay";
+    const synchronized = await post("/api/subscriptions/sync", {
+      id: crypto.randomUUID().replaceAll("-", "").slice(0, 16), managementToken: "test-token-".padEnd(32, "0"), target: "clash-party-config",
+      config: { sources: [{ type: "subscription", value: "https://airport.example/private-source" }] },
+      snapshot: { readAt: new Date(Date.now() - 120_000).toISOString(), sources: [{ content: `${uri}\ntrojan://relay-secret@relay.example:443#${relayName}`, metadata: {} }] },
+    });
+    expect(synchronized.status).toBe(201);
+    const p = await preview({ sources: [{ type: "subscription", value: (await synchronized.json<{ url: string }>()).url }] });
+    const response = await post("/api/rola/chains", {
+      baseId: p.baseId, exit, connectionMode: "direct", groupName: "Homes", residentialNodeNames: [relayName], rules, dns,
+    });
+    expect(response.status).toBe(201);
+    const { url, shadowrocketConfigUrl } = await response.json<{ url: string; shadowrocketConfigUrl: string }>();
+    const usageGroups = (profile: { "proxy-groups": Array<{ name: string }> }) => profile["proxy-groups"].filter(group => group.name.startsWith("📊 VPS"));
+    expect(usageGroups(parse(await (await fetchClient(url)).text()))).toEqual([]);
+    expect((await fetchClient(url)).headers.get("x-subscription-render-cache")).toBe("hit");
+
+    const usage = { server: "relay.example", month: new Date().toISOString().slice(0, 7), txBytes: Math.round(123.4 * 2 ** 30), quotaBytes: 1000 * 2 ** 30, updatedAt: new Date().toISOString() };
+    await env.SUBSCRIPTIONS.put("vps-usage", JSON.stringify(usage));
+    const updated = await fetchClient(url);
+    expect(updated.headers.get("x-subscription-render-cache")).toBeNull();
+    const profile = parse(await updated.text());
+    const name = "📊 VPS 本月 123.4 / 1000 GiB";
+    const names = profile["proxy-groups"].map((group: { name: string }) => group.name);
+    expect(names.indexOf(name)).toBe(names.indexOf("Homes") + 1);
+    expect(profile["proxy-groups"][names.indexOf(name)]).toEqual({ name, type: "select", proxies: [relayName] });
+    expect(profile["proxy-groups"].filter((group: { proxies?: string[] }) => group.proxies?.includes(name))).toEqual([]);
+    expect(profile.rules.filter((rule: string) => rule.includes(name))).toEqual([]);
+    expect((await fetchClient(shadowrocketConfigUrl)).status).toBe(200);
+
+    // A record left from an earlier month is not shown as this month's usage.
+    await env.SUBSCRIPTIONS.put("vps-usage", JSON.stringify({ ...usage, month: "2000-01" }));
+    expect(usageGroups(parse(await (await fetchClient(url)).text()))).toEqual([]);
   });
 });

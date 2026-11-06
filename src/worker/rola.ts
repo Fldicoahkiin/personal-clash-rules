@@ -9,6 +9,7 @@ import { subscriptionRecoveryKey, withSubscriptionRecovery } from "./subscriptio
 import { isSyncOverdue } from "./subscription-snapshot";
 import { renderRolaTarget, requireRolaTarget, rolaMobileFiles, rolaRequestTarget, type RolaTarget } from "./rola-target";
 import { isMihomoConfigTarget, isOutputTarget, type OutputTarget } from "./types";
+import { readVpsUsageGroup, withVpsUsageGroup } from "./vps-usage";
 
 const profileBytes = 256 * 1024;
 const sourceBytes = 1024 * 1024;
@@ -217,8 +218,10 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
       }
       const updateIntervalHours = synchronized?.config.updateIntervalHours
         ?? (chain.source.kind === "convert" ? chain.source.config.updateIntervalHours : 6);
+      // Only Mihomo clients show policy groups; Shadowrocket's paired config has none.
+      const usageGroup = target === "mihomo-config" ? await readVpsUsageGroup(env) : null;
       const freshOutput = synchronized ? { freshForMs: updateIntervalHours * 3_600_000,
-        revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, chain.settings, synchronized])) } : undefined;
+        revision: await hashText(JSON.stringify([env.CF_VERSION_METADATA?.id ?? "local", target, chain.settings, synchronized, usageGroup])) } : undefined;
       const recoveryId = `rola:${match[1]}${target === "mihomo-config" ? "" : `:${target}`}`;
       const response = await withSubscriptionRecovery(env.SUBSCRIPTIONS, recoveryId, async () => {
         if (baseFailure) throw baseFailure;
@@ -232,7 +235,8 @@ export async function routeCloudRola(request: Request, url: URL, env: Env): Prom
           profile = built.generated.content;
           if (built.generated.usage.combined) userinfo = formatSubscriptionUserinfo(built.generated.usage.combined);
         }
-        const content = await renderRolaTarget(env, prepare(profile, chain.settings), chain.settings, target);
+        const prepared = prepare(profile, chain.settings);
+        const content = await renderRolaTarget(env, usageGroup ? withVpsUsageGroup(prepared, usageGroup) : prepared, chain.settings, target);
         if (encoder.encode(content).length > requestBytes) throw new ApiError(413, "rola_output_too_large", "家宽输出不能超过 512 KiB，请减少节点或规则。");
         const rendered = profileResponse(chain, content, userinfo, target, updateIntervalHours);
         if (synchronized) rendered.headers.set("X-Subscription-Synced-At", synchronized.localSync.readAt);
