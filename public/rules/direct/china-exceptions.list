@@ -2,7 +2,7 @@
 # Modified by Flacier (2026-10-19): only entries covered by china-domains are kept; no warranty.
 # Artifact license: GPL-3.0; source license: MetaCubeX/meta-rules-dat GPL-3.0. License text: /rules/licenses/MetaCubeX-GPL-3.0.txt
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-!cn.list
-# Source SHA-256: d4fff8854efc718a2f004b9191b50027ea211a065b13b8fece604a9c2676df8d
+# Source SHA-256: e5c82ecae522379e4fe16e57a5f4a33590545f34f6ce8067094f834f58922afb
 DOMAIN,databank.worldbank.org
 DOMAIN,gitlab-assets.oss-cn-hongkong.aliyuncs.com
 DOMAIN,licdn.cn.cdn20.com
@@ -50,6 +50,7 @@ DOMAIN-SUFFIX,asmr.gay
 DOMAIN-SUFFIX,astm.org
 DOMAIN-SUFFIX,avstar4.com
 DOMAIN-SUFFIX,beatsmusic.wang
+DOMAIN-SUFFIX,bilibili.tv
 DOMAIN-SUFFIX,biliplus.com
 DOMAIN-SUFFIX,binancezh.kim
 DOMAIN-SUFFIX,binancezh.link
@@ -97,8 +98,8 @@ DOMAIN-SUFFIX,hp.com
 DOMAIN-SUFFIX,hpconnected.com
 DOMAIN-SUFFIX,hpstore-china.com
 DOMAIN-SUFFIX,hshsxkj.com
-DOMAIN-SUFFIX,xn--74q035i.xn--hxt814e
 DOMAIN-SUFFIX,huati.cc
+DOMAIN-SUFFIX,xn--74q035i.xn--hxt814e
 DOMAIN-SUFFIX,hummingbird.ms
 DOMAIN-SUFFIX,xn--2vxsp6vi4j.com
 DOMAIN-SUFFIX,icbcmoscow.ru
@@ -107,8 +108,8 @@ DOMAIN-SUFFIX,ieee.org
 DOMAIN-SUFFIX,igkbroker.com
 DOMAIN-SUFFIX,ilife.wang
 DOMAIN-SUFFIX,images-amazon.com
-DOMAIN-SUFFIX,xiaomiflash.com
 DOMAIN-SUFFIX,infoq.com
+DOMAIN-SUFFIX,xiaomiflash.com
 DOMAIN-SUFFIX,inshotapp.com
 DOMAIN-SUFFIX,iop.org
 DOMAIN-SUFFIX,ipad.wang
