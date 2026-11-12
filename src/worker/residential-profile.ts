@@ -507,9 +507,10 @@ export function prepareRolaProfile(source: string, value: unknown) {
     group.set("exclude-filter", filter ? `${filter}|${nodePattern}` : nodePattern);
   }
   const flag = String.fromCodePoint(...settings.country.toUpperCase().split("").map(char => 127397 + char.charCodeAt(0)));
+  // UDP follows the selected member: Rola nodes carry udp: false, a referenced node keeps its own setting.
   groups.add(document.createNode({
     name: groupName, type: "select", proxies: residentialNames,
-    "empty-fallback": "REJECT", "disable-udp": true,
+    "empty-fallback": "REJECT",
   }));
   const residentialGroup = groups.items.pop();
   // Directly after GLOBAL; bases without it keep the legacy third position.

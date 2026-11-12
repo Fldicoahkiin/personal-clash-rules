@@ -548,7 +548,7 @@ describe("local Rola preparation", () => {
     expect(output["proxy-groups"][0]["exclude-filter"]).toBe("(?i)expired|^ROLA-RESIDENTIAL$");
     expect(output["proxy-groups"][1]["exclude-filter"]).toBe("^ROLA-RESIDENTIAL$");
     expect(output["proxy-groups"][3]).toEqual(original["proxy-groups"][2]);
-    expect(output["proxy-groups"][2]).toMatchObject({ name: "ROLA", type: "select", proxies: ["ROLA-RESIDENTIAL"], "empty-fallback": "REJECT", "disable-udp": true });
+    expect(output["proxy-groups"][2]).toEqual({ name: "ROLA", type: "select", proxies: ["ROLA-RESIDENTIAL"], "empty-fallback": "REJECT" });
     expect(output.rules.slice(0, 2)).toEqual(["AND,((DOMAIN-SUFFIX,claude.ai),(NETWORK,UDP)),REJECT", "DOMAIN-SUFFIX,claude.ai,ROLA"]);
     expect(output.rules.slice(-2)).toEqual(original.rules);
     expect(output.dns["nameserver-policy"]["+.claude.ai"]).toEqual(settings.dns.map(url => `${url}#ROLA`));

@@ -304,7 +304,6 @@ proxy-groups:
       - "[Rola] 美国 Las Vegas · 198.51.100.11"
       - "[DigitalOcean] 美国 San Francisco · 192.0.2.50"
     empty-fallback: REJECT
-    disable-udp: true
   - name: ♻️ 自动选择
     type: url-test
     include-all: true
