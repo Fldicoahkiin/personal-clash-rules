@@ -11,6 +11,9 @@ const tencentMediaDomains = ["qq.com", "qpic.cn", "qlogo.cn", "gtimg.cn", "gtimg
 // ICBC online banking connects to the addresses it resolves; it gets real answers from the domestic resolvers.
 const bankDomains = ["icbc.com.cn", "icbc.com", "95588.com"].map(domain => `+.${domain}`);
 const realAddressDomains = [...tencentMediaDomains, ...bankDomains];
+// Tailscale's network extension connects from the physical interface, outside the TUN, so a fake IP never answers it.
+// These get real answers from the proxied resolvers, like any other proxied lookup.
+const tailscaleDomains = ["tailscale.com", "tailscale.io"].map(domain => `+.${domain}`);
 
 export function dnsProxyGroup(providerNames: string[] = []) {
   return {
@@ -86,7 +89,7 @@ export function createProxyDns(settings: DnsSettings = defaultDnsSettings, upstr
     ipv6: settings.ipv6,
     "enhanced-mode": "fake-ip",
     "fake-ip-range": "198.18.0.1/16",
-    "fake-ip-filter": ["*.lan", "*.local", "localhost", ...realAddressDomains],
+    "fake-ip-filter": ["*.lan", "*.local", "localhost", ...realAddressDomains, ...tailscaleDomains],
     "default-nameserver": resolverBootstrap,
     "proxy-server-nameserver": bootstrap,
     nameserver: proxied,

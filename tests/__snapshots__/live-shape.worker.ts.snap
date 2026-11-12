@@ -26,6 +26,8 @@ dns:
     - +.icbc.com.cn
     - +.icbc.com
     - +.95588.com
+    - +.tailscale.com
+    - +.tailscale.io
   default-nameserver: &a1
     - https://223.5.5.5/dns-query
     - https://1.12.12.12/dns-query
