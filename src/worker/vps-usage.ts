@@ -5,7 +5,7 @@ import type { prepareRolaProfile } from "./residential-profile";
 import { hashText } from "./secrets";
 import { readRequestObject } from "./subscriptions";
 
-// The VPS pushes its own monthly interface counter here; the main link shows it as a group that no rule uses.
+// The VPS pushes its own monthly interface counter here; the main link shows it as an entry of the residential group.
 const usageKey = "vps-usage";
 // Pushes arrive every 30 minutes; a record from an earlier month is ignored anyway.
 const usageTtl = 40 * 86400;
@@ -63,7 +63,10 @@ export async function readVpsUsageGroup(env: Pick<Env, "SUBSCRIPTIONS">, now = n
   return { name: groupName(usage), server: usage.server };
 }
 
-/** Adds the usage group right after the residential group, listing the nodes that connect to the VPS. */
+/**
+ * Adds the usage as a hidden group listing the nodes that connect to the VPS, and appends it to the residential group,
+ * so clients show it as the last entry there instead of as a group of its own.
+ */
 export function withVpsUsageGroup(prepared: Prepared, group: VpsUsageGroup): Prepared {
   const document = parseDocument(prepared.profile, { prettyErrors: false, uniqueKeys: true });
   const proxies = document.get("proxies", true);
@@ -72,6 +75,10 @@ export function withVpsUsageGroup(prepared: Prepared, group: VpsUsageGroup): Pre
   const members = proxies.items.flatMap(node => isMap(node) && node.get("server") === group.server ? [String(node.get("name"))] : []);
   if (!members.length || groups.items.some(item => isMap(item) && item.get("name") === group.name)) return prepared;
   const anchor = groups.items.findIndex(item => isMap(item) && item.get("name") === prepared.summary.groupName);
-  groups.items.splice(anchor >= 0 ? anchor + 1 : groups.items.length, 0, document.createNode({ name: group.name, type: "select", proxies: members }));
+  const residential = groups.items[anchor];
+  const entries = isMap(residential) ? residential.get("proxies", true) : undefined;
+  if (!isSeq(entries)) throw new Error("Invalid residential group");
+  entries.add(group.name);
+  groups.items.splice(anchor + 1, 0, document.createNode({ name: group.name, type: "select", hidden: true, proxies: members }));
   return { ...prepared, profile: document.toString({ lineWidth: 0 }), toJS: () => document.toJS({ maxAliasCount: 100 }) };
 }

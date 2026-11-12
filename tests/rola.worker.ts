@@ -477,7 +477,7 @@ describe("cloud Rola subscriptions", () => {
     expect(await env.SUBSCRIPTIONS.get("vps-usage", "json")).toMatchObject(usage);
   });
 
-  it("shows this month's VPS usage as an unused group beside the residential group and refreshes the cached link", async () => {
+  it("shows this month's VPS usage as a hidden entry of the residential group and refreshes the cached link", async () => {
     await env.SUBSCRIPTIONS.delete("vps-usage");
     const relayName = "Relay";
     const synchronized = await post("/api/subscriptions/sync", {
@@ -504,8 +504,10 @@ describe("cloud Rola subscriptions", () => {
     const name = "📊 VPS 本月 123.4 / 1000 GiB";
     const names = profile["proxy-groups"].map((group: { name: string }) => group.name);
     expect(names.indexOf(name)).toBe(names.indexOf("Homes") + 1);
-    expect(profile["proxy-groups"][names.indexOf(name)]).toEqual({ name, type: "select", proxies: [relayName] });
-    expect(profile["proxy-groups"].filter((group: { proxies?: string[] }) => group.proxies?.includes(name))).toEqual([]);
+    expect(profile["proxy-groups"][names.indexOf(name)]).toEqual({ name, type: "select", hidden: true, proxies: [relayName] });
+    const listing = profile["proxy-groups"].filter((group: { proxies?: string[] }) => group.proxies?.includes(name));
+    expect(listing.map((group: { name: string }) => group.name)).toEqual(["Homes"]);
+    expect(listing[0].proxies.at(-1)).toBe(name);
     expect(profile.rules.filter((rule: string) => rule.includes(name))).toEqual([]);
     expect((await fetchClient(shadowrocketConfigUrl)).status).toBe(200);
 
