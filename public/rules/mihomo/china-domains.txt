@@ -6,7 +6,7 @@
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/cn.list
 # Source SHA-256: 64d115b13c843307c2fc29378972cc1be7950ce5cde85e46d7cd4c6be75abacd
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list
-# Source SHA-256: 84438029034ca555759ff5b8cf499299ffcfdcb95fab56491c117f0578005f80
+# Source SHA-256: b6a28f2d69cdf2e50cb55f62e9d2fc3fad1268a1e2b8b761096979766cf58f54
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/xiaohongshu
 # Source SHA-256: c02829a3660e6ddcc24e53a86b33735accf42613d493757564b59d217a06065d
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/askdiandian
@@ -24,9 +24,9 @@
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/jd
 # Source SHA-256: 03a48dfe95eb53ea210f3edf629b2f0f711c535177cc92f7fb4521b97e84aee3
 # Omitted 3 DOMAIN-REGEX rules for the shared mobile/domain format:
-# DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$
 # DOMAIN-REGEX,.+\.awsdns-cn-[0-9][0-9]\.(biz|com|net|top)$
 # DOMAIN-REGEX,.+\.awsdns-cn-[0-9][a-e0-9]\.cn$
+# DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$
 +.alibaba
 +.yun
 +.xn--zfr164b
@@ -110204,6 +110204,7 @@ api.blipsandchitz.me
 end-api.shallow.ink
 end.shallow.ink
 +.lufax.com
++.juejin.im
 +.to8to.com
 +.netbig.top
 +.edgemonix.top
@@ -110294,80 +110295,51 @@ end.shallow.ink
 +.zhiziyun.com
 +.zzzcaculator.top
 +.bdcat.top
++.fengkongcloud.com
 +.tingyun.com
-+.openinstall.io
-+.appjiagu.com
-+.goodq.top
-+.admin5.com
-+.hnol.net
-+.shuwen.com
-+.tidesight.com
-+.upsort.com
-+.vcbeat.top
-+.yccdn.com
-+.gepush.com
-+.getui.com
-+.getui.net
-+.igehuo.com
-+.igetui.com
-+.igexin.com
-+.share123.top
-+.juejin.im
-+.coolab.top
-+.bayescom.com
-+.51zmt.top
-+.baozoumanhua.com
-+.bsbsb.top
-+.goka.top
-+.qwapp.top
-+.chat.top
-+.kuaikanmanhua.com
-+.koowo.com
-+.kskwai.com
-+.kuaishouzt.com
-+.ku6.com
-+.gmanhua.com
-+.manhuaren.com
-+.tgpro.top
-+.vrzwk.top
-+.szbdyd.com
-+.yundouxueyuan.com
-+.5566ua.com
-+.easytomessage.com
-+.jmlk.co
-+.jpush.io
-+.jpushoa.com
-+.pushcfg.com
-+.tendcloud.com
-+.talkingdata.com
-+.talkinggame.com
-+.cpatrk.net
 +.baidustatic.com
 +.duapp.com
 +.duapps.com
 +.hao222.com
 +.quyaoya.com
 +.xycdn.com
-+.mob.com
-+.dutils.com
-+.zymls.com
-+.busyming.com
++.jsj.top
++.coolab.top
++.gio.ren
++.giocdn.com
 +.growingio.com
++.51zmt.top
++.baozoumanhua.com
++.bsbsb.top
++.goka.top
++.qwapp.top
++.chat.top
++.ku6.com
++.koowo.com
++.kskwai.com
++.kuaishouzt.com
++.gmanhua.com
++.manhuaren.com
++.kuaikanmanhua.com
++.tgpro.top
++.vrzwk.top
++.bayescom.com
 +.jtexpress.top
 +.yto.top
-+.giocdn.com
-+.gio.ren
-+.jsj.top
-+.fengkongcloud.com
-+.bseinfo.net
-+.lgstatic.com
-+.saduck.top
-+.staticfile.net
-+.staticfile.org
++.gepush.com
++.getui.com
++.getui.net
++.igehuo.com
++.igetui.com
++.igexin.com
 +.bootcdn.net
 +.bootcss.com
-+.jutongbao.top
++.staticfile.net
++.staticfile.org
++.cpatrk.net
++.talkinggame.com
 +.tapnow.top
++.nia-teams.com
 +.senseavatar.com
 +.favonis.cloud
 +.favonis.com
@@ -110375,6 +110347,33 @@ end.shallow.ink
 +.ai-indeed.com
 +.diandianlife.top
 +.doubaoapps.com
++.talkingdata.com
++.tendcloud.com
++.zymls.com
++.busyming.com
++.pushcfg.com
++.jpushoa.com
++.jpush.io
++.jmlk.co
++.easytomessage.com
++.5566ua.com
++.yundouxueyuan.com
++.goodq.top
++.admin5.com
++.hnol.net
++.shuwen.com
++.tidesight.com
++.upsort.com
++.vcbeat.top
++.saduck.top
++.szbdyd.com
++.lgstatic.com
++.yccdn.com
++.bseinfo.net
++.share123.top
++.jutongbao.top
++.openinstall.io
++.appjiagu.com
 +.aloys233.top
 +.lg3000.top
 +.misaka-net.top
@@ -110382,9 +110381,11 @@ end.shallow.ink
 +.tianhw.top
 +.topwd.top
 +.zway.top
++.mob.com
++.dutils.com
 +.tclai.top
-+.meitustat.com
 +.shuqistat.com
++.meitustat.com
 time.izatcloud.net
 time.xtracloud.net
 izattime.qcomgeo2.com

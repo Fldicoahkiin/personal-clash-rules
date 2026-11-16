@@ -2,7 +2,7 @@
 # Modified by Flacier (2026-10-19): only entries covered by china-domains are kept; no warranty.
 # Artifact license: GPL-3.0; source license: MetaCubeX/meta-rules-dat GPL-3.0. License text: /rules/licenses/MetaCubeX-GPL-3.0.txt
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-!cn.list
-# Source SHA-256: e5c82ecae522379e4fe16e57a5f4a33590545f34f6ce8067094f834f58922afb
+# Source SHA-256: 7cad622007acd938ced17298f591fe0cc31ee6dcc8e8646941b053ee4c4a54db
 DOMAIN,databank.worldbank.org
 DOMAIN,gitlab-assets.oss-cn-hongkong.aliyuncs.com
 DOMAIN,licdn.cn.cdn20.com
