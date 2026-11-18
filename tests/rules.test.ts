@@ -85,6 +85,12 @@ describe("published rule sets", { timeout: 30_000 }, () => {
     for (const hostname of [
       "api.anthropic.com",
       "downloads.claude.ai",
+      "claude.new",
+      "claude.app",
+      "ant.dev",
+      "claudepages.dev",
+      "claudestudio.com",
+      "chatbotclaude.com",
       "bridge.claudeusercontent.com",
       "widget.claudemcpcontent.com",
       "servd-anthropic-website.b-cdn.net",
