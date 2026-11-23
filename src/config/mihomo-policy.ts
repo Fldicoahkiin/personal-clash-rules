@@ -162,6 +162,8 @@ function countryGroup(name: string, filter: string) {
   };
 }
 
+export const FIXED_IP_GROUP = "🇺🇸 美国固定 IP";
+
 export const businessProxyGroupNames = [
   "AI", "CLAUDE", "APPLE", "ICLOUD", "APPLE-MEDIA", "APPLE-INTELLIGENCE", "APPLE-DOWNLOAD", "APPLE-SYSTEM",
   "STEAM", "STEAM-DOWNLOAD", "STEAM-ONLINE", "DISCORD",
@@ -173,7 +175,7 @@ function businessGroup(name: typeof businessProxyGroupNames[number], icon: strin
   return {
     name,
     type: "select",
-    proxies: [...new Set([initial, "GLOBAL", "AUTO", ...Object.keys(countryGroupNames), "DIRECT"])],
+    proxies: [...new Set([initial, "GLOBAL", "AUTO", FIXED_IP_GROUP, ...Object.keys(countryGroupNames), "DIRECT"])],
     "include-all": true,
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/${icon}.svg`,
@@ -184,7 +186,7 @@ export const mihomoProxyGroups = [
   {
     name: "GLOBAL",
     type: "select",
-    proxies: ["AUTO", "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
+    proxies: ["AUTO", FIXED_IP_GROUP, "US", "JP", "SG", "HK", "TW", "KR", "EU", "DIRECT"],
     "include-all": true,
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/globe.svg`,
@@ -202,7 +204,7 @@ export const mihomoProxyGroups = [
   },
   // 固定 IP 出口：只收名字带 DigitalOcean 的自建节点，空组时 Mihomo 用 REJECT 兜底。
   {
-    name: "🇺🇸 美国固定 IP",
+    name: FIXED_IP_GROUP,
     type: "select",
     "include-all": true,
     filter: "(?i)digitalocean",

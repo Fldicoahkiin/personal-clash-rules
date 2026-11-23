@@ -161,6 +161,7 @@ describe("Clash Party override", () => {
     expect(groups.get("🤖 AI")?.proxies).toEqual([
       "GLOBAL",
       "♻️ 自动选择",
+      "🇺🇸 美国固定 IP",
       "🇺🇸 美国",
       "🇯🇵 日本",
       "🇸🇬 新加坡",
