@@ -200,6 +200,16 @@ export const mihomoProxyGroups = [
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/auto.svg`,
   },
+  // 固定 IP 出口：只收名字带 DigitalOcean 的自建节点，空组时 Mihomo 用 REJECT 兜底。
+  {
+    name: "🇺🇸 美国固定 IP",
+    type: "select",
+    "include-all": true,
+    filter: "(?i)digitalocean",
+    "exclude-filter": metadataFilter,
+    "empty-fallback": "REJECT" as const,
+    icon: `${policyIconBase}/region.svg`,
+  },
   countryGroup(
     "US",
     `(?i)(${countryNodeFilters.US})`,

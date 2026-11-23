@@ -26,6 +26,11 @@ describe("business policy choices", () => {
     for (const name of byName.keys()) visit(name);
   });
 
+  it("exposes a fixed-IP selector limited to the self-hosted nodes", () => {
+    const group = mihomoProxyGroups.find(candidate => candidate.name === "🇺🇸 美国固定 IP");
+    expect(group).toMatchObject({ type: "select", "include-all": true, filter: "(?i)digitalocean" });
+  });
+
   it("keeps explicit DIRECT selectable without adding direct nodes to automatic or country pools", () => {
     for (const name of ["GLOBAL"]) {
       const group = mihomoProxyGroups.find(group => group.name === name);
