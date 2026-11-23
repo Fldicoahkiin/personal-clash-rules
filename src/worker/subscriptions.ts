@@ -648,8 +648,11 @@ async function subscriptionResponse(config: SubscriptionConfig, generated: Await
   const etag = `"${await hashText(`${content}\n${subscriptionUserinfo ?? ""}`)}"`;
   const profileName = displayProfileName(config, generated.inheritedName);
   const extension = target === "shadowrocket-config" ? "conf" : target === "shadowrocket" ? "txt" : "yaml";
+  // 手机客户端普遍不认 RFC 5987 的 filename*，会显示成一串百分号编码；补一个纯 ASCII 的 filename。
+  const plainName = target === "shadowrocket-config" ? "Flacier-Mobile.conf"
+    : target === "shadowrocket" ? "Flacier-Mobile-Nodes.txt" : `Flacier.${extension}`;
   const headers = new Headers({
-    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${profileName}.${extension}`)}`,
+    "Content-Disposition": `attachment; filename="${plainName}"; filename*=UTF-8''${encodeURIComponent(`${profileName}.${extension}`)}`,
     "Content-Type": contentTypeFor(target),
     ETag: etag,
     "Profile-Update-Interval": String(config.updateIntervalHours),
