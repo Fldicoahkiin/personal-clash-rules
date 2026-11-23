@@ -13,8 +13,9 @@ describe("targetForUserAgent", () => {
     ["Quantumult%20X/1.5", "quantumult-x"],
     ["sing-box/1.12", "sing-box"],
     ["v2rayN/7.0", "v2ray"],
-    ["clash-verge/v2.0", "mihomo"],
-    ["unknown-client/1.0", "mihomo"],
+    ["clash-verge/v2.0", "mihomo-config"],
+    ["unknown-client/1.0", "mihomo-config"],
+    ["Clash Party/2.0", "mihomo-config"],
   ])("maps %s to %s", (userAgent, target) => {
     expect(targetForUserAgent(userAgent)).toBe(target);
   });

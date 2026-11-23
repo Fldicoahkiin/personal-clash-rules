@@ -2,6 +2,7 @@ export type UserAgentTarget =
   | "egern"
   | "loon"
   | "mihomo"
+  | "mihomo-config"
   | "quantumult-x"
   | "shadowrocket"
   | "sing-box"
@@ -39,5 +40,6 @@ export function targetForUserAgent(userAgent: string): UserAgentTarget {
   if (/\bv2ray(?:n|ng)?\b/u.test(normalized)) {
     return "v2ray";
   }
-  return "mihomo";
+  // 裸链接默认给完整配置：只给节点列表的订阅在任何 Clash 客户端里都没有规则可用。
+  return "mihomo-config";
 }
