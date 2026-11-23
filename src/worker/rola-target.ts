@@ -44,7 +44,7 @@ export async function renderRolaTarget(env: SubscriptionEnv, prepared: ReturnTyp
     || countTargetCompatibleNodes(base.proxies, "shadowrocket") !== base.proxies.length) {
     throw new ApiError(422, "rola_mobile_nodes_unsupported", "来源含 Shadowrocket 无法保留的节点或代理链，未输出缺少节点的订阅。");
   }
-  const nodes = await produceTarget(env, base.proxies, "shadowrocket");
+  const nodes = await produceTarget(env, base.proxies, "shadowrocket", "flacier", 6, "doh", undefined, undefined, false);
   if (nodes.split("\n").filter(Boolean).length !== base.proxies.length) {
     throw new ApiError(422, "rola_mobile_nodes_unsupported", "Shadowrocket 节点输出不完整，已停止生成。");
   }

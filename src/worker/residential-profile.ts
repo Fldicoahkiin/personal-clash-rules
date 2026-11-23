@@ -413,10 +413,12 @@ export function prepareRolaProfile(source: string, value: unknown) {
   }
   const protectedPolicy = (rule: string) => claudePolicy && policyGroup === aiGroup && isClaudeProtectedRule(rule) ? claudePolicy.name : policyGroup;
   const names = new Set<string>();
+  // 新版底座自己就带同名出口组；旧链记录遇到它时复用该组，而不是 422。
+  const reuseGroup = groups.items.some(item => isMap(item) && item.get("name") === groupName && item.get("type") === "select");
   for (const item of [...proxies.items, ...groups.items]) {
     if (!isMap(item) || typeof item.get("name") !== "string") throw new Error("Unsupported proxy/group structure in base profile");
     const name = String(item.get("name"));
-    if (names.has(name) || exits.some(exit => exit.name === name) || name === groupName) throw new Error("Duplicate or reserved Rola name in base profile; regenerate from the original base");
+    if (names.has(name) || exits.some(exit => exit.name === name) || (name === groupName && !reuseGroup)) throw new Error("Duplicate or reserved Rola name in base profile; regenerate from the original base");
     names.add(name);
   }
   validateResidentialReferences(base.proxies as Array<Record<string, unknown>>, settings.residentialNodeNames, encryptedUpstream);
@@ -508,14 +510,19 @@ export function prepareRolaProfile(source: string, value: unknown) {
   }
   const flag = String.fromCodePoint(...settings.country.toUpperCase().split("").map(char => 127397 + char.charCodeAt(0)));
   // UDP follows the selected member: Rola nodes carry udp: false, a referenced node keeps its own setting.
-  groups.add(document.createNode({
-    name: groupName, type: "select", proxies: residentialNames,
-    "empty-fallback": "REJECT",
-  }));
-  const residentialGroup = groups.items.pop();
-  // Directly after GLOBAL; bases without it keep the legacy third position.
-  const globalIndex = groups.items.findIndex(group => isMap(group) && group.get("name") === "GLOBAL");
-  groups.items.splice(globalIndex >= 0 ? globalIndex + 1 : Math.min(2, groups.items.length), 0, residentialGroup);
+  if (reuseGroup) {
+    const existing = groups.items.find(group => isMap(group) && group.get("name") === groupName);
+    if (isMap(existing)) existing.set("proxies", document.createNode(residentialNames));
+  } else {
+    groups.add(document.createNode({
+      name: groupName, type: "select", proxies: residentialNames,
+      "empty-fallback": "REJECT",
+    }));
+    const residentialGroup = groups.items.pop();
+    // Directly after GLOBAL; bases without it keep the legacy third position.
+    const globalIndex = groups.items.findIndex(group => isMap(group) && group.get("name") === "GLOBAL");
+    groups.items.splice(globalIndex >= 0 ? globalIndex + 1 : Math.min(2, groups.items.length), 0, residentialGroup);
+  }
   for (const group of groups.items) {
     if (!isMap(group) || !residentialSelectableGroups.includes(String(group.get("name")))) continue;
     const members = group.get("proxies", true);

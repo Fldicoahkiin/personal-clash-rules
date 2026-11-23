@@ -65,8 +65,10 @@ export async function produceTarget(
   dnsMode: MihomoDnsMode = "doh",
   upstreamConfig?: Record<string, unknown>,
   dnsSettings?: DnsSettings,
+  includeUsageNode = true,
 ): Promise<string> {
-  const usageNode = await usageNodeFor(_env);
+  // 规则型输出（.conf）只用节点名，不需要这条展示节点。
+  const usageNode = includeUsageNode && target !== "shadowrocket-config" ? await usageNodeFor(_env) : null;
   const withUsage = usageNode ? [usageNode, ...nodes] : nodes;
   const supported = (withUsage as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
