@@ -495,12 +495,19 @@ async function readSubscriptionConfig(
 }
 
 async function readStoredSubscription(env: SubscriptionEnv, token: string): Promise<string | null> {
-  try {
-    return await env.SUBSCRIPTIONS.get(`${subscriptionKeyPrefix}${token}`);
-  } catch (error) {
-    console.error(JSON.stringify({ event: "subscription_storage_read_failed", error: error instanceof Error ? error.name : "unknown" }));
-    throw new ApiError(503, "subscription_storage_unavailable", "Subscription storage is temporarily unavailable");
+  // KV 偶发读取失败不该直接变成 503：重试一次，仍旧失败才报。
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      return await env.SUBSCRIPTIONS.get(`${subscriptionKeyPrefix}${token}`);
+    } catch (error) {
+      if (attempt === 2) {
+        console.error(JSON.stringify({ event: "subscription_storage_read_failed", error: error instanceof Error ? error.name : "unknown" }));
+        throw new ApiError(503, "subscription_storage_unavailable", "Subscription storage is temporarily unavailable");
+      }
+      await new Promise(resolve => setTimeout(resolve, 60));
+    }
   }
+  return null;
 }
 
 // A stored record that no longer passes current validation is a deployment problem, not a missing link.
@@ -572,7 +579,11 @@ async function renderSubscription(
   }
 
   const universal = parts.length === 2;
-  const targetParameter = universal ? url.searchParams.get("target") : parts[2];
+  const requested = universal ? url.searchParams.get("target") : parts[2];
+  // 手机客户端按 URL 最后一段命名配置；给家宽时代的文件名保留别名，导入后就是 Flacier-Mobile.*。
+  const alias = requested === "Flacier-Mobile.conf" ? "shadowrocket-config"
+    : requested === "Flacier-Mobile-Nodes.txt" ? "shadowrocket" : undefined;
+  const targetParameter = alias ?? requested;
   let target: OutputTarget;
   if (targetParameter) {
     if (!isOutputTarget(targetParameter)) {
@@ -649,8 +660,10 @@ async function subscriptionResponse(config: SubscriptionConfig, generated: Await
   const profileName = displayProfileName(config, generated.inheritedName);
   const extension = target === "shadowrocket-config" ? "conf" : target === "shadowrocket" ? "txt" : "yaml";
   // 手机客户端普遍不认 RFC 5987 的 filename*，会显示成一串百分号编码；补一个纯 ASCII 的 filename。
-  const plainName = target === "shadowrocket-config" ? "Flacier-Mobile.conf"
-    : target === "shadowrocket" ? "Flacier-Mobile-Nodes.txt" : `Flacier.${extension}`;
+  const pathName = url.pathname.endsWith("/Flacier-Mobile.conf") ? "Flacier-Mobile.conf"
+    : url.pathname.endsWith("/Flacier-Mobile-Nodes.txt") ? "Flacier-Mobile-Nodes.txt" : undefined;
+  const plainName = pathName ?? (target === "shadowrocket-config" ? "Flacier-Mobile.conf"
+    : target === "shadowrocket" ? "Flacier-Mobile-Nodes.txt" : `Flacier.${extension}`);
   const headers = new Headers({
     "Content-Disposition": `attachment; filename="${plainName}"; filename*=UTF-8''${encodeURIComponent(`${profileName}.${extension}`)}`,
     "Content-Type": contentTypeFor(target),
