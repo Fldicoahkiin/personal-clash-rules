@@ -38,6 +38,24 @@ export function countTargetCompatibleNodes(
   return (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target)).length;
 }
 
+
+// 自建节点的月度用量做成一个独立节点（不是组、也不是名字后缀）：手机端的节点列表里也能看到。
+// 名字里带「流量」，会被业务组和自动选择的 exclude-filter 过滤掉，不会被误选。
+const usageQuota = 2 ** 30;
+async function usageNodeFor(env: SubscriptionEnv): Promise<SubscriptionNode | null> {
+  try {
+    const raw = await env.SUBSCRIPTIONS.get("vps-usage");
+    if (!raw) return null;
+    const usage = JSON.parse(raw) as { txBytes?: unknown; quotaBytes?: unknown; month?: unknown };
+    if (typeof usage.txBytes !== "number" || typeof usage.quotaBytes !== "number" || usage.quotaBytes <= 0) return null;
+    const used = (usage.txBytes / usageQuota).toFixed(1);
+    const total = Math.round(usage.quotaBytes / usageQuota);
+    return { name: `📊 VPS 流量 ${used} / ${total} GiB`, type: "socks5", server: "127.0.0.1", port: 1, udp: false } as SubscriptionNode;
+  } catch {
+    return null;
+  }
+}
+
 export async function produceTarget(
   _env: SubscriptionEnv,
   nodes: SubscriptionNode[],
@@ -48,7 +66,9 @@ export async function produceTarget(
   upstreamConfig?: Record<string, unknown>,
   dnsSettings?: DnsSettings,
 ): Promise<string> {
-  const supported = (nodes as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
+  const usageNode = await usageNodeFor(_env);
+  const withUsage = usageNode ? [usageNode, ...nodes] : nodes;
+  const supported = (withUsage as ProxyNode[]).filter((node) => isTargetCompatible(node, target));
   if (supported.length === 0) {
     throw new ApiError(422, "target_unsupported", `${target} could not represent the normalized nodes`);
   }
