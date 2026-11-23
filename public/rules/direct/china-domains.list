@@ -6,7 +6,7 @@
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/cn.list
 # Source SHA-256: 64d115b13c843307c2fc29378972cc1be7950ce5cde85e46d7cd4c6be75abacd
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list
-# Source SHA-256: b6a28f2d69cdf2e50cb55f62e9d2fc3fad1268a1e2b8b761096979766cf58f54
+# Source SHA-256: 36a8b4985f20ba4931dee7bec1db2f727b33b3ac6d6615203677ba4b22217b92
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/xiaohongshu
 # Source SHA-256: c02829a3660e6ddcc24e53a86b33735accf42613d493757564b59d217a06065d
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/askdiandian
@@ -20,7 +20,7 @@
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/alibaba
 # Source SHA-256: aa9b99855ef5a7fc92d51d4429575656a2f84362a0fa8a2ad771f533539bccc9
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/aliyun
-# Source SHA-256: d01109fb8cd401f8ae80d37ddbfe72e9bb6dd5e717853fdf8d1871c5878fb863
+# Source SHA-256: 3c58c9392303ee2a7191065088b0708a03deba40e139f02c4d18cf12c6302d54
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/jd
 # Source SHA-256: 03a48dfe95eb53ea210f3edf629b2f0f711c535177cc92f7fb4521b97e84aee3
 # Omitted 3 DOMAIN-REGEX rules for the shared mobile/domain format:
@@ -110203,8 +110203,10 @@ DOMAIN-SUFFIX,gs2.ww.prod.dl.playstation.net
 DOMAIN,api.blipsandchitz.me
 DOMAIN,end-api.shallow.ink
 DOMAIN,end.shallow.ink
-DOMAIN-SUFFIX,lufax.com
-DOMAIN-SUFFIX,juejin.im
+DOMAIN-SUFFIX,jutongbao.top
+DOMAIN-SUFFIX,echooai.com
+DOMAIN-SUFFIX,fazhipro.com
+DOMAIN-SUFFIX,saasfz.com
 DOMAIN-SUFFIX,to8to.com
 DOMAIN-SUFFIX,netbig.top
 DOMAIN-SUFFIX,edgemonix.top
@@ -110295,49 +110297,36 @@ DOMAIN-SUFFIX,zhanzhang.net
 DOMAIN-SUFFIX,zhiziyun.com
 DOMAIN-SUFFIX,zzzcaculator.top
 DOMAIN-SUFFIX,bdcat.top
-DOMAIN-SUFFIX,fengkongcloud.com
-DOMAIN-SUFFIX,tingyun.com
-DOMAIN-SUFFIX,baidustatic.com
-DOMAIN-SUFFIX,duapp.com
-DOMAIN-SUFFIX,duapps.com
-DOMAIN-SUFFIX,hao222.com
-DOMAIN-SUFFIX,quyaoya.com
-DOMAIN-SUFFIX,xycdn.com
-DOMAIN-SUFFIX,jsj.top
-DOMAIN-SUFFIX,coolab.top
-DOMAIN-SUFFIX,gio.ren
-DOMAIN-SUFFIX,giocdn.com
-DOMAIN-SUFFIX,growingio.com
-DOMAIN-SUFFIX,51zmt.top
-DOMAIN-SUFFIX,baozoumanhua.com
-DOMAIN-SUFFIX,bsbsb.top
-DOMAIN-SUFFIX,goka.top
-DOMAIN-SUFFIX,qwapp.top
-DOMAIN-SUFFIX,chat.top
-DOMAIN-SUFFIX,ku6.com
-DOMAIN-SUFFIX,koowo.com
-DOMAIN-SUFFIX,kskwai.com
-DOMAIN-SUFFIX,kuaishouzt.com
-DOMAIN-SUFFIX,gmanhua.com
-DOMAIN-SUFFIX,manhuaren.com
-DOMAIN-SUFFIX,kuaikanmanhua.com
-DOMAIN-SUFFIX,tgpro.top
-DOMAIN-SUFFIX,vrzwk.top
-DOMAIN-SUFFIX,bayescom.com
-DOMAIN-SUFFIX,jtexpress.top
-DOMAIN-SUFFIX,yto.top
 DOMAIN-SUFFIX,gepush.com
 DOMAIN-SUFFIX,getui.com
 DOMAIN-SUFFIX,getui.net
 DOMAIN-SUFFIX,igehuo.com
 DOMAIN-SUFFIX,igetui.com
 DOMAIN-SUFFIX,igexin.com
-DOMAIN-SUFFIX,bootcdn.net
-DOMAIN-SUFFIX,bootcss.com
+DOMAIN-SUFFIX,gio.ren
+DOMAIN-SUFFIX,giocdn.com
+DOMAIN-SUFFIX,growingio.com
+DOMAIN-SUFFIX,share123.top
+DOMAIN-SUFFIX,yccdn.com
+DOMAIN-SUFFIX,lgstatic.com
+DOMAIN-SUFFIX,saduck.top
+DOMAIN-SUFFIX,juejin.im
+DOMAIN-SUFFIX,5566ua.com
+DOMAIN-SUFFIX,easytomessage.com
+DOMAIN-SUFFIX,jmlk.co
+DOMAIN-SUFFIX,jpush.io
+DOMAIN-SUFFIX,jpushoa.com
+DOMAIN-SUFFIX,pushcfg.com
+DOMAIN-SUFFIX,jsj.top
+DOMAIN-SUFFIX,lenovofuturecenter.com
+DOMAIN-SUFFIX,xycdn.com
+DOMAIN-SUFFIX,bayescom.com
+DOMAIN-SUFFIX,tingyun.com
 DOMAIN-SUFFIX,staticfile.net
 DOMAIN-SUFFIX,staticfile.org
-DOMAIN-SUFFIX,cpatrk.net
-DOMAIN-SUFFIX,talkinggame.com
+DOMAIN-SUFFIX,bootcdn.net
+DOMAIN-SUFFIX,bootcss.com
+DOMAIN-SUFFIX,yundouxueyuan.com
 DOMAIN-SUFFIX,tapnow.top
 DOMAIN-SUFFIX,nia-teams.com
 DOMAIN-SUFFIX,senseavatar.com
@@ -110347,33 +110336,19 @@ DOMAIN-SUFFIX,favonis.space
 DOMAIN-SUFFIX,ai-indeed.com
 DOMAIN-SUFFIX,diandianlife.top
 DOMAIN-SUFFIX,doubaoapps.com
+DOMAIN-SUFFIX,appjiagu.com
+DOMAIN-SUFFIX,zhaoliangjipc.com
+DOMAIN-SUFFIX,qpmcn.com
+DOMAIN-SUFFIX,coolab.top
+DOMAIN-SUFFIX,szbdyd.com
+DOMAIN-SUFFIX,bseinfo.net
+DOMAIN-SUFFIX,openinstall.io
+DOMAIN-SUFFIX,cpatrk.net
+DOMAIN-SUFFIX,talkinggame.com
 DOMAIN-SUFFIX,talkingdata.com
 DOMAIN-SUFFIX,tendcloud.com
-DOMAIN-SUFFIX,zymls.com
-DOMAIN-SUFFIX,busyming.com
-DOMAIN-SUFFIX,pushcfg.com
-DOMAIN-SUFFIX,jpushoa.com
-DOMAIN-SUFFIX,jpush.io
-DOMAIN-SUFFIX,jmlk.co
-DOMAIN-SUFFIX,easytomessage.com
-DOMAIN-SUFFIX,5566ua.com
-DOMAIN-SUFFIX,yundouxueyuan.com
-DOMAIN-SUFFIX,goodq.top
-DOMAIN-SUFFIX,admin5.com
-DOMAIN-SUFFIX,hnol.net
-DOMAIN-SUFFIX,shuwen.com
-DOMAIN-SUFFIX,tidesight.com
-DOMAIN-SUFFIX,upsort.com
-DOMAIN-SUFFIX,vcbeat.top
-DOMAIN-SUFFIX,saduck.top
-DOMAIN-SUFFIX,szbdyd.com
-DOMAIN-SUFFIX,lgstatic.com
-DOMAIN-SUFFIX,yccdn.com
-DOMAIN-SUFFIX,bseinfo.net
-DOMAIN-SUFFIX,share123.top
-DOMAIN-SUFFIX,jutongbao.top
-DOMAIN-SUFFIX,openinstall.io
-DOMAIN-SUFFIX,appjiagu.com
+DOMAIN-SUFFIX,mob.com
+DOMAIN-SUFFIX,dutils.com
 DOMAIN-SUFFIX,aloys233.top
 DOMAIN-SUFFIX,lg3000.top
 DOMAIN-SUFFIX,misaka-net.top
@@ -110381,15 +110356,45 @@ DOMAIN-SUFFIX,pljzy.top
 DOMAIN-SUFFIX,tianhw.top
 DOMAIN-SUFFIX,topwd.top
 DOMAIN-SUFFIX,zway.top
-DOMAIN-SUFFIX,mob.com
-DOMAIN-SUFFIX,dutils.com
+DOMAIN-SUFFIX,goodq.top
+DOMAIN-SUFFIX,admin5.com
+DOMAIN-SUFFIX,hnol.net
+DOMAIN-SUFFIX,shuwen.com
+DOMAIN-SUFFIX,tidesight.com
+DOMAIN-SUFFIX,upsort.com
+DOMAIN-SUFFIX,vcbeat.top
+DOMAIN-SUFFIX,ku6.com
+DOMAIN-SUFFIX,koowo.com
+DOMAIN-SUFFIX,manhuaren.com
+DOMAIN-SUFFIX,gmanhua.com
+DOMAIN-SUFFIX,kuaikanmanhua.com
+DOMAIN-SUFFIX,fengkongcloud.com
+DOMAIN-SUFFIX,jtexpress.top
+DOMAIN-SUFFIX,yto.top
 DOMAIN-SUFFIX,tclai.top
-DOMAIN-SUFFIX,shuqistat.com
-DOMAIN-SUFFIX,meitustat.com
+DOMAIN-SUFFIX,baidustatic.com
+DOMAIN-SUFFIX,duapp.com
+DOMAIN-SUFFIX,duapps.com
+DOMAIN-SUFFIX,hao222.com
+DOMAIN-SUFFIX,quyaoya.com
+DOMAIN-SUFFIX,zymls.com
+DOMAIN-SUFFIX,busyming.com
+DOMAIN-SUFFIX,51zmt.top
+DOMAIN-SUFFIX,baozoumanhua.com
+DOMAIN-SUFFIX,bsbsb.top
+DOMAIN-SUFFIX,goka.top
+DOMAIN-SUFFIX,qwapp.top
+DOMAIN-SUFFIX,kskwai.com
+DOMAIN-SUFFIX,kuaishouzt.com
+DOMAIN-SUFFIX,tgpro.top
+DOMAIN-SUFFIX,vrzwk.top
+DOMAIN-SUFFIX,chat.top
 DOMAIN,time.izatcloud.net
 DOMAIN,time.xtracloud.net
 DOMAIN,izattime.qcomgeo2.com
 DOMAIN,xtratime.qcomgeo2.com
+DOMAIN-SUFFIX,meitustat.com
+DOMAIN-SUFFIX,shuqistat.com
 DOMAIN-SUFFIX,xhsrcdn.com
 DOMAIN-SUFFIX,amap.net
 DOMAIN-SUFFIX,ztna-dingtalk.com

@@ -6,7 +6,7 @@
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/cn.list
 # Source SHA-256: 64d115b13c843307c2fc29378972cc1be7950ce5cde85e46d7cd4c6be75abacd
 # Source: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/geolocation-cn.list
-# Source SHA-256: b6a28f2d69cdf2e50cb55f62e9d2fc3fad1268a1e2b8b761096979766cf58f54
+# Source SHA-256: 36a8b4985f20ba4931dee7bec1db2f727b33b3ac6d6615203677ba4b22217b92
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/xiaohongshu
 # Source SHA-256: c02829a3660e6ddcc24e53a86b33735accf42613d493757564b59d217a06065d
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/askdiandian
@@ -20,7 +20,7 @@
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/alibaba
 # Source SHA-256: aa9b99855ef5a7fc92d51d4429575656a2f84362a0fa8a2ad771f533539bccc9
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/aliyun
-# Source SHA-256: d01109fb8cd401f8ae80d37ddbfe72e9bb6dd5e717853fdf8d1871c5878fb863
+# Source SHA-256: 3c58c9392303ee2a7191065088b0708a03deba40e139f02c4d18cf12c6302d54
 # Source: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/jd
 # Source SHA-256: 03a48dfe95eb53ea210f3edf629b2f0f711c535177cc92f7fb4521b97e84aee3
 # Omitted 3 DOMAIN-REGEX rules for the shared mobile/domain format:
@@ -110203,8 +110203,10 @@
 api.blipsandchitz.me
 end-api.shallow.ink
 end.shallow.ink
-+.lufax.com
-+.juejin.im
++.jutongbao.top
++.echooai.com
++.fazhipro.com
++.saasfz.com
 +.to8to.com
 +.netbig.top
 +.edgemonix.top
@@ -110295,49 +110297,36 @@ end.shallow.ink
 +.zhiziyun.com
 +.zzzcaculator.top
 +.bdcat.top
-+.fengkongcloud.com
-+.tingyun.com
-+.baidustatic.com
-+.duapp.com
-+.duapps.com
-+.hao222.com
-+.quyaoya.com
-+.xycdn.com
-+.jsj.top
-+.coolab.top
-+.gio.ren
-+.giocdn.com
-+.growingio.com
-+.51zmt.top
-+.baozoumanhua.com
-+.bsbsb.top
-+.goka.top
-+.qwapp.top
-+.chat.top
-+.ku6.com
-+.koowo.com
-+.kskwai.com
-+.kuaishouzt.com
-+.gmanhua.com
-+.manhuaren.com
-+.kuaikanmanhua.com
-+.tgpro.top
-+.vrzwk.top
-+.bayescom.com
-+.jtexpress.top
-+.yto.top
 +.gepush.com
 +.getui.com
 +.getui.net
 +.igehuo.com
 +.igetui.com
 +.igexin.com
-+.bootcdn.net
-+.bootcss.com
++.gio.ren
++.giocdn.com
++.growingio.com
++.share123.top
++.yccdn.com
++.lgstatic.com
++.saduck.top
++.juejin.im
++.5566ua.com
++.easytomessage.com
++.jmlk.co
++.jpush.io
++.jpushoa.com
++.pushcfg.com
++.jsj.top
++.lenovofuturecenter.com
++.xycdn.com
++.bayescom.com
++.tingyun.com
 +.staticfile.net
 +.staticfile.org
-+.cpatrk.net
-+.talkinggame.com
++.bootcdn.net
++.bootcss.com
++.yundouxueyuan.com
 +.tapnow.top
 +.nia-teams.com
 +.senseavatar.com
@@ -110347,33 +110336,19 @@ end.shallow.ink
 +.ai-indeed.com
 +.diandianlife.top
 +.doubaoapps.com
++.appjiagu.com
++.zhaoliangjipc.com
++.qpmcn.com
++.coolab.top
++.szbdyd.com
++.bseinfo.net
++.openinstall.io
++.cpatrk.net
++.talkinggame.com
 +.talkingdata.com
 +.tendcloud.com
-+.zymls.com
-+.busyming.com
-+.pushcfg.com
-+.jpushoa.com
-+.jpush.io
-+.jmlk.co
-+.easytomessage.com
-+.5566ua.com
-+.yundouxueyuan.com
-+.goodq.top
-+.admin5.com
-+.hnol.net
-+.shuwen.com
-+.tidesight.com
-+.upsort.com
-+.vcbeat.top
-+.saduck.top
-+.szbdyd.com
-+.lgstatic.com
-+.yccdn.com
-+.bseinfo.net
-+.share123.top
-+.jutongbao.top
-+.openinstall.io
-+.appjiagu.com
++.mob.com
++.dutils.com
 +.aloys233.top
 +.lg3000.top
 +.misaka-net.top
@@ -110381,15 +110356,45 @@ end.shallow.ink
 +.tianhw.top
 +.topwd.top
 +.zway.top
-+.mob.com
-+.dutils.com
++.goodq.top
++.admin5.com
++.hnol.net
++.shuwen.com
++.tidesight.com
++.upsort.com
++.vcbeat.top
++.ku6.com
++.koowo.com
++.manhuaren.com
++.gmanhua.com
++.kuaikanmanhua.com
++.fengkongcloud.com
++.jtexpress.top
++.yto.top
 +.tclai.top
-+.shuqistat.com
-+.meitustat.com
++.baidustatic.com
++.duapp.com
++.duapps.com
++.hao222.com
++.quyaoya.com
++.zymls.com
++.busyming.com
++.51zmt.top
++.baozoumanhua.com
++.bsbsb.top
++.goka.top
++.qwapp.top
++.kskwai.com
++.kuaishouzt.com
++.tgpro.top
++.vrzwk.top
++.chat.top
 time.izatcloud.net
 time.xtracloud.net
 izattime.qcomgeo2.com
 xtratime.qcomgeo2.com
++.meitustat.com
++.shuqistat.com
 +.xhsrcdn.com
 +.amap.net
 +.ztna-dingtalk.com
