@@ -9,7 +9,14 @@
 
 ### iOS Shadowrocket
 
-固定 IP 合并订阅提供两个手机入口：`/r/订阅ID/Flacier-Mobile-Nodes.txt` 用于首页节点，`/r/订阅ID/Flacier-Mobile.conf` 用于配置页分流与 DNS。可读文件名会在重新导入时保留，原短链接及 `target` 参数继续兼容。首页节点和配置文件分别更新，不能用更新节点代替更新规则。
+手机入口固定在主订阅下，两条地址长期不变：
+
+| 用途 | 地址 | 导入后名字 |
+| --- | --- | --- |
+| 首页节点 | `/s/订阅ID/`（或 `/s/订阅ID/Flacier-Mobile-Nodes.txt`） | `Flacier-Mobile-Nodes.txt` |
+| 配置页分流与 DNS | `/s/订阅ID/Flacier-Mobile.conf` | `Flacier-Mobile.conf` |
+
+客户端按 URL 最后一段命名配置，所以这两个可读文件名必须保留；`target` 参数继续兼容。首页节点和配置文件分别更新，不能用更新节点代替更新规则。旧的家宽链入口 `/r/…/Flacier-Mobile.*` 已随家宽下线，不要再引用。
 
 选择「完整配置 → Shadowrocket · 配套配置」会生成两个资源。节点订阅带真实 `Subscription-Userinfo`；`.conf` 负责规则和 DNS，不重复写节点密码，也不创建 Clash 式策略组。代理规则使用内置 `PROXY`，跟随首页选中的节点；国内白名单继续使用 `DIRECT`。节点改名或新增时无需在配置中同步节点名称；修改分流规则或 DNS 后，需要重新下载配套配置。客户端自动更新是否开启，要在手机上另行确认。
 
