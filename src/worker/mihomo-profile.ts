@@ -1,6 +1,7 @@
 import { stringify as stringifyYaml } from "yaml";
 
 import {
+  FIXED_IP_GROUP,
   displayMihomoGroup,
   displayMihomoRule,
   mihomoProxyGroups,
@@ -43,6 +44,25 @@ const globalRules = [
   ...mihomoUdpFallbackRules,
 ] as const;
 
+type PolicyGroup = Record<string, unknown> & { name: string; proxies?: string[] };
+
+// 固定 IP 出口跟着订阅走：有自建节点就只收它们（显式成员，不靠名字正则），
+// 没有就整组拿掉，并在所有引用它的组里摘干净——别人的订阅里不会出现一个永远为空的组。
+function withSelfHostedExit(groups: PolicyGroup[], selfHosted: string[]): PolicyGroup[] {
+  if (selfHosted.length > 0) {
+    return groups.map((group) => (group.name !== FIXED_IP_GROUP ? group : {
+      name: FIXED_IP_GROUP,
+      type: "select",
+      proxies: selfHosted,
+      "empty-fallback": "REJECT" as const,
+      icon: group.icon,
+    }));
+  }
+  return groups
+    .filter((group) => group.name !== FIXED_IP_GROUP)
+    .map((group) => ({ ...group, proxies: (group.proxies ?? []).filter((name) => name !== FIXED_IP_GROUP) }));
+}
+
 function profileBody(
   proxies: Array<Record<string, unknown>>,
   rulePreset: MihomoRulePreset,
@@ -50,13 +70,15 @@ function profileBody(
   dnsMode: MihomoDnsMode = "doh",
   upstreamConfig?: Record<string, unknown>,
   dnsSettings: DnsSettings = defaultDnsSettings,
+  selfHosted?: string[],
 ) {
   const inheritedDns = dnsMode === "upstream" ? readUpstreamDns(upstreamConfig) : undefined;
   if (inheritedDns) validateIndependentDns(inheritedDns);
   const flacierRules = rulePreset !== "global" && rulePreset !== "direct";
   const directRules = rulePreset === "direct";
   const groups = directRules ? [] : flacierRules ? mihomoProxyGroups : globalProxyGroups;
-  const proxyGroups: Array<Record<string, unknown>> = groups.map((group) => ({ ...group, "empty-fallback": "REJECT" }));
+  const scoped = flacierRules && selfHosted ? withSelfHostedExit(groups as PolicyGroup[], selfHosted) : groups;
+  const proxyGroups: Array<Record<string, unknown>> = scoped.map((group) => ({ ...group, "empty-fallback": "REJECT" }));
   const dns = inheritedDns ? { ...inheritedDns, ipv6: dnsSettings.ipv6 }
     : dnsMode === "doh" ? createProxyDns(dnsSettings, upstreamConfig) : { enable: false };
   if (dnsMode === "doh" && !directRules) proxyGroups.push(dnsProxyGroup());
@@ -91,6 +113,7 @@ export function createMihomoProfile(
   dnsMode: MihomoDnsMode = "doh",
   upstreamConfig?: Record<string, unknown>,
   dnsSettings: DnsSettings = defaultDnsSettings,
+  selfHosted?: string[],
 ): string {
   return stringifyYaml(profileBody(
     readYamlProxyResource(nodeResource, "Mihomo"),
@@ -99,5 +122,6 @@ export function createMihomoProfile(
     dnsMode,
     upstreamConfig,
     dnsSettings,
+    selfHosted,
   ));
 }

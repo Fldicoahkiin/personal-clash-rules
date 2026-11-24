@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { describePolicyRoute } from "../src/app/lib/policy-groups";
 import { businessProxyGroupNames, mihomoProxyGroups } from "../src/config/mihomo-policy";
+import { createMihomoProfile } from "../src/worker/mihomo-profile";
+import { parse } from "yaml";
 
 describe("business policy choices", () => {
   it("offers the same complete exits for every business policy without selector cycles", () => {
@@ -26,9 +28,39 @@ describe("business policy choices", () => {
     for (const name of byName.keys()) visit(name);
   });
 
-  it("exposes a fixed-IP selector limited to the self-hosted nodes", () => {
+  it("keeps the fixed-IP selector free of any vendor-specific pattern", () => {
     const group = mihomoProxyGroups.find(candidate => candidate.name === "🇺🇸 美国固定 IP");
-    expect(group).toMatchObject({ type: "select", "include-all": true, filter: "(?i)digitalocean" });
+    expect(group).toMatchObject({ type: "select", "include-all": true });
+    expect(group).not.toHaveProperty("filter");
+    expect(JSON.stringify(group)).not.toMatch(/digitalocean|vultr|linode|aws/iu);
+  });
+
+  it("limits the fixed-IP selector to the self-hosted nodes of the subscription", () => {
+    const nodes = [
+      { name: "🇺🇸 美国 01", type: "ss", server: "airport.example", port: 443, cipher: "aes-128-gcm", password: "p" },
+      { name: "自建 A", type: "ss", server: "203.0.113.10", port: 443, cipher: "aes-128-gcm", password: "p" },
+      { name: "自建 B", type: "ss", server: "203.0.113.10", port: 8443, cipher: "aes-128-gcm", password: "p" },
+    ];
+    const profile = parse(createMihomoProfile(JSON.stringify({ proxies: nodes }), "flacier", 6, "doh", undefined, undefined, ["自建 A", "自建 B"]));
+    const groups = profile["proxy-groups"] as Array<{ name: string; proxies?: string[]; "include-all"?: boolean }>;
+    const fixed = groups.find(group => group.name === "🇺🇸 美国固定 IP");
+    // 显式成员，不靠名字正则；机场节点进不来。
+    expect(fixed).toMatchObject({ type: "select", proxies: ["自建 A", "自建 B"], "empty-fallback": "REJECT" });
+    expect(fixed).not.toHaveProperty("include-all");
+    expect(fixed).not.toHaveProperty("filter");
+    for (const name of ["GLOBAL", "🧠 Claude", "🤖 AI"]) {
+      expect(groups.find(group => group.name === name)?.proxies, name).toContain("🇺🇸 美国固定 IP");
+    }
+  });
+
+  it("omits the fixed-IP selector entirely for a subscription without self-hosted nodes", () => {
+    const nodes = [{ name: "🇺🇸 美国 01", type: "ss", server: "airport.example", port: 443, cipher: "aes-128-gcm", password: "p" }];
+    const profile = parse(createMihomoProfile(JSON.stringify({ proxies: nodes }), "flacier", 6, "doh", undefined, undefined, []));
+    const groups = profile["proxy-groups"] as Array<{ name: string; proxies?: string[] }>;
+    expect(groups.some(group => group.name === "🇺🇸 美国固定 IP")).toBe(false);
+    for (const group of groups) expect(group.proxies ?? []).not.toContain("🇺🇸 美国固定 IP");
+    // 其他出口不受影响。
+    expect(groups.find(group => group.name === "GLOBAL")?.proxies).toContain("♻️ 自动选择");
   });
 
   it("keeps explicit DIRECT selectable without adding direct nodes to automatic or country pools", () => {

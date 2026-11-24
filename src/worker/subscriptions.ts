@@ -12,11 +12,12 @@ import {
   defaultNodeSettings,
   parseNodeSettings,
   type NodeSettings,
+  type SubscriptionNode,
 } from "./node-transforms";
 import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
 import { hashText, randomSubscriptionId } from "./secrets";
-import { normalizeSourceBundle, type SourceResourceLimits } from "./sub-store/normalize";
-import { countTargetCompatibleNodes, produceTarget, readVpsUsage } from "./sub-store/produce";
+import { normalizeSourceBundle, normalizeSources, type SourceResourceLimits } from "./sub-store/normalize";
+import { countTargetCompatibleNodes, produceTarget, readVpsUsage, usesVps } from "./sub-store/produce";
 import { parseRemoteSubscriptionUrl, readRemoteSource, type RemoteSubscriptionSource } from "./sub-store/remote";
 import { combineSubscriptionUsage, formatSubscriptionUserinfo, type RemoteSubscriptionMetadata, type SubscriptionUsage } from "./sub-store/usage";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
@@ -393,6 +394,9 @@ async function generateTarget(
       .map((source) => source.value),
   });
   const nodes = applyNodeTransforms(normalized.nodes, config.nodeSettings);
+  // 自建节点 = 用户手动贴进来的那些（node 来源），按 server 认，不看名字里有没有供应商。
+  // 固定 IP 出口和 VPS 用量都以这个集合为准；没有 node 来源的订阅不会出现固定 IP 组。
+  const selfHosted = await selfHostedNodeNames(env, config, nodes);
   const outputNodeCount = countTargetCompatibleNodes(nodes, target);
   const nodeStats: NodeStats = {
     read: normalized.inputNodeCount,
@@ -412,6 +416,8 @@ async function generateTarget(
     config.dnsMode,
     normalized.upstreamConfig,
     config.dnsSettings,
+    true,
+    selfHosted,
   );
   const template = ruleTemplates.find(template => template.id === config.rulePreset);
   const templateUrl = template?.url || (config.rulePreset === "custom" ? config.ruleTemplateUrl : "");
@@ -427,21 +433,34 @@ async function generateTarget(
   return {
     content: output,
     nodeStats,
-    usage: await withVpsUsage(generatedUsage(remoteSources, normalized.remoteMetadata), env, config),
+    usage: await withVpsUsage(generatedUsage(remoteSources, normalized.remoteMetadata), env, nodes, selfHosted),
     ...(normalized.profileName ? { inheritedName: normalized.profileName } : {}),
   };
 }
 
+// 只拿 node 来源解析一遍（不联网），得到自建机器的 server 集合，再回到改过名的节点里挑出它们。
+async function selfHostedNodeNames(env: SubscriptionEnv, config: SubscriptionConfig, nodes: SubscriptionNode[]): Promise<string[]> {
+  const inline = config.sources.filter((source) => source.type === "node").map((source) => source.value);
+  if (inline.length === 0) return [];
+  const servers = new Set((await normalizeSources(env, { profileName: "", subscriptionUrls: [], nodes: inline }))
+    .map((node) => node.server).filter((server): server is string => typeof server === "string" && server.length > 0));
+  if (servers.size === 0) return [];
+  return nodes.filter((node) => servers.has(node.server as string)).map((node) => node.name);
+}
+
 // 卡片上的用量 = 机场订阅 + 自建节点（如果它在推用量）的月度合计。
-// 只有带自建节点来源的订阅才并入；VPS 没推数据时保持机场原值，不让卡片整个失去用量条。
-async function withVpsUsage(usage: GeneratedUsage, env: SubscriptionEnv, config: SubscriptionConfig): Promise<GeneratedUsage> {
-  if (!config.sources.some((source) => source.type === "node")) return usage;
+// 用量记录全服务只有一条，所以只在订阅里确实有那台机器的节点时才并入：别人的订阅、纯机场订阅都不受影响。
+// VPS 没推数据时保持机场原值，不让卡片整个失去用量条。
+async function withVpsUsage(usage: GeneratedUsage, env: SubscriptionEnv, nodes: SubscriptionNode[], selfHostedNames: string[]): Promise<GeneratedUsage> {
   const vps = await readVpsUsage(env);
-  if (!vps) return usage;
+  // 口径与固定 IP 出口一致：只认这个订阅里属于自建名单、且正是那台机器的节点。
+  const owned = new Set(selfHostedNames);
+  if (!usesVps(nodes.filter((node) => owned.has(node.name)), vps)) return usage;
   // 自建节点只有「本月发送总量」一个计数，没有上下行拆分：全部记到 download，upload 记 0。
   // 它按月重置、没有到期日，所以不带 expire，不会拉低机场的到期时间。
   const selfHostedUsage: SubscriptionUsage = { upload: "0", download: String(vps.txBytes), total: String(vps.quotaBytes) };
-  const selfHosted: SubscriptionUsageSource = { name: "DigitalOcean VPS", status: "available", usage: selfHostedUsage };
+  // 标签用那台机器自己的地址，不写死供应商：每个人的 VPS 都不一样。
+  const selfHosted: SubscriptionUsageSource = { name: `VPS ${vps.server}`, status: "available", usage: selfHostedUsage };
   const reported = usage.sources.flatMap((source) => (source.usage ? [source.usage] : []));
   const parts: SubscriptionUsage[] = [...reported, selfHostedUsage];
   return {

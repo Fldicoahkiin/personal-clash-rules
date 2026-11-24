@@ -202,12 +202,13 @@ export const mihomoProxyGroups = [
     "exclude-filter": metadataFilter,
     icon: `${policyIconBase}/auto.svg`,
   },
-  // 固定 IP 出口：只收名字带 DigitalOcean 的自建节点，空组时 Mihomo 用 REJECT 兜底。
+  // 固定 IP 出口：收自建节点，空组时 Mihomo 用 REJECT 兜底。
+  // 这里不绑定任何供应商：服务端生成配置时会用订阅里实际的自建节点覆盖成员，
+  // 没有自建节点的订阅则整组省略（见 withSelfHostedExit）。覆写文件里保持全量候选，由使用者自行收窄。
   {
     name: FIXED_IP_GROUP,
     type: "select",
     "include-all": true,
-    filter: "(?i)digitalocean",
     "exclude-filter": metadataFilter,
     "empty-fallback": "REJECT" as const,
     icon: `${policyIconBase}/region.svg`,
