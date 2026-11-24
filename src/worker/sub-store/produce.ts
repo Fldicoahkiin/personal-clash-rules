@@ -40,7 +40,7 @@ export function countTargetCompatibleNodes(
 
 
 // 自建节点的月度用量做成一个独立节点（不是组、也不是名字后缀）：手机端的节点列表里也能看到。
-// 名字里带「流量」，会被业务组和自动选择的 exclude-filter 过滤掉，不会被误选。
+// 名字沿用家宽链时代的「VPS 本月」，不撞 metadataFilter（剩余|流量|到期…），所以桌面端在自动选择组里也能看到它；指向本地死端口，误选也连不上。
 const usageQuota = 2 ** 30;
 async function usageNodeFor(env: SubscriptionEnv): Promise<SubscriptionNode | null> {
   try {
@@ -50,7 +50,7 @@ async function usageNodeFor(env: SubscriptionEnv): Promise<SubscriptionNode | nu
     if (typeof usage.txBytes !== "number" || typeof usage.quotaBytes !== "number" || usage.quotaBytes <= 0) return null;
     const used = (usage.txBytes / usageQuota).toFixed(1);
     const total = Math.round(usage.quotaBytes / usageQuota);
-    return { name: `📊 VPS 流量 ${used} / ${total} GiB`, type: "socks5", server: "127.0.0.1", port: 1, udp: false } as SubscriptionNode;
+    return { name: `📊 VPS 本月 ${used} / ${total} GiB`, type: "socks5", server: "127.0.0.1", port: 1, udp: false } as SubscriptionNode;
   } catch {
     return null;
   }
