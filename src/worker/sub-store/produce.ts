@@ -42,18 +42,29 @@ export function countTargetCompatibleNodes(
 // 自建节点的月度用量做成一个独立节点（不是组、也不是名字后缀）：手机端的节点列表里也能看到。
 // 名字沿用家宽链时代的「VPS 本月」，不撞 metadataFilter（剩余|流量|到期…），所以桌面端在自动选择组里也能看到它；指向本地死端口，误选也连不上。
 const usageQuota = 2 ** 30;
-async function usageNodeFor(env: SubscriptionEnv): Promise<SubscriptionNode | null> {
+
+export type VpsUsage = { txBytes: number; quotaBytes: number; month: string };
+
+// VPS 每 30 分钟把本月接口计数推到 /api/vps-usage；读不到、格式不对都当没有，不影响订阅输出。
+export async function readVpsUsage(env: SubscriptionEnv): Promise<VpsUsage | null> {
   try {
     const raw = await env.SUBSCRIPTIONS.get("vps-usage");
     if (!raw) return null;
     const usage = JSON.parse(raw) as { txBytes?: unknown; quotaBytes?: unknown; month?: unknown };
-    if (typeof usage.txBytes !== "number" || typeof usage.quotaBytes !== "number" || usage.quotaBytes <= 0) return null;
-    const used = (usage.txBytes / usageQuota).toFixed(1);
-    const total = Math.round(usage.quotaBytes / usageQuota);
-    return { name: `📊 VPS 本月 ${used} / ${total} GiB`, type: "socks5", server: "127.0.0.1", port: 1, udp: false } as SubscriptionNode;
+    if (typeof usage.txBytes !== "number" || typeof usage.quotaBytes !== "number" || usage.quotaBytes <= 0
+      || typeof usage.month !== "string" || !/^\d{4}-(?:0[1-9]|1[0-2])$/u.test(usage.month)) return null;
+    return { txBytes: usage.txBytes, quotaBytes: usage.quotaBytes, month: usage.month };
   } catch {
     return null;
   }
+}
+
+async function usageNodeFor(env: SubscriptionEnv): Promise<SubscriptionNode | null> {
+  const usage = await readVpsUsage(env);
+  if (!usage) return null;
+  const used = (usage.txBytes / usageQuota).toFixed(1);
+  const total = Math.round(usage.quotaBytes / usageQuota);
+  return { name: `📊 VPS 本月 ${used} / ${total} GiB`, type: "socks5", server: "127.0.0.1", port: 1, udp: false } as SubscriptionNode;
 }
 
 export async function produceTarget(

@@ -16,7 +16,7 @@ import {
 import type { MihomoDnsMode, MihomoRulePreset } from "./mihomo-profile";
 import { hashText, randomSubscriptionId } from "./secrets";
 import { normalizeSourceBundle, type SourceResourceLimits } from "./sub-store/normalize";
-import { countTargetCompatibleNodes, produceTarget } from "./sub-store/produce";
+import { countTargetCompatibleNodes, produceTarget, readVpsUsage } from "./sub-store/produce";
 import { parseRemoteSubscriptionUrl, readRemoteSource, type RemoteSubscriptionSource } from "./sub-store/remote";
 import { combineSubscriptionUsage, formatSubscriptionUserinfo, type RemoteSubscriptionMetadata, type SubscriptionUsage } from "./sub-store/usage";
 import { managedProfileUrlPlaceholder } from "./surge-profile";
@@ -427,8 +427,31 @@ async function generateTarget(
   return {
     content: output,
     nodeStats,
-    usage: generatedUsage(remoteSources, normalized.remoteMetadata),
+    usage: await withVpsUsage(generatedUsage(remoteSources, normalized.remoteMetadata), env, config),
     ...(normalized.profileName ? { inheritedName: normalized.profileName } : {}),
+  };
+}
+
+// 卡片上的用量 = 机场订阅 + 自建节点（如果它在推用量）的月度合计。
+// 只有带自建节点来源的订阅才并入；VPS 没推数据时保持机场原值，不让卡片整个失去用量条。
+async function withVpsUsage(usage: GeneratedUsage, env: SubscriptionEnv, config: SubscriptionConfig): Promise<GeneratedUsage> {
+  if (!config.sources.some((source) => source.type === "node")) return usage;
+  const vps = await readVpsUsage(env);
+  if (!vps) return usage;
+  // 自建节点只有「本月发送总量」一个计数，没有上下行拆分：全部记到 download，upload 记 0。
+  // 它按月重置、没有到期日，所以不带 expire，不会拉低机场的到期时间。
+  const selfHostedUsage: SubscriptionUsage = { upload: "0", download: String(vps.txBytes), total: String(vps.quotaBytes) };
+  const selfHosted: SubscriptionUsageSource = { name: "DigitalOcean VPS", status: "available", usage: selfHostedUsage };
+  const reported = usage.sources.flatMap((source) => (source.usage ? [source.usage] : []));
+  const parts: SubscriptionUsage[] = [...reported, selfHostedUsage];
+  return {
+    combined: {
+      upload: parts.reduce((sum, part) => sum + BigInt(part.upload), 0n).toString(),
+      download: parts.reduce((sum, part) => sum + BigInt(part.download), 0n).toString(),
+      total: parts.reduce((sum, part) => sum + BigInt(part.total), 0n).toString(),
+      ...(usage.combined?.expire !== undefined ? { expire: usage.combined.expire } : {}),
+    },
+    sources: [...usage.sources, selfHosted],
   };
 }
 
