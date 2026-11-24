@@ -663,9 +663,12 @@ async function subscriptionResponse(config: SubscriptionConfig, generated: Await
   const pathName = url.pathname.endsWith("/Flacier-Mobile.conf") ? "Flacier-Mobile.conf"
     : url.pathname.endsWith("/Flacier-Mobile-Nodes.txt") ? "Flacier-Mobile-Nodes.txt" : undefined;
   const plainName = pathName ?? (target === "shadowrocket-config" ? "Flacier-Mobile.conf"
-    : target === "shadowrocket" ? "Flacier-Mobile-Nodes.txt" : `Flacier.${extension}`);
+    : target === "shadowrocket" ? "Flacier-Mobile-Nodes.txt" : undefined);
   const headers = new Headers({
-    "Content-Disposition": `attachment; filename="${plainName}"; filename*=UTF-8''${encodeURIComponent(`${profileName}.${extension}`)}`,
+    // 桌面端按 filename* 取订阅名（机场就是这么做的）；手机端需要可读文件名，走 filename=。
+    "Content-Disposition": plainName
+      ? `attachment; filename="${plainName}"; filename*=UTF-8''${encodeURIComponent(`${profileName}.${extension}`)}`
+      : `attachment; filename*=UTF-8''${encodeURIComponent(profileName)}`,
     "Content-Type": contentTypeFor(target),
     ETag: etag,
     "Profile-Update-Interval": String(config.updateIntervalHours),
