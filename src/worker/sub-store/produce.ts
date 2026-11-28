@@ -98,7 +98,9 @@ export async function produceTarget(
     throw new ApiError(422, "rule_preset_requires_mihomo", `${target} only supports the Flacier rule preset`);
   }
   if (isMihomoConfigTarget(target)) {
-    return createMihomoProfile(stringifyYaml({ proxies: supported }), rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings, selfHosted);
+    // 固定 IP 出口的最后一项也显示用量：VPS 就是这组的出口。选中它连接会失败，名字随用量变，刷新后回到第一项。
+    const fixedExit = usageNode && selfHosted?.length ? [...selfHosted, usageNode.name] : selfHosted;
+    return createMihomoProfile(stringifyYaml({ proxies: supported }), rulePreset, updateIntervalHours, dnsMode, upstreamConfig, dnsSettings, fixedExit);
   }
   if (target === "shadowrocket-config") return createShadowrocketProfile(supported.map(node => node.name), rulePreset, dnsMode, dnsSettings);
   if (target === "stash-config") return createStashProfile(stringifyYaml({ proxies: supported }), updateIntervalHours);

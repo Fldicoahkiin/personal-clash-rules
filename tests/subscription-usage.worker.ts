@@ -76,6 +76,12 @@ describe("subscription usage total", () => {
     }));
     expect(profile.headers.get("subscription-userinfo")).toContain(`total=${(BigInt(airport.total) + BigInt(vpsUsage.quotaBytes)).toString()}`);
     expect(profile.headers.get("subscription-userinfo")).toContain(`expire=${airport.expire}`);
+
+    // 用量节点留在节点列表里给手机看，同时是固定 IP 出口的最后一项。
+    const config = parse(await profile.text()) as { proxies: Array<{ name: string }>; "proxy-groups": Array<{ name: string; proxies?: string[] }> };
+    const usageName = "📊 VPS 本月 100.0 / 1000 GiB";
+    expect(config.proxies.map((node) => node.name)).toContain(usageName);
+    expect(config["proxy-groups"].find((group) => group.name === "🇺🇸 美国固定 IP")?.proxies).toEqual(["self-hosted", usageName]);
   });
 
   it("keeps the airport quota unchanged when the VPS has not reported", async () => {
